@@ -1,6 +1,6 @@
 # AVA-IA
 
-Ambiente Virtual de Aprendizagem com suporte de Inteligência Artificial.
+Ambiente Virtual de Aprendizagem com IA.
 
 ## 🚀 Objetivo
 
