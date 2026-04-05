@@ -6,7 +6,7 @@ export default function LoginForm() {
   return (
     <form className="mt-8 space-y-6 text-left">
       <div className="max-w-[410px] mx-auto w-full">
-        <label className="block text-sm font-medium text-[#364153] mb-1 ml-1">E-mail</label>
+        <label className="block text-sm font-bold text-[#364153] mb-1 ml-1">E-mail</label>
         <div className="relative">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <Mail size={18} strokeWidth={1.5} />
@@ -20,7 +20,7 @@ export default function LoginForm() {
       </div>
 
       <div className="max-w-[410px] mx-auto w-full">
-        <label className="block text-sm font-medium text-[#364153] mb-1 ml-1">Senha</label>
+        <label className="block text-sm font-bold text-[#364153] mb-1 ml-1">Senha</label>
         <div className="relative">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
             <LockKeyhole size={18} strokeWidth={1.5} />

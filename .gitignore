@@ -1,0 +1,12 @@
+# Pasta de pacotes do Frontend 
+frontend/node_modules/
+frontend/.next/
+frontend/.env*
+
+# Ambiente virtual e arquivos do Backend 
+backend/venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/.env
+
+.DS_Store
