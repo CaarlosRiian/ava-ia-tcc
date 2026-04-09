@@ -17,10 +17,10 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-            <button className="flex items-center gap-1 hover:text-[#6366F1] transition-colors">
+            <button className="flex items-center cursor-pointer gap-1 hover:text-[#2F52E0] transition-colors">
               Explorar <ChevronDown className="h-4 w-4" />
             </button>
-            <Link href="/meus-cursos" className="hover:text-[#6366F1] transition-colors">
+            <Link href="/meus-cursos" className="hover:text-[#2F52E0] transition-colors">
               Meus Cursos
             </Link>
           </nav>
@@ -32,9 +32,9 @@ export default function Header() {
             <input
               type="text"
               placeholder="Buscar cursos, aulas..."
-              className="w-full bg-[#F3F4F6] border-transparent border-2 focus:border-[#6366F1] placeholder:text-gray-400 focus:bg-white rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-400 outline-none transition-all"
+              className="w-full bg-[#F3F4F6] border-transparent border-2 focus:border-[#2F52E0] placeholder:text-gray-400 focus:bg-white rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-400 outline-none transition-all"
             />
-          </div>
+          </div> 
         </div>
 
         <div className="flex items-center gap-4">
@@ -51,7 +51,7 @@ export default function Header() {
             </Link>
             <Link 
               href="/cadastro" 
-              className="px-5 py-2.5 text-sm font-bold text-white bg-[#2F52E0] text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+              className="px-5 py-2.5 text-sm font-bold bg-[#2F52E0] text-white font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
             >
               Cadastrar
             </Link>
