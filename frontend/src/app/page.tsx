@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { BookOpen, Sparkles, Brain, MessageCircle, ArrowRight, CheckCircle } from "lucide-react";
+import Header from "../components/Header";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
+      <Header />
       <section className="relative overflow-hidden py-20 md:py-32">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#2F52E0] opacity-[0.03] rounded-full -translate-y-1/2 translate-x-1/2" />
         
