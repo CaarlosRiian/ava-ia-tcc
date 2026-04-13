@@ -1,4 +1,4 @@
-import CourseCard from "./CourseCard";
+import CourseCard from "../../components/CourseCard";
 
 interface Course {
   id: number | string;

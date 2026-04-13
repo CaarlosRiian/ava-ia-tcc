@@ -18,8 +18,8 @@ export default function LessonContent({
   course, lesson, lessonIndex, aiOpen, setAiOpen, lessonsOpen, setLessonsOpen, prevLesson, nextLesson
 }: LessonContentProps) {
   return (
-    <div className="max-w-4xl mx-auto p-6 lg:p-10">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+    <div className="max-w-4xl mx-auto p-6 lg:p-10 bg-white">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 ">
         <div>
           <Link href={`/curso/${course.id}`} className="text-xs font-bold text-[#2F52E0] hover:underline flex items-center gap-1 mb-3 uppercase tracking-wider">
             <ArrowLeft className="h-3 w-3" /> {course.title}

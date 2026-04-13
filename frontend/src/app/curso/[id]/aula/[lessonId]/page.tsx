@@ -39,10 +39,10 @@ export default function Aula() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden ">
       <Header />
 
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden ">
         
         <div className="flex-1 flex flex-col overflow-hidden">
           

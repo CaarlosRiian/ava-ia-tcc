@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Header from "@/components/Header";
-import CourseCard from "@/app/descobrir/CourseCard";
+import CourseCard from "@/components/CourseCard";
 import { mockCourses } from "@/data/courses";
 import { BookOpen } from "lucide-react";
 
