@@ -14,7 +14,7 @@ export function StatsCards({ pendentes, aprovados, rejeitados }: StatsProps) {
         { label: "Aprovados", valor: aprovados, cor: "text-green-500" },
         { label: "Rejeitados", valor: rejeitados, cor: "text-red-500" },
       ].map((item) => (
-        <Card key={item.label} className="border-none shadow-sm rounded-2xl">
+        <Card key={item.label} className="border-none shadow-sm rounded-2xl bg-white">
           <CardHeader className="pb-2">
             <CardDescription className="font-bold uppercase text-xs tracking-wider">{item.label}</CardDescription>
             <CardTitle className={`text-3xl font-black ${item.cor}`}>{item.valor}</CardTitle>
