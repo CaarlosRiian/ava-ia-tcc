@@ -33,7 +33,9 @@ export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
       <TableBody>
         {usuarios.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-muted-foreground py-10">Nenhum usuário encontrado.</TableCell>
+            <TableCell colSpan={5} className="text-center text-bold py-10">
+              Nenhum usuário encontrado.
+            </TableCell>
           </TableRow>
         ) : (
           usuarios.map((u) => (
@@ -45,34 +47,59 @@ export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
                     <AvatarFallback>{iniciais(u.nome)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{u.nome}</p>
+                    <p className="font-medium text-gray-900">{u.nome}</p>
                     <p className="text-sm text-muted-foreground">{u.email}</p>
                   </div>
                 </div>
               </TableCell>
-              <TableCell><Badge variant={roleVariants[u.role]}>{roleLabels[u.role]}</Badge></TableCell>
+
+              <TableCell>
+                <Badge variant={roleVariants[u.role]}>{roleLabels[u.role]}</Badge>
+              </TableCell>
+
               <TableCell>
                 <Badge variant={u.status === "ativo" ? "outline" : "destructive"}>
                   {u.status === "ativo" ? "Ativo" : "Banido"}
                 </Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground">{formatarData(u.cadastradoEm)}</TableCell>
+
+              <TableCell className="text-muted-foreground">
+                {formatarData(u.cadastradoEm)}
+              </TableCell>
+
               <TableCell className="text-right">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                  <DropdownMenuTrigger className="p-2 hover:bg-gray-100 rounded-full cursor-pointer outline-none transition-colors">
+                    <MoreVertical className="h-4 w-4 text-gray-600" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(u)}>Editar papel</DropdownMenuItem>
+
+                  <DropdownMenuContent align="end" className="w-48 bg-white shadow-lg border border-gray-100 rounded-xl p-1">
+                    <DropdownMenuItem
+                      onClick={() => onEdit(u)}
+                      className="cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg hover:bg-gray-50 focus:bg-gray-50 outline-none"
+                    >
+                      Editar papel
+                    </DropdownMenuItem>
+
                     {u.role === "instrutor" && (
                       <DropdownMenuItem asChild>
-                        <Link href={`/professor/${u.nome.toLowerCase().replace(/\s+/g, "-")}`}>
-                            <ExternalLink className="mr-2 h-4 w-4" /> Ver perfil
+                        <Link
+                          href={`/professor/${u.nome.toLowerCase().replace(/\s+/g, "-")}`}
+                          className="cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg hover:bg-gray-50 focus:bg-gray-50 outline-none"
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Ver perfil
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onBan(u)} className={u.status === "ativo" ? "text-destructive" : ""}>
+
+                    <DropdownMenuSeparator className="my-1 bg-gray-100" />
+
+                    <DropdownMenuItem
+                      onClick={() => onBan(u)}
+                      className={`cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg outline-none focus:bg-red-50 ${u.status === "ativo" ? "text-red-600 focus:text-red-600" : "text-green-600 focus:text-green-600"
+                        }`}
+                    >
                       {u.status === "ativo" ? "Banir usuário" : "Reativar usuário"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
