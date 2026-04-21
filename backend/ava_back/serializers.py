@@ -1,0 +1,38 @@
+from rest_framework import serializers
+from .models import User, Category, Course, Module, Lesson
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 'status', 'created_at']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'created_at': {'read_only': True},
+        }
+
+    def create(self, validated_data):
+        validated_data['role'] = 'aluno'
+        validated_data['status'] = 'ativo'
+        user = User.objects.create_user(**validated_data)
+        return user
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'avatar_url']
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'category', 'professor', 'price', 'published', 'created_at']
+
+
+class ModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ['id', 'course', 'title', 'order']
+
+class LessonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lesson
+        fields = ['id', 'module', 'title', 'slug', 'video_url', 'duration_seconds', 'order']
