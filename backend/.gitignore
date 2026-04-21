@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local database (SQLite)
+*.sqlite3
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Static and Media (arquivos que os usuários sobem)
+static/
+media/
+
+# Environment variables
+.env
+
+# IDEs (VS Code, PyCharm)
+.vscode/
+.idea/
