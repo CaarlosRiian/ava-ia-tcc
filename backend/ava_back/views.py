@@ -30,10 +30,13 @@ class CategoryViewSet(ModelViewSet):
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
-    queryset = Course.objects.filter(published=True)
+    # queryset = Course.objects.filter(published=True)
+    queryset = Course.objects.all()
 
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
 
     search_fields = ['title', 'category__name']
     filterset_fields = ['category']
 
+    def perform_create(self, serializer):
+        serializer.save(professor=User.objects.first())

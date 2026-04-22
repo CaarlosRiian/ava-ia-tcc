@@ -23,9 +23,11 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'avatar_url']
 
 class CourseSerializer(serializers.ModelSerializer):
+    professor_name = serializers.CharField(source='professor.username', read_only=True)
+
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor', 'price', 'published', 'created_at']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail_url', 'published', 'created_at']
 
 
 class ModuleSerializer(serializers.ModelSerializer):
