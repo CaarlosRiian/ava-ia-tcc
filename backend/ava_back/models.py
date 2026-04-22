@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.text import slugify
 
 class User(AbstractUser):
     STATUS_CHOICES = (
@@ -25,16 +26,38 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+from django.db import models
+from django.utils.text import slugify
+
 class Course(models.Model):
     title = models.CharField(max_length=100, null=False, blank=False)
     slug = models.SlugField(unique=True, null=False, blank=False)
     description = models.TextField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     thumbnail_url = models.URLField()
-    professor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses', limit_choices_to={'role': 'professor'})
+    professor = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='courses',
+        limit_choices_to={'role': 'professor'}
+    )
     published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            count = 1
+
+            while Course.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
