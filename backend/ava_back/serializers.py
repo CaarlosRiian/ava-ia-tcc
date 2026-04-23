@@ -29,13 +29,31 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail_url', 'published', 'created_at']
 
-
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = ['id', 'course', 'title', 'order']
 
 class LessonSerializer(serializers.ModelSerializer):
+    module = serializers.PrimaryKeyRelatedField(queryset=Module.objects.all())
+    module_title = serializers.CharField(source='module.title', read_only=True)
+
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'title', 'slug', 'video_url', 'duration_seconds', 'order']
+        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video_url', 'duration_seconds', 'order']
+
+class ModuleDetailSerializer(serializers.ModelSerializer):
+    lessons = LessonSerializer(many=True, read_only=True)
+    class Meta:
+        model = Module
+        fields = ['id', 'title', 'order', 'lessons']
+
+class CourseDetailSerializer(serializers.ModelSerializer):
+    modules = ModuleDetailSerializer(many=True, read_only=True)
+    professor_name = serializers.CharField(source='professor.username', read_only=True)
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail_url', 'published', 'created_at', 'modules']
+
+
