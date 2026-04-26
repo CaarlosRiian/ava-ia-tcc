@@ -6,8 +6,8 @@ from rest_framework import filters
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from .models import User, Course, Category, Module, Lesson
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer
+from .models import User, Course, Category, Module, Lesson, Enrollment
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -71,3 +71,20 @@ class LessonViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Lesson.objects.select_related('module').all()
+
+class EnrollmentViewSet(ModelViewSet):
+    queryset = Enrollment.objects.all()
+    serializer_class = EnrollmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Enrollment.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        course = serializer.validated_data['course']
+
+        if Enrollment.objects.filter(user=user, course=course).exists():
+            raise ValidationError("Você já está matriculado neste curso.")
+
+        serializer.save(user=user)
