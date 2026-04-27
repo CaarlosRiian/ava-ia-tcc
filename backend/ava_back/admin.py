@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Category, Course, Module, Lesson, Enrollment
+from .models import User, Category, Course, Module, Lesson, Enrollment, AIAssistant
 
 class LessonInline(admin.TabularInline):
     model = Lesson
@@ -30,3 +30,7 @@ admin.site.register(Category)
 class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ('user', 'course', 'enrolled_at', 'is_active')
     list_filter = ('course', 'is_active')
+
+@admin.register(AIAssistant)
+class AIAssistantAdmin(admin.ModelAdmin):
+    list_display = ('lesson', 'generated_at')

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress
+from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,13 +34,31 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = ['id', 'course', 'title', 'order']
 
+class AIAssistantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AIAssistant
+        fields = ['summary', 'quiz_json', 'generated_at']
+
 class LessonSerializer(serializers.ModelSerializer):
-    module = serializers.PrimaryKeyRelatedField(queryset=Module.objects.all())
     module_title = serializers.CharField(source='module.title', read_only=True)
+    ai_content = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video_url', 'duration_seconds', 'order']
+        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video_url', 'duration_seconds', 'order', 'ai_content']
+
+    def get_ai_content(self, obj):
+        ai = AIAssistant.objects.filter(lesson=obj).first()
+
+        if not ai:
+            return None
+
+        return {
+            "summary": ai.summary,
+            "quiz_json": ai.quiz_json,
+            "generated_at": ai.generated_at
+        }
+
 
 class ModuleDetailSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)

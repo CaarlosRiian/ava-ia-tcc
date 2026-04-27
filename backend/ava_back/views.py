@@ -107,7 +107,11 @@ class LessonViewSet(ModelViewSet):
         lesson = self.get_object()
         user = request.user
 
-        if not Enrollment.objects.filter(user=user, course=lesson.module.course).exists():
+        if not Enrollment.objects.filter(
+            user=user,
+            course=lesson.module.course,
+            is_active=True
+        ).exists():
             return Response(
                 {"error": "Você não está matriculado nesse curso"},
                 status=status.HTTP_403_FORBIDDEN
@@ -118,11 +122,38 @@ class LessonViewSet(ModelViewSet):
             lesson=lesson
         )
 
+        if progress.completed:
+            return Response({
+                "message": "Aula já estava concluída"
+            })
+
         progress.completed = True
         progress.save()
 
         return Response({
             "message": "Aula marcada como concluída"
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def generate_ai(self, request, pk=None):
+        lesson = self.get_object()
+
+        ai_content, created = AIAssistant.objects.get_or_create(lesson=lesson)
+
+        ai_content.summary = "Resumo gerado automaticamente (mock)"
+        ai_content.quiz_json = {
+            "questions": [
+                {
+                    "question": "O que foi visto na aula?",
+                    "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
+                    "correct": "Opção A"
+                }
+            ]
+        }
+        ai_content.save()
+
+        return Response({
+            "message": "Conteúdo de IA gerado com sucesso"
         }, status=status.HTTP_200_OK)
 
 class EnrollmentViewSet(ModelViewSet):
