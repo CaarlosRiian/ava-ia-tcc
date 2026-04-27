@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress
 from .serializers import (
@@ -59,6 +60,43 @@ class CourseViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(professor=self.request.user) 
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_courses(self, request):
+        user = request.user
+
+        enrollments = Enrollment.objects.select_related('course').filter(
+            user=user,
+            is_active=True
+        )
+
+        data = []
+
+        for enrollment in enrollments:
+            course = enrollment.course
+
+            total_lessons = Lesson.objects.filter(
+                module__course=course
+            ).count()
+
+            completed_lessons = LessonProgress.objects.filter(
+                user=user,
+                lesson__module__course=course,
+                completed=True
+            ).count()
+
+            progress = 0
+            if total_lessons > 0:
+                progress = (completed_lessons / total_lessons) * 100
+
+            data.append({
+                "course_id": course.id,
+                "title": course.title,
+                "thumbnail": course.thumbnail_url,
+                "progress": round(progress, 2)
+            })
+
+        return Response(data)
 
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def progress(self, request, pk=None):
