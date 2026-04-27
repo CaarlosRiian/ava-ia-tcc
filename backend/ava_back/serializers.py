@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, Enrollment
+from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,3 +61,9 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         model = Enrollment
         fields = ['id', 'course', 'enrolled_at', 'is_active']
         read_only_fields = ['enrolled_at']
+
+class LessonProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonProgress
+        fields = ['id', 'lesson', 'completed', 'last_watched']
+        read_only_fields = ['last_watched']

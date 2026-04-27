@@ -2,12 +2,19 @@ from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Prefetch
 
-from rest_framework import filters
+from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
-from .models import User, Course, Category, Module, Lesson, Enrollment
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer
+from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress
+from .serializers import (
+    CourseSerializer, UserSerializer, CategorySerializer,
+    CourseDetailSerializer, ModuleSerializer,
+    LessonSerializer, EnrollmentSerializer
+)
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -31,8 +38,8 @@ class CategoryViewSet(ModelViewSet):
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
-    # queryset = Course.objects.filter(published=True)
     queryset = Course.objects.all()
+    # queryset = Course.objects.filter(published=True)
 
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['title', 'category__name']
@@ -46,13 +53,36 @@ class CourseViewSet(ModelViewSet):
     def get_queryset(self):
         if self.action == 'retrieve':
             return Course.objects.select_related('professor','category').prefetch_related(
-            Prefetch('modules',queryset=Module.objects.prefetch_related('lessons')
+                Prefetch('modules', queryset=Module.objects.prefetch_related('lessons'))
             )
-        )
         return super().get_queryset()
 
     def perform_create(self, serializer):
-        serializer.save(professor=self.request.User)
+        serializer.save(professor=self.request.user) 
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def progress(self, request, pk=None):
+        course = self.get_object()
+        user = request.user
+
+        total_lessons = Lesson.objects.filter(module__course=course).count()
+
+        completed_lessons = LessonProgress.objects.filter(
+            user=user,
+            lesson__module__course=course,
+            completed=True
+        ).count()
+
+        progress_percentage = 0
+        if total_lessons > 0:
+            progress_percentage = (completed_lessons / total_lessons) * 100
+
+        return Response({
+            "course": course.title,
+            "total_lessons": total_lessons,
+            "completed_lessons": completed_lessons,
+            "progress": round(progress_percentage, 2)
+        })
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer
@@ -71,6 +101,29 @@ class LessonViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Lesson.objects.select_related('module').all()
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def complete(self, request, pk=None):
+        lesson = self.get_object()
+        user = request.user
+
+        if not Enrollment.objects.filter(user=user, course=lesson.module.course).exists():
+            return Response(
+                {"error": "Você não está matriculado nesse curso"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        progress, created = LessonProgress.objects.get_or_create(
+            user=user,
+            lesson=lesson
+        )
+
+        progress.completed = True
+        progress.save()
+
+        return Response({
+            "message": "Aula marcada como concluída"
+        }, status=status.HTTP_200_OK)
 
 class EnrollmentViewSet(ModelViewSet):
     queryset = Enrollment.objects.all()
