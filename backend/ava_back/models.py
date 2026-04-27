@@ -108,3 +108,12 @@ class LessonProgress(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.lesson.title} - {self.completed}'
+
+class AIAssistant(models.Model):
+    lesson = models.OneToOneField('Lesson', on_delete=models.CASCADE, related_name='ai_assistant')
+    summary = models.TextField(blank=True, null=True)
+    quiz_json = models.JSONField(blank=True, null=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'IA - {self.lesson.title}'
