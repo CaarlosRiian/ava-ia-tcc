@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
+import os
 
 from pathlib import Path
 
@@ -142,3 +143,5 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'ava_back.User'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -16,6 +16,7 @@ from .serializers import (
     CourseDetailSerializer, ModuleSerializer,
     LessonSerializer, EnrollmentSerializer
 )
+from .services.ai_service import generate_ai_for_lesson
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
@@ -210,3 +211,12 @@ class EnrollmentViewSet(ModelViewSet):
             raise ValidationError("Você já está matriculado neste curso.")
 
         serializer.save(user=user)
+
+@api_view(['POST'])
+def generate_ai(request, lesson_id):
+    data = generate_ai_for_lesson(lesson_id)
+
+    if not data:
+        return Response({"error": "Falha ao gerar IA"}, status=400)
+
+    return Response(data)
