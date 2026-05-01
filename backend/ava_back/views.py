@@ -91,6 +91,7 @@ class CourseViewSet(ModelViewSet):
                 "course_id": course.id,
                 "title": course.title,
                 "thumbnail": course.thumbnail_url,
+                "professor": course.professor.username,
                 "progress": round(progress, 2)
             })
 
