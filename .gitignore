@@ -9,4 +9,6 @@ backend/__pycache__/
 backend/*.py[cod]
 backend/.env
 
+/.env
+
 .DS_Store
