@@ -9,13 +9,10 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress
-from .serializers import (
-    CourseSerializer, UserSerializer, CategorySerializer,
-    CourseDetailSerializer, ModuleSerializer,
-    LessonSerializer, EnrollmentSerializer
-)
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer
 from .services.ai_service import generate_ai_for_lesson
 
 class UserViewSet(ModelViewSet):
@@ -220,3 +217,6 @@ def generate_ai(request, lesson_id):
         return Response({"error": "Falha ao gerar IA"}, status=400)
 
     return Response(data)
+
+class EmailTokenView(TokenObtainPairView):
+    serializer_class = EmailTokenSerializer

@@ -1,5 +1,10 @@
 from rest_framework import serializers
 from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
+from rest_framework_simplejwt.tokens import RefreshToken 
+from django.contrib.auth import authenticate, get_user_model
+
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,3 +90,26 @@ class LessonProgressSerializer(serializers.ModelSerializer):
         model = LessonProgress
         fields = ['id', 'lesson', 'completed', 'last_watched']
         read_only_fields = ['last_watched']
+
+class EmailTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Credenciais inválidas")
+
+        if not user.check_password(password):
+            raise serializers.ValidationError("Credenciais inválidas")
+
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        }
