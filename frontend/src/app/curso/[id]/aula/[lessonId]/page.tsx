@@ -2,54 +2,85 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
-import { mockCourses } from "@/data/courses";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import VideoPlayer from "./VideoPlayer";
 import LessonContent from "./LessonContent";
 import AIChatPanel from "./AIChatPanel";
+import { getCourseDetail } from "@/services/courses";
 
 export default function Aula() {
   const params = useParams();
   const courseId = Number(params.id);
-  const lessonId = params.lessonId;
+  const lessonId = Number(params.lessonId);
+
+  const [course, setCourse] = useState<any>(null);
+  const [lesson, setLesson] = useState<any>(null);
 
   const [aiOpen, setAiOpen] = useState(false);
   const [lessonsOpen, setLessonsOpen] = useState(true);
 
-  const course = mockCourses.find((c) => c.id === courseId);
-  const lesson = course?.lessons.find((l) => l.id === lessonId);
-  const lessonIndex = course?.lessons.findIndex((l) => l.id === lessonId) ?? 0;
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getCourseDetail(courseId);
+
+        const allLessons =
+          data.modules?.flatMap((m: any) => m.lessons) || [];
+
+        const currentLesson = allLessons.find(
+          (l: any) => l.id === lessonId
+        );
+
+        const index = allLessons.findIndex(
+          (l: any) => l.id === lessonId
+        );
+
+        setCourse({
+          ...data,
+          lessons: allLessons,
+        });
+
+        setLesson({
+          ...currentLesson,
+          index,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (courseId && lessonId) load();
+  }, [courseId, lessonId]);
 
   if (!course || !lesson) {
     return (
       <div className="flex flex-col h-screen">
         <Header />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <p className="text-gray-500 font-medium">Aula não encontrada.</p>
-          <Link 
-            href="/explorar" 
-            className="px-6 py-2 bg-[#2F52E0] text-white rounded-lg font-bold hover:bg-blue-700 transition-all"
-          >
-            Voltar para Explorar
-          </Link>
+        <div className="flex-1 flex items-center justify-center">
+          Carregando aula...
         </div>
       </div>
     );
   }
 
+  const lessonIndex = lesson.index;
+
   return (
-    <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden ">
+    <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden">
       <Header />
 
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden ">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          
-          <VideoPlayer onToggleAI={() => setAiOpen(!aiOpen)} />
-          
+
+          <VideoPlayer
+            lesson={lesson}
+            onToggleAI={() => setAiOpen(!aiOpen)}
+          />
+
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <LessonContent 
+            <LessonContent
               course={course}
               lesson={lesson}
               lessonIndex={lessonIndex}
@@ -64,9 +95,9 @@ export default function Aula() {
         </div>
 
         {aiOpen && (
-          <AIChatPanel 
-            lessonTitle={lesson.title} 
-            onClose={() => setAiOpen(false)} 
+          <AIChatPanel
+            lessonTitle={lesson.title}
+            onClose={() => setAiOpen(false)}
           />
         )}
       </div>

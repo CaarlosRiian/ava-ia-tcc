@@ -1,19 +1,19 @@
 "use client";
 
 import { PlayCircle, Clock } from "lucide-react";
-import Link from "next/link"; // 1. Importar o Link
+import Link from "next/link"; 
 
 interface CourseProps {
-  id: number;      // 2. Adicionar o ID às props
+  id: number;      
   title: string;
   author: string;
   hours: number;
   progress?: number; 
+  thumbnail?: string;
 }
 
 export default function CourseCard({ id, title, author, hours, progress }: CourseProps) {
   return (
-    // 3. Envolver tudo com o Link apontando para a rota dinâmica /curso/[id]
     <Link href={`/curso/${id}`} className="block h-full">
       <div className="group bg-white border border-gray-300 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full">
         <div className="h-40 bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors relative">

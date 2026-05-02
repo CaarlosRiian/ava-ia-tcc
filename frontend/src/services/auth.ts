@@ -1,0 +1,60 @@
+const API_URL = "http://localhost:8000/api";
+
+export type RegisterData = {
+  username: string;
+  email: string;
+  password: string;
+};
+
+export type LoginData = {
+  email: string;
+  password: string;
+};
+
+export async function registerUser(data: RegisterData) {
+  const response = await fetch(`${API_URL}/users/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await response.json();
+
+  console.log("REGISTER RESPONSE:", result);
+
+  if (!response.ok) {
+    throw new Error(result?.detail || "Erro ao criar usuário");
+  }
+
+  return result;
+}
+
+export async function loginUser(data: LoginData) {
+  const response = await fetch(`${API_URL}/token/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.detail || "Credenciais inválidas");
+  }
+
+  return result;
+}
+
+export function saveTokens(access: string, refresh: string) {
+  localStorage.setItem("access", access);
+  localStorage.setItem("refresh", refresh);
+}
+
+export function logout() {
+  localStorage.removeItem("access");
+  localStorage.removeItem("refresh");
+}
