@@ -24,3 +24,29 @@ export async function getMyCourses() {
 
   return data;
 }
+
+export async function getCourseDetail(courseId: number) {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(
+    `${API_URL}/courses/${courseId}/`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/login";
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error("Erro ao buscar curso");
+  }
+
+  return response.json();
+}
