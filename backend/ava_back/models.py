@@ -117,3 +117,20 @@ class AIAssistant(models.Model):
 
     def __str__(self):
         return f'IA - {self.lesson.title}'
+
+class InstructorRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pendente'),
+        ('approved', 'Aprovado'),
+        ('rejected', 'Rejeitado'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    especialidade = models.CharField(max_length=100)
+    bio = models.TextField()
+    linkedin = models.URLField(blank=True, null=True)
+    portfolio = models.URLField(blank=True, null=True)
+    arquivo = models.FileField(upload_to='instructor_requests/', null=True, blank=True)
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)

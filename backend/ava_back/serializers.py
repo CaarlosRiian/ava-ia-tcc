@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant
+from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant, InstructorRequest
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -113,3 +113,19 @@ class EmailTokenSerializer(serializers.Serializer):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
         }
+
+class InstructorRequestSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "name": obj.user.username,
+            "email": obj.user.email,
+        }
+
+    class Meta:
+        model = InstructorRequest
+        fields = [ "id", "user", "especialidade", "bio", "linkedin", "portfolio", "arquivo", "status", "created_at",]
+
+        read_only_fields = ["user", "status"]

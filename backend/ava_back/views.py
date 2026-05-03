@@ -10,9 +10,10 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer
+from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer
 from .services.ai_service import generate_ai_for_lesson
 
 class UserViewSet(ModelViewSet):
@@ -221,3 +222,32 @@ def generate_ai(request, lesson_id):
 
 class EmailTokenView(TokenObtainPairView):
     serializer_class = EmailTokenSerializer
+
+class InstructorRequestViewSet(ModelViewSet):
+    queryset = InstructorRequest.objects.select_related("user").all()
+    serializer_class = InstructorRequestSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def aprovar(self, request, pk=None):
+        obj = self.get_object()
+
+        obj.status = "approved"
+        obj.save()
+
+        user = obj.user
+        user.role = "professor"
+        user.save()
+
+        return Response({"status": "aprovado"})
+
+    @action(detail=True, methods=["post"])
+    def rejeitar(self, request, pk=None):
+        obj = self.get_object()
+        obj.status = "rejected"
+        obj.save()
+        return Response({"status": "rejeitado"})
