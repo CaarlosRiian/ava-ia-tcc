@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -251,3 +251,15 @@ class InstructorRequestViewSet(ModelViewSet):
         obj.status = "rejected"
         obj.save()
         return Response({"status": "rejeitado"})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    user = request.user
+
+    return Response({
+        "id": user.id,
+        "name": user.username,   
+        "email": user.email,
+        "role": user.role
+    })

@@ -7,19 +7,52 @@ import { BookOpen, Search, Heart, ChevronDown, User, Settings, LogOut, BookMarke
 
 export default function Header() {
   const [isAuth, setIsAuth] = useState(false);
-  const [userRole, setUserRole] = useState("aluno"); 
+  const [userRole, setUserRole] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("access");
     const role = localStorage.getItem("user_role"); 
+    const name = localStorage.getItem("username");
+    const email = localStorage.getItem("user_email");
+
     setIsAuth(!!token);
-    if (role) setUserRole(role);
+    setUserRole(role || "");
+    setUserName(name || "");
+    setUserEmail(email || "");
+    
   }, []);
+
+  const formatName = (name: string) => {
+  const cleaned = name.replace(/_/g, " ");
+
+  if (cleaned.length > 15) {
+    return cleaned.slice(0, 15) + "...";
+  }
+
+  return cleaned;
+};
+
+const getInitials = (name: string) => {
+  return name
+    .replace(/_/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+};
 
   const logout = () => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     localStorage.removeItem("user_role");
+    localStorage.removeItem("username");
+    localStorage.removeItem("user_email");
+
     window.location.href = "/entrar";
   };
 
@@ -67,7 +100,7 @@ export default function Header() {
             <div className="relative group">
               <div className="flex items-center gap-2 cursor-pointer p-1">
                 <div className="h-9 w-9 rounded-full bg-[#6366F1] text-white flex items-center justify-center font-bold shadow-sm">
-                  RC
+                  {getInitials(userName)}
                 </div>
                 <ChevronDown className="h-4 w-4 text-gray-500 transition-transform group-hover:rotate-180" />
               </div>
@@ -76,11 +109,12 @@ export default function Header() {
                 
                 <div className="p-4 flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-[#6366F1] text-white flex items-center justify-center text-lg font-bold">
-                    RC
+                    {getInitials(userName)}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[15px] font-bold text-gray-800">Rian Carlos</span>
-                    <span className="text-xs text-gray-500">rian.carlos@email.com</span>
+                    <span className="text-[15px] font-bold text-gray-800">{formatName(userName)}
+                    </span>
+                    <span className="text-xs text-gray-500">{userEmail}</span>
                     <span className="mt-1 w-fit bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                       {userRole}
                     </span>
@@ -112,7 +146,10 @@ export default function Header() {
                     
                     {userRole === 'aluno' && (
                       <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
-                        <GraduationCap className="h-5 w-5 text-gray-500" /> Quero ser instrutor
+                        <Link href="/instrutor/cadastro" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"
+                        > <GraduationCap className="h-5 w-5 text-gray-500" />
+                          Quero ser instrutor
+                        </Link>
                       </button>
                     )}
 
