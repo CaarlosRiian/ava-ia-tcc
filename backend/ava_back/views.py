@@ -1,18 +1,19 @@
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Sum
 
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer
+from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer
 from .services.ai_service import generate_ai_for_lesson
 
 class UserViewSet(ModelViewSet):
@@ -212,6 +213,12 @@ class EnrollmentViewSet(ModelViewSet):
 
 @api_view(['POST'])
 def generate_ai(request, lesson_id):
+
+
+
+
+
+    
     data = generate_ai_for_lesson(lesson_id)
 
     if not data:
@@ -221,3 +228,73 @@ def generate_ai(request, lesson_id):
 
 class EmailTokenView(TokenObtainPairView):
     serializer_class = EmailTokenSerializer
+
+class InstructorRequestViewSet(ModelViewSet):
+    queryset = InstructorRequest.objects.select_related("user").all()
+    serializer_class = InstructorRequestSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def aprovar(self, request, pk=None):
+        obj = self.get_object()
+
+        obj.status = "approved"
+        obj.save()
+
+        user = obj.user
+        user.role = "professor"
+        user.save()
+
+        return Response({"status": "aprovado"})
+
+    @action(detail=True, methods=["post"])
+    def rejeitar(self, request, pk=None):
+        obj = self.get_object()
+        obj.status = "rejected"
+        obj.save()
+        return Response({"status": "rejeitado"})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    user = request.user
+
+    return Response({
+        "id": user.id,
+        "name": user.username,   
+        "email": user.email,
+        "role": user.role
+    })
+
+@api_view(["GET"])
+def professor_by_slug(request, slug):
+    try:
+        professor = User.objects.get(slug=slug, role="professor")
+    except User.DoesNotExist:
+        return Response({"error": "Not found"}, status=404)
+
+    courses = Course.objects.filter(professor=professor, published=True)
+
+    total_lessons = Lesson.objects.filter(module__course__in=courses).count()
+
+    total_duration = Lesson.objects.filter(module__course__in=courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
+
+    total_hours = round(total_duration / 3600, 1)
+
+    return Response({
+        "id": professor.id,
+        "username": professor.username,
+        "email": professor.email,
+        "bio": professor.bio,
+        "especialidade": "Professor",  
+        "stats": {
+            "coursesCount": courses.count(),
+            "lessons": total_lessons,
+            "hours": total_hours
+        },
+        "courses": CourseSerializer(courses, many=True).data
+    })

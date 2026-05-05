@@ -1,100 +1,113 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
+import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Send } from "lucide-react";
-import { toast } from "sonner";
-import Header from "@/components/Header";
 
 import { FormHeader } from "./_components/form-header";
 import { SocialLinksInput } from "./_components/social-links-input";
 import { FileUpload } from "./_components/file-upload";
 
-const especialidades = ["Programação", "Design", "Ciência de Dados", "Inteligência Artificial", "Matemática", "Inglês", "Marketing Digital", "Desenvolvimento Pessoal", "Outro"];
+import { useCadastroInstrutor } from "./_components/use-cadastro-instrutor";
+
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, } from "@/components/ui/select";
 
 export default function CadastroInstrutor() {
-  const [especialidade, setEspecialidade] = useState("");
-  const [bio, setBio] = useState("");
-  const [linkedin, setLinkedin] = useState("");
-  const [portfolio, setPortfolio] = useState("");
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [aceiteTermos, setAceiteTermos] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+  const { form, onSubmit } = useCadastroInstrutor();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!especialidade || !bio.trim()) return toast.error("Preencha os campos obrigatórios.");
-    if (!aceiteTermos) return toast.error("Aceite os termos.");
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { isSubmitting },
+  } = form;
 
-    setEnviando(true);
-    setTimeout(() => {
-      setEnviando(false);
-      toast.success("Solicitação enviada!");
-    }, 1500);
-  };
+  const arquivo = watch("arquivo");
+
+  useEffect(() => {
+  form.register("especialidade");
+}, [form]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header />
+
       <main className="flex-1 flex flex-col items-center justify-center py-12 px-4">
         <div className="w-full max-w-2xl mx-auto space-y-8">
           <FormHeader />
+
           <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
             <CardHeader className="bg-white border-b border-gray-100 p-8">
-              <CardTitle className="text-xl font-bold">Formulário de Cadastro</CardTitle>
-              <CardDescription className="font-medium text-gray-400">Campos com * são obrigatórios.</CardDescription>
+              <CardTitle className="text-xl font-bold">
+                Formulário de Cadastro
+              </CardTitle>
+              <CardDescription>
+                Campos com * são obrigatórios.
+              </CardDescription>
             </CardHeader>
+
             <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
                 <div className="space-y-2">
                   <Label className="font-bold text-gray-700">Área de Especialidade <span className="text-red-500">*</span></Label>
-                  <Select value={especialidade} onValueChange={setEspecialidade}>
-                    <SelectTrigger className="rounded-x cursor-pointer h-12 p-4 border-gray-200 bg-white">
-                        <SelectValue placeholder="Selecione sua área principal" />
+                  <Select onValueChange={(value) => setValue("especialidade", value)}>
+                    <SelectTrigger className="w-full h-12 p-5 rounded-x border-gray-200 bg-white  cursor-pointer">
+                      <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
-                    <SelectContent className="z-[99] bg-white"> 
-                        {especialidades.map((esp) => (
-                        <SelectItem key={esp} value={esp} className="font-medium cursor-pointer">
-                            {esp}
-                        </SelectItem>
-                        ))}
+
+
+                    <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg min-w-[var(--radix-select-trigger-width)] z-[50]">
+                      <SelectItem value="Programação" className="cursor-pointer hover:bg-slate-100 py-3">
+                        Programação
+                      </SelectItem>
+                      <SelectItem value="Design" className="cursor-pointer hover:bg-slate-100 py-3">
+                        Design
+                      </SelectItem>
                     </SelectContent>
-                    </Select>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-bold text-gray-700">Bio Profissional <span className="text-red-500">*</span></Label>
-                  <Textarea
-                    placeholder="Conte sua trajetória..."
-                    className="min-h-[140px] rounded-xl border-gray-200 resize-none p-4"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                  <Label className="font-bold text-gray-700">Bio <span className="text-red-500">*</span></Label>
+                  <textarea
+                    {...register("bio")}
+                    className="w-full min-h-[120px] border rounded-xl p-3"
+                    placeholder="Descreva um pouco da sua carreira profissional..."
                   />
                 </div>
 
-                <SocialLinksInput 
-                  linkedin={linkedin} setLinkedin={setLinkedin} 
-                  portfolio={portfolio} setPortfolio={setPortfolio} 
+                <SocialLinksInput
+                  linkedin={watch("linkedin") || ""}
+                  setLinkedin={(v) => setValue("linkedin", v)}
+                  portfolio={watch("portfolio") || ""}
+                  setPortfolio={(v) => setValue("portfolio", v)}
                 />
 
-                <FileUpload arquivo={arquivo} setArquivo={setArquivo} />
+                <FileUpload
+                  arquivo={arquivo}
+                  setArquivo={(file) => setValue("arquivo", file)}
+                />
 
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-[#F8F9FA] border border-gray-100">
-                  <Checkbox id="termos" checked={aceiteTermos} onCheckedChange={(c) => setAceiteTermos(c === true)} />
-                  <Label htmlFor="termos" className="text-sm font-medium text-gray-600 cursor-pointer">
-                    Comprometo-me com a qualidade da <span className="text-[#2F52E0] font-bold">AVA-IA</span>. <span className="text-red-500">*</span>
-                  </Label>
+                <div className="flex items-center gap-2">
+                  <Checkbox className="cursor-pointer" />
+                  <Label>Concordo com os termos</Label>
                 </div>
 
-                <Button type="submit" className="w-full bg-[#2F52E0] hover:bg-[#1e3bb3] h-14 rounded-x cursor-pointer text-lg font-bold shadow-lg" disabled={enviando}>
-                  {enviando ? "Enviando..." : <><Send className="mr-2 h-5 w-5" /> Enviar Solicitação</>}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-[#2F52E0] hover:bg-[#1e3bb3] h-12 rounded-x cursor-pointer text-lg font-medium shadow-lg"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
                 </Button>
+
               </form>
             </CardContent>
           </Card>

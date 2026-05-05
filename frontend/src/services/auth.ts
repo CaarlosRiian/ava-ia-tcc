@@ -58,3 +58,21 @@ export function logout() {
   localStorage.removeItem("access");
   localStorage.removeItem("refresh");
 }
+
+export async function getMe(token: string) {
+  const response = await fetch(`${API_URL}/me/`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.detail || "Erro ao buscar usuário");
+  }
+
+  return result;
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getMe } from "@/services/auth";
 import { User, Mail, Shield, Save } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -11,16 +12,32 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 import { ProfileHeader } from "./_components/profile-header";
-import { InstructorSection } from "./_components/instructor-section";
 
 export default function ConfiguracoesPerfil() {
   const [name, setName] = useState("Rian Carlos");
   const [email, setEmail] = useState("rian.carlos@estudante.com");
   const [bio, setBio] = useState("Estudante de Engenharia focado em desenvolvimento Full Stack e IA.");
   const [isProfessor, setIsProfessor] = useState(false);
+  const [userRole, setUserRole] = useState("")
+
+  useEffect(() => {
+  const token = localStorage.getItem("access");
+
+  if (!token) return;
+
+  getMe(token).then((data) => {
+    setName(data.name);
+    setEmail(data.email);
+    setBio(data.bio || "");
+    setUserRole(data.role);
+    setIsProfessor(data.role === "professor");
+  });
+}, []);
+
+  const formatName = (name: string) => name.replace(/_/g, " ");
 
   const handleSave = () => {
-    toast.success("Perfil atualizado!", { description: "Suas alterações foram salvas." });
+    toast.success("Perfil atualizado!");
   };
 
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -36,7 +53,7 @@ export default function ConfiguracoesPerfil() {
         </div>
 
         <div className="space-y-8">
-          <ProfileHeader name={name} email={email} initials={initials} />
+          <ProfileHeader name={name} email={email} initials={initials} role={userRole} />
 
           <Card className="border-none bg-white shadow-sm rounded-[16px]">
             <CardHeader>
@@ -47,7 +64,7 @@ export default function ConfiguracoesPerfil() {
             <CardContent className="space-y-6">
               <div className="grid gap-2">
                 <Label className="font-bold text-gray-700">Nome completo</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-md p-4" />
+                <Input value={formatName(name)} />
               </div>
               <div className="grid gap-2">
                 <Label className="font-bold text-gray-700">E-mail</Label>
@@ -59,8 +76,6 @@ export default function ConfiguracoesPerfil() {
               </div>
             </CardContent>
           </Card>
-
-          <InstructorSection isProfessor={isProfessor} onToggle={setIsProfessor} />
 
           <Card className="border-none shadow-sm rounded-[16px] bg-white">
             <CardHeader>

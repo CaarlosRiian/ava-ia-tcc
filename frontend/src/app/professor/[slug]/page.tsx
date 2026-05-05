@@ -1,18 +1,32 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
-import { mockCourses } from "@/data/courses";
-import { mockProfessors, slugify } from "@/data/professors";
 import { ArrowLeft } from "lucide-react";
 import { ProfessorHero } from "./_components/professor-hero";
 
 export default function PerfilProfessor() {
   const params = useParams();
   const slug = params?.slug as string;
-  const professor = slug ? mockProfessors[slug] : undefined;
+
+  const [professor, setProfessor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    fetch(`http://localhost:8000/api/professor/${slug}/`)
+      .then((res) => res.json())
+      .then((data) => setProfessor(data))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return <div className="p-10">Carregando...</div>;
+  }
 
   if (!professor) {
     return (
@@ -30,14 +44,36 @@ export default function PerfilProfessor() {
     );
   }
 
-  const courses = mockCourses.filter((c) => slugify(c.author) === slug);
-  const stats = {
-    coursesCount: courses.length,
-    hours: courses.reduce((sum, c) => sum + c.hours, 0),
-    lessons: courses.reduce((sum, c) => sum + c.lessons.length, 0),
-  };
+  const courses = professor.courses || [];
 
-  const initials = professor.name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  const initials =
+    professor.username
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const formatName = (name: string) => {
+  const cleaned = name.replace(/_/g, " ");
+
+  if (cleaned.length <= 19) return cleaned;
+
+  const truncated = cleaned.slice(0, 19);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  if (lastSpace > 0) {
+    return truncated.slice(0, lastSpace) + "...";
+  }
+
+  return truncated + "...";
+};
+
+  const stats = professor?.stats || {
+    coursesCount: 0,
+    hours: 0,
+    lessons: 0,
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
@@ -50,27 +86,29 @@ export default function PerfilProfessor() {
         </Link>
 
         <ProfessorHero 
-          name={professor.name}
-          bio={professor.bio}
-          specialties={professor.specialties}
+          name={formatName(professor.username)}
+          bio={professor.bio || "Este professor ainda não adicionou uma bio."}
+          specialties={[professor.especialidade]}
           initials={initials}
           stats={stats}
         />
 
         <div className="mb-10">
           <h2 className="text-2xl font-black text-[#161B1D]">Cursos publicados</h2>
-          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {professor.name}</p>
+          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {formatName(professor.username)}</p>
         </div>
 
         {courses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {courses.map((course) => (
+            {courses.map((course: any) => (
               <CourseCard key={course.id} {...course} />
             ))}
           </div>
         ) : (
-          <div className="py-12 bg-white rounded-2xl text-center border-2 border-dashed border-gray-100">
-            <p className="text-gray-400">Este professor ainda não possui cursos publicados.</p>
+          <div className="py-12 bg-white rounded-2xl text-center border-2 border-gray-100">
+            <p className="text-gray-400">
+              Este professor ainda não possui cursos publicados.
+            </p>
           </div>
         )}
       </main>

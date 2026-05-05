@@ -6,27 +6,58 @@ interface ProfileHeaderProps {
   name: string;
   email: string;
   initials: string;
+  role?: string;
 }
 
-export function ProfileHeader({ name, email, initials }: ProfileHeaderProps) {
+export function ProfileHeader({
+  name,
+  email,
+  initials,
+  role,
+}: ProfileHeaderProps) {
+  const formatName = (value: string) =>
+    value?.replace(/_/g, " ") || "";
+
+  const formatRole = (role?: string) => {
+    if (!role) return "Usuário";
+
+    switch (role) {
+      case "aluno":
+        return "Conta Estudante";
+      case "professor":
+        return "Instrutor";
+      case "admin":
+        return "Administrador";
+      default:
+        return role;
+    }
+  };
+
   return (
     <Card className="border-none shadow-sm rounded-[24px] bg-white overflow-hidden">
       <CardContent className="flex items-center gap-6 pt-8 pb-8 bg-white">
+        
         <div className="relative group">
           <Avatar className="h-24 w-24 border-4 border-gray-50 shadow-md">
             <AvatarFallback className="text-2xl font-black bg-[#2F52E0] text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
+
           <button className="absolute -bottom-1 -right-1 p-2 rounded-full bg-[#2F52E0] text-white hover:scale-110 cursor-pointer transition-transform shadow-lg">
             <Camera className="h-4 w-4" />
           </button>
         </div>
+
         <div>
-          <h2 className="text-xl font-bold text-[#161B1D]">{name}</h2>
+          <h2 className="text-xl font-bold text-[#161B1D]">
+            {formatName(name)}
+          </h2>
+
           <p className="text-gray-400">{email}</p>
+
           <span className="inline-block mt-2 px-3 py-1 rounded-full bg-blue-50 text-[#2F52E0] text-xs font-bold border border-blue-100">
-            Conta Estudante
+            {formatRole(role)}
           </span>
         </div>
       </CardContent>

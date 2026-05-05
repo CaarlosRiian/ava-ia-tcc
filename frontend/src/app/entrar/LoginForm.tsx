@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { Mail, LockKeyhole, ChevronRight } from "lucide-react";
-import { loginUser, saveTokens } from "@/services/auth";
+import { loginUser, saveTokens, getMe } from "@/services/auth";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -20,6 +20,12 @@ export default function LoginForm() {
       const data = await loginUser({ email, password });
 
       saveTokens(data.access, data.refresh);
+
+      const me = await getMe(data.access);
+
+      localStorage.setItem("username", me.name || me.username);
+      localStorage.setItem("user_email", me.email);
+      localStorage.setItem("user_role", me.role);
 
       window.location.href = "/descobrir";
 
