@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,10 @@ export default function CadastroInstrutor() {
 
   const arquivo = watch("arquivo");
 
+  useEffect(() => {
+  form.register("especialidade");
+}, [form]);
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header />
@@ -51,7 +56,7 @@ export default function CadastroInstrutor() {
 
                 <div className="space-y-2">
                   <Label className="font-bold text-gray-700">Área de Especialidade <span className="text-red-500">*</span></Label>
-                  <Select {...register("especialidade")}>
+                  <Select onValueChange={(value) => setValue("especialidade", value)}>
                     <SelectTrigger className="w-full h-12 p-5 rounded-x border-gray-200 bg-white  cursor-pointer">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>

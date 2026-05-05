@@ -13,11 +13,26 @@ class User(AbstractUser):
         ('professor', 'Professor'),
         ('aluno', 'Aluno'),
     )
+    slug = models.SlugField(unique=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='aluno')
     avatar_url = models.URLField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.username)
+            slug = base_slug
+            count = 1
+
+            while User.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
 class Category(models.Model):
     name = models.CharField(max_length=100)

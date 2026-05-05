@@ -24,21 +24,28 @@ export function useCadastroInstrutor() {
       const formData = new FormData();
 
       Object.entries(data).forEach(([key, value]) => {
-        if (value) formData.append(key, value as any);
+        if (value !== null && value !== undefined) {
+          formData.append(key, value as any);
+        }
       });
 
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/instructor-requests/",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
-      if (!res.ok) throw new Error();
+      const res = await fetch("http://127.0.0.1:8000/api/instructor-requests/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        throw new Error(text);
+      }
 
       toast.success("Enviado com sucesso!");
       form.reset();

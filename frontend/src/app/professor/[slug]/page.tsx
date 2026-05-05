@@ -1,18 +1,32 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
-import { mockCourses } from "@/data/courses";
-import { mockProfessors, slugify } from "@/data/professors";
 import { ArrowLeft } from "lucide-react";
 import { ProfessorHero } from "./_components/professor-hero";
 
 export default function PerfilProfessor() {
   const params = useParams();
   const slug = params?.slug as string;
-  const professor = slug ? mockProfessors[slug] : undefined;
+
+  const [professor, setProfessor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    fetch(`http://localhost:8000/api/professor/${slug}/`)
+      .then((res) => res.json())
+      .then((data) => setProfessor(data))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return <div className="p-10">Carregando...</div>;
+  }
 
   if (!professor) {
     return (
@@ -30,14 +44,21 @@ export default function PerfilProfessor() {
     );
   }
 
-  const courses = mockCourses.filter((c) => slugify(c.author) === slug);
+  const courses = professor.courses || [];
+
+  const initials =
+    professor.username
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
   const stats = {
     coursesCount: courses.length,
-    hours: courses.reduce((sum, c) => sum + c.hours, 0),
-    lessons: courses.reduce((sum, c) => sum + c.lessons.length, 0),
+    hours: 0, 
+    lessons: 0,
   };
-
-  const initials = professor.name.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
@@ -64,13 +85,15 @@ export default function PerfilProfessor() {
 
         {courses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {courses.map((course) => (
+            {courses.map((course: any) => (
               <CourseCard key={course.id} {...course} />
             ))}
           </div>
         ) : (
           <div className="py-12 bg-white rounded-2xl text-center border-2 border-dashed border-gray-100">
-            <p className="text-gray-400">Este professor ainda não possui cursos publicados.</p>
+            <p className="text-gray-400">
+              Este professor ainda não possui cursos publicados.
+            </p>
           </div>
         )}
       </main>

@@ -16,7 +16,7 @@ export default function Header() {
     const role = localStorage.getItem("user_role"); 
     const name = localStorage.getItem("username");
     const email = localStorage.getItem("user_email");
-
+    
     setIsAuth(!!token);
     setUserRole(role || "");
     setUserName(name || "");
@@ -161,7 +161,9 @@ const getInitials = (name: string) => {
 
                     {userRole === 'admin' && (
                       <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
-                        <ShieldCheck className="h-5 w-5 text-gray-500" /> Painel admin
+                        <Link href="/admin/solicitacoes" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"
+                        ><ShieldCheck className="h-5 w-5 text-gray-500" /> Painel admin
+                        </Link>
                       </button>
                     )}
                   </div>

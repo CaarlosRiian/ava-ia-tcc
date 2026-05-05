@@ -213,6 +213,12 @@ class EnrollmentViewSet(ModelViewSet):
 
 @api_view(['POST'])
 def generate_ai(request, lesson_id):
+
+
+
+
+
+    
     data = generate_ai_for_lesson(lesson_id)
 
     if not data:
@@ -263,3 +269,13 @@ def me(request):
         "email": user.email,
         "role": user.role
     })
+
+@api_view(["GET"])
+def professor_by_slug(request, slug):
+    try:
+        professor = User.objects.get(slug=slug, role="professor")
+    except User.DoesNotExist:
+        return Response({"error": "Not found"}, status=404)
+
+    serializer = UserSerializer(professor)
+    return Response(serializer.data)
