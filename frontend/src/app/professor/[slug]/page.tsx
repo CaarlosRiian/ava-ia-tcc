@@ -54,9 +54,24 @@ export default function PerfilProfessor() {
       .slice(0, 2)
       .toUpperCase();
 
-  const stats = {
-    coursesCount: courses.length,
-    hours: 0, 
+  const formatName = (name: string) => {
+  const cleaned = name.replace(/_/g, " ");
+
+  if (cleaned.length <= 19) return cleaned;
+
+  const truncated = cleaned.slice(0, 19);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  if (lastSpace > 0) {
+    return truncated.slice(0, lastSpace) + "...";
+  }
+
+  return truncated + "...";
+};
+
+  const stats = professor?.stats || {
+    coursesCount: 0,
+    hours: 0,
     lessons: 0,
   };
 
@@ -71,16 +86,16 @@ export default function PerfilProfessor() {
         </Link>
 
         <ProfessorHero 
-          name={professor.name}
-          bio={professor.bio}
-          specialties={professor.specialties}
+          name={formatName(professor.username)}
+          bio={professor.bio || "Este professor ainda não adicionou uma bio."}
+          specialties={[professor.especialidade]}
           initials={initials}
           stats={stats}
         />
 
         <div className="mb-10">
           <h2 className="text-2xl font-black text-[#161B1D]">Cursos publicados</h2>
-          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {professor.name}</p>
+          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {formatName(professor.username)}</p>
         </div>
 
         {courses.length > 0 ? (
@@ -90,7 +105,7 @@ export default function PerfilProfessor() {
             ))}
           </div>
         ) : (
-          <div className="py-12 bg-white rounded-2xl text-center border-2 border-dashed border-gray-100">
+          <div className="py-12 bg-white rounded-2xl text-center border-2 border-gray-100">
             <p className="text-gray-400">
               Este professor ainda não possui cursos publicados.
             </p>

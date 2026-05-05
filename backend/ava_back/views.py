@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Sum
 
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
@@ -277,5 +277,24 @@ def professor_by_slug(request, slug):
     except User.DoesNotExist:
         return Response({"error": "Not found"}, status=404)
 
-    serializer = UserSerializer(professor)
-    return Response(serializer.data)
+    courses = Course.objects.filter(professor=professor, published=True)
+
+    total_lessons = Lesson.objects.filter(module__course__in=courses).count()
+
+    total_duration = Lesson.objects.filter(module__course__in=courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
+
+    total_hours = round(total_duration / 3600, 1)
+
+    return Response({
+        "id": professor.id,
+        "username": professor.username,
+        "email": professor.email,
+        "bio": professor.bio,
+        "especialidade": "Professor",  
+        "stats": {
+            "coursesCount": courses.count(),
+            "lessons": total_lessons,
+            "hours": total_hours
+        },
+        "courses": CourseSerializer(courses, many=True).data
+    })

@@ -27,7 +27,7 @@ export function ProfessorHero({ name, bio, specialties, initials, stats }: Profe
         <p className="text-lg text-gray-500 leading-relaxed mb-6 max-w-2xl">{bio}</p>
         
         <div className="flex flex-wrap gap-2 mb-8">
-          {specialties.map((s) => (
+          {(specialties || []).map((s) => (
             <span key={s} className="px-4 py-1.5 rounded-full bg-blue-50 text-[#2F52E0] text-sm font-bold border border-blue-100">
               {s}
             </span>
