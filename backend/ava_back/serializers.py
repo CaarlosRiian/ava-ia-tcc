@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant, InstructorRequest
+from .models import User, Category, Course, Module, Lesson, Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
+from django.db.models import Sum
 
 User = get_user_model()
 
@@ -129,3 +130,21 @@ class InstructorRequestSerializer(serializers.ModelSerializer):
         fields = [ "id", "user", "especialidade", "bio", "linkedin", "portfolio", "arquivo", "status", "created_at",]
 
         read_only_fields = ["user", "status"]
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(source='course.title', read_only=True)
+    author = serializers.CharField(source='course.professor.username', read_only=True)
+    hours = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Favorite
+        fields = ['id', 'course', 'title', 'author', 'hours']
+
+    def get_hours(self, obj):
+        total_seconds = Lesson.objects.filter(
+            module__course=obj.course
+        ).aggregate(
+            total=Sum('duration_seconds')
+        )['total'] or 0
+
+        return round(total_seconds / 3600, 1)

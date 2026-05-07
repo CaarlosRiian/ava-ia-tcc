@@ -1,6 +1,6 @@
 "use client";
 
-import { PlayCircle, Clock } from "lucide-react";
+import { PlayCircle, Clock, Heart } from "lucide-react";
 import Link from "next/link"; 
 
 interface CourseProps {
@@ -10,12 +10,36 @@ interface CourseProps {
   hours: number;
   progress?: number; 
   thumbnail?: string;
+
+  showFavoriteButton?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (e: React.MouseEvent) => void;
 }
 
-export default function CourseCard({ id, title, author, hours, progress }: CourseProps) {
+export default function CourseCard({ id, title, author, hours, progress, showFavoriteButton = false, isFavorite = false, onToggleFavorite }: CourseProps) {
   return (
     <Link href={`/curso/${id}`} className="block h-full">
-      <div className="group bg-white border border-gray-300 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full">
+      <div className="group bg-white border border-gray-300 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full relative">
+
+        {showFavoriteButton && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleFavorite?.(e);
+            }}
+            className="absolute top-3 right-3 z-10"
+          >
+            <Heart
+              className={`w-7 h-7 transition-all cursor-pointer ${
+                isFavorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-gray-300 hover:text-red-400"
+              }`}
+            />
+          </button>
+        )}
+
         <div className="h-40 bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors relative">
           <PlayCircle className="text-gray-300 group-hover:text-[#2F52E0] w-12 h-12 transition-all" />
           
