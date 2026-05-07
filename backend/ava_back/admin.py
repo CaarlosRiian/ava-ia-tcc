@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Category, Course, Module, Lesson, Enrollment, AIAssistant, InstructorRequest
+from .models import User, Category, Course, Module, Lesson, Enrollment, AIAssistant, InstructorRequest, Favorite
 
 class LessonInline(admin.TabularInline):
     model = Lesson
@@ -47,3 +47,9 @@ class InstructorRequestAdmin(admin.ModelAdmin):
 
     list_filter = ("status", "created_at")
     search_fields = ("especialidade", "bio", "user__username")
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'course', 'created_at')
+    search_fields = ('user__username', 'course__title')
+    list_filter = ('created_at',)

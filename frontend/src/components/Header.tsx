@@ -92,9 +92,9 @@ const getInitials = (name: string) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer" title="Meus Favoritos">
-            <Heart className="h-5 w-5" />
-          </button>
+          <Link href="/favoritos" className="flex items-center gap-3 px-3 py-2.5 p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
+              <Heart className="h-5 w-5" />
+          </Link>
 
           {isAuth ? (
             <div className="relative group">

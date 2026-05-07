@@ -12,8 +12,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer
+from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer
 from .services.ai_service import generate_ai_for_lesson
 
 class UserViewSet(ModelViewSet):
@@ -298,3 +298,48 @@ def professor_by_slug(request, slug):
         },
         "courses": CourseSerializer(courses, many=True).data
     })
+
+class FavoriteViewSet(ModelViewSet):
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Favorite.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'course',
+            'course__professor'
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def toggle(self, request):
+        course_id = request.data.get("course")
+
+        if not course_id:
+            return Response(
+                {"error": "course é obrigatório"},
+                status=400
+            )
+
+        favorite = Favorite.objects.filter(
+            user=request.user,
+            course_id=course_id
+        ).first()
+
+        if favorite:
+            favorite.delete()
+            return Response({
+                "favorited": False
+            })
+
+        Favorite.objects.create(
+            user=request.user,
+            course_id=course_id
+        )
+
+        return Response({
+            "favorited": True
+        })
