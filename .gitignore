@@ -10,5 +10,6 @@ backend/*.py[cod]
 backend/.env
 
 /.env
+/.env.local
 
 .DS_Store

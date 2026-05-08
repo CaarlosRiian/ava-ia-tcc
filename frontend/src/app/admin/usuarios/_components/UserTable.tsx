@@ -6,14 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Usuario, roleLabels, roleVariants } from "@/data/admType";
+import { formatName } from "@/utils/formatName";
 
 interface UserTableProps {
   usuarios: Usuario[];
   onEdit: (u: Usuario) => void;
   onBan: (u: Usuario) => void;
+  onOpenRole: (user: Usuario) => void;
 }
 
-export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
+export const UserTable = ({ usuarios, onEdit, onBan, onOpenRole }: UserTableProps) => {
   const formatarData = (iso: string) =>
     new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
@@ -43,11 +45,11 @@ export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
               <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={u.avatar} alt={u.nome} />
-                    <AvatarFallback>{iniciais(u.nome)}</AvatarFallback>
+                    <AvatarImage src={u.avatar_url} alt={u.username} />
+                    <AvatarFallback>{iniciais(u.username)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-gray-900">{u.nome}</p>
+                    <p className="font-medium text-gray-900">{formatName(u.username)}</p>
                     <p className="text-sm text-muted-foreground">{u.email}</p>
                   </div>
                 </div>
@@ -64,7 +66,7 @@ export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
               </TableCell>
 
               <TableCell className="text-muted-foreground">
-                {formatarData(u.cadastradoEm)}
+                {formatarData(u.created_at)}
               </TableCell>
 
               <TableCell className="text-right">
@@ -75,16 +77,16 @@ export const UserTable = ({ usuarios, onEdit, onBan }: UserTableProps) => {
 
                   <DropdownMenuContent align="end" className="w-48 bg-white shadow-lg border border-gray-100 rounded-xl p-1">
                     <DropdownMenuItem
-                      onClick={() => onEdit(u)}
+                      onClick={() => onOpenRole(u)}
                       className="cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg hover:bg-gray-50 focus:bg-gray-50 outline-none"
                     >
                       Editar papel
                     </DropdownMenuItem>
 
-                    {u.role === "instrutor" && (
+                    {u.role === "professor" && (
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/professor/${u.nome.toLowerCase().replace(/\s+/g, "-")}`}
+                          href={`/professor/${u.username.toLowerCase().replace(/\s+/g, "-")}`}
                           className="cursor-pointer flex items-center px-3 py-2 text-sm rounded-lg hover:bg-gray-50 focus:bg-gray-50 outline-none"
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />

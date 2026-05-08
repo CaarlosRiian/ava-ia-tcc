@@ -15,16 +15,78 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
 from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer
 from .services.ai_service import generate_ai_for_lesson
+from .permissions import IsAdminUserRole
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
-    queryset = User.objects.filter(status='ativo')
+    queryset = User.objects.all()
 
-    # permission_classes = [IsAuthenticated]
-    permission_classes = [AllowAny]
+    filter_backends = [
+        filters.SearchFilter,
+        DjangoFilterBackend,
+        filters.OrderingFilter
+    ]
 
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['username']
+    search_fields = ['username', 'email']
+    filterset_fields = ['role', 'status']
+    ordering_fields = ['created_at', 'username']
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [AllowAny()]
+
+        return [IsAdminUserRole()]
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+
+        status_param = self.request.query_params.get("status")
+
+        if status_param and status_param != "todos":
+            queryset = queryset.filter(status=status_param)
+
+        role_param = self.request.query_params.get("role")
+
+        if role_param and role_param != "todos":
+            queryset = queryset.filter(role=role_param)
+
+        return queryset.order_by("-created_at")
+
+    @action(detail=True, methods=['patch'])
+    def change_role(self, request, pk=None):
+        user = self.get_object()
+
+        role = request.data.get("role")
+
+        if role not in ['admin', 'professor', 'aluno']:
+            return Response(
+                {"error": "Role inválida"},
+                status=400
+            )
+
+        user.role = role
+        user.save()
+
+        return Response({
+            "message": "Role atualizada"
+        })
+
+    @action(detail=True, methods=['patch'])
+    def toggle_ban(self, request, pk=None):
+        user = self.get_object()
+
+        user.status = (
+            "ativo"
+            if user.status == "banido"
+            else "banido"
+        )
+
+        user.save()
+
+        return Response({
+            "message": "Status atualizado",
+            "status": user.status
+        })
 
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
