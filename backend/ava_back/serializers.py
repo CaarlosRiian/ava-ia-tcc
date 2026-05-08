@@ -15,12 +15,31 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'created_at': {'read_only': True},
             'status': {'read_only': True},
+            'role': {'read_only': True},
         }
 
+    def validate_email(self, value):
+
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "Este email já está em uso."
+            )
+
+        return value
+
     def create(self, validated_data):
-        validated_data['role'] = 'aluno'
-        validated_data['status'] = 'ativo'
-        user = User.objects.create_user(**validated_data)
+
+        password = validated_data.pop("password")
+
+        user = User(
+            **validated_data,
+            role="aluno",
+            status="ativo"
+        )
+
+        user.set_password(password)
+        user.save()
+
         return user
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -107,6 +126,11 @@ class EmailTokenSerializer(serializers.Serializer):
 
         if not user.check_password(password):
             raise serializers.ValidationError("Credenciais inválidas")
+
+        if user.status == "banido":
+            raise serializers.ValidationError(
+                "Sua conta foi desativada."
+            )
 
         refresh = RefreshToken.for_user(user)
 

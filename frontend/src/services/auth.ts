@@ -46,6 +46,8 @@ export async function loginUser(data: LoginData) {
     throw new Error(result?.detail || "Credenciais inválidas");
   }
 
+  saveTokens(result.access, result.refresh);
+
   return result;
 }
 
