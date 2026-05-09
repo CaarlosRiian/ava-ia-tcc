@@ -50,9 +50,11 @@ class CategorySerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)
 
+    thumbnail = serializers.ImageField(required=False)
+
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail_url', 'published', 'created_at']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at']
 
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,9 +97,11 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     modules = ModuleDetailSerializer(many=True, read_only=True)
     professor_name = serializers.CharField(source='professor.username', read_only=True)
 
+    thumbnail = serializers.ImageField(required=False)
+
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail_url', 'published', 'created_at', 'modules']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'modules']
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -154,6 +158,65 @@ class InstructorRequestSerializer(serializers.ModelSerializer):
         fields = [ "id", "user", "especialidade", "bio", "linkedin", "portfolio", "arquivo", "status", "created_at",]
 
         read_only_fields = ["user", "status"]
+
+class InstructorLessonSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lesson
+        fields = [
+            "id",
+            "title",
+            "order",
+            "video_url",
+            "duration_seconds",
+            "status"
+        ]
+
+    def get_status(self, obj):
+        return "publicada" if obj.module.course.published else "rascunho"
+
+class InstructorModuleSerializer(serializers.ModelSerializer):
+    lessons = InstructorLessonSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = Module
+        fields = [
+            "id",
+            "title",
+            "order",
+            "lessons"
+        ]
+
+class InstructorCourseSerializer(serializers.ModelSerializer):
+    modules = InstructorModuleSerializer(
+        many=True,
+        read_only=True
+    )
+
+    alunos = serializers.SerializerMethodField()
+    thumbnail = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Course
+        fields = [
+            "id",
+            "title",
+            "description",
+            "published",
+            "thumbnail",
+            "alunos",
+            "modules"
+        ]
+
+    def get_alunos(self, obj):
+        return Enrollment.objects.filter(
+            course=obj,
+            is_active=True
+        ).count()
 
 class FavoriteSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='course.title', read_only=True)

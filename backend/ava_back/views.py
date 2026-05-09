@@ -13,7 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
 
@@ -101,9 +101,18 @@ class CategoryViewSet(ModelViewSet):
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
-    # queryset = Course.objects.filter(published=True)
 
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+        JSONParser
+    ]
+
+    filter_backends = [
+        filters.SearchFilter,
+        DjangoFilterBackend
+    ]
+
     search_fields = ['title', 'category__name']
     filterset_fields = ['category']
 
@@ -113,20 +122,43 @@ class CourseViewSet(ModelViewSet):
         return CourseSerializer
 
     def get_queryset(self):
-        if self.action == 'retrieve':
-            return Course.objects.select_related('professor','category').prefetch_related(
-                Prefetch('modules', queryset=Module.objects.prefetch_related('lessons'))
+        qs = Course.objects.select_related('professor', 'category')
+
+        if self.action in ['retrieve', 'instructor_dashboard']:
+            qs = qs.prefetch_related(
+                Prefetch(
+                    'modules',
+                    queryset=Module.objects.prefetch_related('lessons')
+                )
             )
-        return super().get_queryset()
+
+        return qs
 
     def perform_create(self, serializer):
-        serializer.save(professor=self.request.user) 
+        if self.request.user.role != "professor":
+            raise PermissionDenied("Apenas professores podem criar cursos")
+
+        serializer.save(professor=self.request.user)
+
+    def calculate_progress(self, user, course):
+        total = Lesson.objects.filter(module__course=course).count()
+
+        completed = LessonProgress.objects.filter(
+            user=user,
+            lesson__module__course=course,
+            completed=True
+        ).count()
+
+        return round((completed / total * 100), 2) if total else 0
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_courses(self, request):
         user = request.user
 
-        enrollments = Enrollment.objects.select_related('course').filter(
+        enrollments = Enrollment.objects.select_related(
+            'course',
+            'course__professor'
+        ).filter(
             user=user,
             is_active=True
         )
@@ -136,26 +168,19 @@ class CourseViewSet(ModelViewSet):
         for enrollment in enrollments:
             course = enrollment.course
 
-            total_lessons = Lesson.objects.filter(
-                module__course=course
-            ).count()
-
-            completed_lessons = LessonProgress.objects.filter(
-                user=user,
-                lesson__module__course=course,
-                completed=True
-            ).count()
-
-            progress = 0
-            if total_lessons > 0:
-                progress = (completed_lessons / total_lessons) * 100
+            thumbnail = None
+            if course.thumbnail:
+                try:
+                    thumbnail = request.build_absolute_uri(course.thumbnail.url)
+                except:
+                    thumbnail = None
 
             data.append({
                 "course_id": course.id,
                 "title": course.title,
-                "thumbnail": course.thumbnail_url,
+                "thumbnail": thumbnail,
                 "professor": course.professor.username,
-                "progress": round(progress, 2)
+                "progress": self.calculate_progress(user, course)
             })
 
         return Response(data)
@@ -173,16 +198,36 @@ class CourseViewSet(ModelViewSet):
             completed=True
         ).count()
 
-        progress_percentage = 0
-        if total_lessons > 0:
-            progress_percentage = (completed_lessons / total_lessons) * 100
+        progress_percentage = (
+            round((completed_lessons / total_lessons * 100), 2)
+            if total_lessons else 0
+        )
 
         return Response({
             "course": course.title,
             "total_lessons": total_lessons,
             "completed_lessons": completed_lessons,
-            "progress": round(progress_percentage, 2)
+            "progress": progress_percentage
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def instructor_dashboard(self, request):
+
+        courses = Course.objects.filter(
+            professor=request.user
+        ).select_related(
+            'professor',
+            'category'
+        ).prefetch_related(
+            'modules__lessons'
+        )
+
+        serializer = InstructorCourseSerializer(
+            courses,
+            many=True
+        )
+
+        return Response(serializer.data)
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer

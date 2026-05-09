@@ -1,6 +1,8 @@
 from django.contrib import admin
 from .models import User, Category, Course, Module, Lesson, Enrollment, AIAssistant, InstructorRequest, Favorite
 
+from django.utils.html import format_html
+
 class LessonInline(admin.TabularInline):
     model = Lesson
     extra = 1
@@ -16,7 +18,47 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ('category', 'published', 'created_at')
     search_fields = ('title', 'description')
     prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ('preview_thumbnail',)
+
+    fieldsets = (
+        (
+            "Informações do Curso",
+            {
+                "fields": (
+                    'title',
+                    'slug',
+                    'description',
+                    'category',
+                    'price',
+                    'professor',
+                    'published'
+                )
+            }
+        ),
+
+        (
+            "Thumbnail",
+            {
+                "fields": (
+                    'thumbnail',
+                    'preview_thumbnail'
+                )
+            }
+        ),
+    )
+
     inlines = [ModuleInline]
+
+    def preview_thumbnail(self, obj):
+        if obj.thumbnail:
+            return format_html(
+                '<img src="{}" width="200" style="border-radius:10px;" />',
+                obj.thumbnail.url
+            )
+
+        return "Sem imagem"
+
+    preview_thumbnail.short_description = "Preview"
 
 @admin.register(Module)
 class ModuleAdmin(admin.ModelAdmin):
