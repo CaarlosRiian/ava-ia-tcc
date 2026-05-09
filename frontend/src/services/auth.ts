@@ -78,3 +78,11 @@ export async function getMe(token: string) {
 
   return result;
 }
+
+export function getAccessToken() {
+  return localStorage.getItem("access");
+}
+
+export function getRefreshToken() {
+  return localStorage.getItem("refresh");
+}

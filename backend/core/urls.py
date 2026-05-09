@@ -1,9 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import (TokenRefreshView)
 from ava_back.views import EmailTokenView
 from django.conf import settings
 from django.conf.urls.static import static

@@ -47,7 +47,7 @@ class Course(models.Model):
     description = models.TextField()
     category = models.ForeignKey('Category', on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    thumbnail_url = models.URLField()
+    thumbnail = models.ImageField(upload_to="courses/", null=True, blank=True)
     professor = models.ForeignKey(
         'User',
         on_delete=models.CASCADE,
