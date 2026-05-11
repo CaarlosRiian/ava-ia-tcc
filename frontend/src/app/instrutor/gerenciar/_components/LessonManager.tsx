@@ -4,14 +4,28 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, GripVertical, BookOpen } from "lucide-react";
 import { CursoGerenciado, ModuloGerenciado, AulaGerenciada } from "@/data/types";
 import { CreateLessonModal } from "../_components/CreateLessonModal";
+import { createLesson } from "@/services/lessons";
 
 interface Props {
   curso: CursoGerenciado | undefined;
-  onToggle: (cId: string, aId: string) => void;
-  onDelete: (cId: string, aId: string) => void;
+    onToggle: (cId: number, aId: number) => void;
+    onDelete: (cId: number, aId: number) => void;
 }
 
-export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
+  export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
+    const handleCreateLesson = async (data: FormData) => {
+      try {
+        console.log("ENVIANDO:", [...data.entries()]);
+
+        const response = await createLesson(data);
+
+        console.log("AULA CRIADA:", response);
+
+      } catch (error) {
+        console.log("ERRO AO CRIAR AULA:", error);
+      }
+    };
+
   if (!curso) return (
     <div className="h-64 border-2 border-gray-200 rounded-[24px] flex flex-col items-center justify-center text-center p-6 bg-white/50">
       <BookOpen size={40} className="text-gray-200 mb-3" />
@@ -29,12 +43,10 @@ export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
           </p>
           <CardDescription className="text-xs">{curso.modules.reduce((acc, mod) => acc + mod.lessons.length, 0)} aulas</CardDescription>
         </div>
-        <CreateLessonModal
-          cursoId={curso.id}
-          onCreate={(data) => {
-            console.log("nova aula:", data);
-          }}
-        />
+          <CreateLessonModal
+            modules={curso.modules}
+            onCreate={handleCreateLesson}
+          />
       </CardHeader>
 
       <CardContent className="p-4 space-y-6">

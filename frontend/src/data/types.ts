@@ -1,17 +1,18 @@
 export interface AulaGerenciada {
-  id: string;
+  id: number;
   title: string;
   duracao: string;
   status: "publicada" | "rascunho";
 }
 
 export interface ModuloGerenciado {
-  id: string;
+  id: number;
   title: string;
   lessons: AulaGerenciada[];
 }
+
 export interface CursoGerenciado {
-  id: string;
+  id: number;
   title: string;
   categoria: string;
   description: string;
