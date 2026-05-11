@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
+import LoadingScreen from "@/components/LoadingScreen";
 import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
 import { getCourses } from "@/services/courses";
@@ -14,31 +15,32 @@ export default function Explorar() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-      async function load() {
-        try {
-          setLoading(true);
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
 
-          const [coursesData, categoriesData] = await Promise.all([
-            getCourses(),
-            getCategories(),
-          ]);
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-          console.log("COURSES DATA:", coursesData);
-          console.log("CATEGORIES DATA:", categoriesData);
+        setLoading(false);
 
-          setCourses(coursesData);
-          setCategories(categoriesData);
+        const [coursesData, categoriesData] = await Promise.all([
+          getCourses(),
+          getCategories(),
+        ]);
 
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setLoading(false);
-        }
+        setCourses(coursesData);
+        setCategories(categoriesData);
+
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
       }
+    }
 
-      load();
-    }, []);
+    load();
+  }, []);
 
   const filteredCourses = activeCategory
     ? courses.filter((c) => c.category === activeCategory)
@@ -52,11 +54,7 @@ export default function Explorar() {
     .filter((cat) => cat.courses.length > 0);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-gray-500">Carregando cursos...</p>
-      </div>
-    );
+    return <LoadingScreen text="Carregando cursos..." />
   }
 
   return (
@@ -65,7 +63,7 @@ export default function Explorar() {
 
       <main className="py-12">
         <div className="container mx-auto px-6">
-          
+
           <div className="flex items-center gap-3 mb-8">
             <div className="bg-[#2F52E0] p-2 rounded-lg shadow-lg shadow-blue-100">
               <Sparkles className="text-white h-5 w-5" />
@@ -73,10 +71,10 @@ export default function Explorar() {
             <h1 className="text-3xl font-extrabold text-[#161B1D]">Cursos recomendados</h1>
           </div>
 
-          <CategoryFilters 
-            categories={categories} 
-            activeCategory={activeCategory} 
-            onSelect={setActiveCategory} 
+          <CategoryFilters
+            categories={categories}
+            activeCategory={activeCategory}
+            onSelect={setActiveCategory}
           />
 
           {activeCategory ? (
@@ -98,7 +96,7 @@ export default function Explorar() {
                       Mostrar mais <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
-                  
+
                   <CourseGrid courses={cat.courses.slice(0, 4)} />
                 </section>
               ))}

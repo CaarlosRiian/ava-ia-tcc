@@ -1,5 +1,7 @@
 "use client";
 
+// Integrar essa página
+
 import { useState, useEffect } from "react";
 import { getMe } from "@/services/auth";
 import { User, Mail, Shield, Save } from "lucide-react";
@@ -12,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 import { ProfileHeader } from "./_components/profile-header";
+import { ProfileSkeleton } from "./_components/ProfileSkeleton";
 
 export default function ConfiguracoesPerfil() {
   const [name, setName] = useState("Rian Carlos");
@@ -19,26 +22,55 @@ export default function ConfiguracoesPerfil() {
   const [bio, setBio] = useState("Estudante de Engenharia focado em desenvolvimento Full Stack e IA.");
   const [isProfessor, setIsProfessor] = useState(false);
   const [userRole, setUserRole] = useState("")
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const token = localStorage.getItem("access");
+    async function load() {
+      const token = localStorage.getItem("access");
 
-  if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-  getMe(token).then((data) => {
-    setName(data.name);
-    setEmail(data.email);
-    setBio(data.bio || "");
-    setUserRole(data.role);
-    setIsProfessor(data.role === "professor");
-  });
-}, []);
+      try {
+        setLoading(true);
+
+        const data = await getMe(token);
+
+        setName(data.name);
+        setEmail(data.email);
+        setBio(data.bio || "");
+        setUserRole(data.role);
+        setIsProfessor(data.role === "professor");
+
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
 
   const formatName = (name: string) => name.replace(/_/g, " ");
 
   const handleSave = () => {
     toast.success("Perfil atualizado!");
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
+        <Header />
+
+        <main className="flex-1 container max-w-3xl mx-auto px-6 py-12">
+          <ProfileSkeleton />
+        </main>
+      </div>
+    );
+  }
 
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 

@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
 import { BookOpen } from "lucide-react";
 import { getMyCourses } from "@/services/courses";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type Course = {
   course_id: number;
@@ -49,7 +50,7 @@ export default function MeusCursos() {
         </div>
 
         {loading ? (
-          <p>Carregando...</p>
+          <LoadingScreen text="Carregando meus cursos..." />
         ) : courses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {courses.map((course) => (

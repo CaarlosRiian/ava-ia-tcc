@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
 import { ArrowLeft } from "lucide-react";
 import { ProfessorHero } from "./_components/professor-hero";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function PerfilProfessor() {
   const params = useParams();
@@ -25,7 +26,7 @@ export default function PerfilProfessor() {
   }, [slug]);
 
   if (loading) {
-    return <div className="p-10">Carregando...</div>;
+    return <LoadingScreen text="Carregando dados do professor..." />;
   }
 
   if (!professor) {

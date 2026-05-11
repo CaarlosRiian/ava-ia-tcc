@@ -7,6 +7,7 @@ import { StatsCards } from "./_components/stats-cards";
 import { RequestCard } from "./_components/request-card";
 
 import { useSolicitacoes } from "./hooks/useSolicitacoes";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function AdminSolicitacoes() {
   const {
@@ -21,11 +22,7 @@ export default function AdminSolicitacoes() {
       : solicitacoes.filter((s) => s.status === status);
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        Carregando solicitações...
-      </div>
-    );
+    return <LoadingScreen text="Carregando as solicitações..." />;
   }
 
   return (
