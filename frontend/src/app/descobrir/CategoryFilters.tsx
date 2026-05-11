@@ -1,13 +1,12 @@
 interface Category {
-  id: string;
-  label: string;
-  icon: string;
+  id: number;
+  name: string;
 }
 
 interface Props {
   categories: Category[];
-  activeCategory: string | null;
-  onSelect: (id: string | null) => void;
+  activeCategory: number | null;
+  onSelect: (id: number | null) => void;
 }
 
 export default function CategoryFilters({ categories, activeCategory, onSelect }: Props) {
@@ -34,8 +33,7 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
               : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50 shadow-sm"
           }`}
         >
-          <span>{cat.icon}</span>
-          {cat.label}
+          <span>{cat.name}</span>
         </button>
       ))}
     </div>

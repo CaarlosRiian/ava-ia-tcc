@@ -1,25 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
-import { mockCourses, categories } from "@/data/courses";
+import { getCourses } from "@/services/courses";
+import { getCategories } from "@/services/categories";
 
 export default function Explorar() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+   useEffect(() => {
+      async function load() {
+        try {
+          setLoading(true);
+
+          const [coursesData, categoriesData] = await Promise.all([
+            getCourses(),
+            getCategories(),
+          ]);
+
+          console.log("COURSES DATA:", coursesData);
+          console.log("CATEGORIES DATA:", categoriesData);
+
+          setCourses(coursesData);
+          setCategories(categoriesData);
+
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      load();
+    }, []);
 
   const filteredCourses = activeCategory
-    ? mockCourses.filter((c) => c.category === activeCategory)
-    : mockCourses;
+    ? courses.filter((c) => c.category === activeCategory)
+    : courses;
 
   const coursesByCategory = categories
     .map((cat) => ({
       ...cat,
-      courses: mockCourses.filter((c) => c.category === cat.id),
+      courses: courses.filter((c) => c.category === cat.id),
     }))
     .filter((cat) => cat.courses.length > 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm text-gray-500">Carregando cursos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
