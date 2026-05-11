@@ -13,38 +13,38 @@ export default function Header() {
 
   useEffect(() => {
     const token = localStorage.getItem("access");
-    const role = localStorage.getItem("user_role"); 
+    const role = localStorage.getItem("user_role");
     const name = localStorage.getItem("username");
     const email = localStorage.getItem("user_email");
-    
+
     setIsAuth(!!token);
     setUserRole(role || "");
     setUserName(name || "");
     setUserEmail(email || "");
-    
+
   }, []);
 
   const formatName = (name: string) => {
-  const cleaned = name.replace(/_/g, " ");
+    const cleaned = name.replace(/_/g, " ");
 
-  if (cleaned.length > 15) {
-    return cleaned.slice(0, 15) + "...";
-  }
+    if (cleaned.length > 15) {
+      return cleaned.slice(0, 15) + "...";
+    }
 
-  return cleaned;
-};
+    return cleaned;
+  };
 
-const getInitials = (name: string) => {
-  return name
-    .replace(/_/g, " ")
-    .trim()
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-};
+  const getInitials = (name: string) => {
+    return name
+      .replace(/_/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  };
 
   const logout = () => {
     localStorage.removeItem("access");
@@ -59,7 +59,7 @@ const getInitials = (name: string) => {
   return (
     <header className="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
-        
+
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <div className="bg-[#6366F1] rounded-lg p-1.5 text-white">
@@ -83,17 +83,15 @@ const getInitials = (name: string) => {
         <div className="flex-1 max-w-md hidden sm:block">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#6366F1]" />
-            <input
-              type="text"
-              placeholder="Buscar cursos, aulas..."
-              className="w-full bg-[#F3F4F6] rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none"
+            <input type="text" placeholder="Buscar cursos, aulas..." className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none bg-white border border-gray-400 transition-all duration-500 ease-in-out
+    focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/favoritos" className="flex items-center gap-3 px-3 py-2.5 p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
-              <Heart className="h-5 w-5" />
+          <Link href="/favoritos" className="flex items-center gap-3 px-3 py-2.5 p-2 text-gray-400 hover:text-red-500 transition-colors duration-300 cursor-pointer">
+            <Heart className="h-5 w-5" />
           </Link>
 
           {isAuth ? (
@@ -106,7 +104,7 @@ const getInitials = (name: string) => {
               </div>
 
               <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
-                
+
                 <div className="p-4 flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-[#6366F1] text-white flex items-center justify-center text-lg font-bold">
                     {getInitials(userName)}
@@ -143,28 +141,27 @@ const getInitials = (name: string) => {
                 <div className="p-2">
                   <span className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Áreas</span>
                   <div className="mt-1 space-y-0.5 text-[14px] text-gray-700 font-medium">
-                    
+
                     {userRole === 'aluno' && (
-                      <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
+                     
                         <Link href="/instrutor/cadastro" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"
                         > <GraduationCap className="h-5 w-5 text-gray-500" />
                           Quero ser instrutor
                         </Link>
-                      </button>
                     )}
 
                     {userRole === 'professor' && (
-                      <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
+                      <Link href="/instrutor/gerenciar" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
                         <LayoutDashboard className="h-5 w-5 text-gray-500" /> Painel do professor
-                      </button>
+                      </Link>
                     )}
 
                     {userRole === 'admin' && (
-                      <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer">
-                        <Link href="/admin/solicitacoes" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"
-                        ><ShieldCheck className="h-5 w-5 text-gray-500" /> Painel admin
-                        </Link>
-                      </button>
+                      <Link href="/admin/solicitacoes" className="flex -center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-[14px] text-gray-700 font-medium"
+                      >
+                        <ShieldCheck className="h-5 w-5 text-gray-500" />
+                        Painel do admin
+                      </Link>
                     )}
                   </div>
                 </div>

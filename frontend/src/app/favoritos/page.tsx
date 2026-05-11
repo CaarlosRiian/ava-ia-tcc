@@ -6,6 +6,7 @@ import CourseCard from "@/components/CourseCard";
 import { Heart } from "lucide-react";
 import { useFavorites } from "./useFavorites";
 import { formatName } from "@/utils/formatName";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function Favoritos() {
   const { favoriteCourses, loading, removeFavorite } = useFavorites();
@@ -24,9 +25,7 @@ export default function Favoritos() {
         </p>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-20">
-            Carregando favoritos...
-          </p>
+          <LoadingScreen text="Carregando favoritos..." />
         ) : favoriteCourses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {favoriteCourses.map((course) => (
