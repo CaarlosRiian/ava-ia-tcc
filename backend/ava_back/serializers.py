@@ -72,7 +72,7 @@ class LessonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video_url', 'duration_seconds', 'order', 'ai_content']
+        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'duration_seconds', 'order', 'ai_content']
 
     def get_ai_content(self, obj):
         ai = AIAssistant.objects.filter(lesson=obj).first()
@@ -168,7 +168,7 @@ class InstructorLessonSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "order",
-            "video_url",
+            "video",
             "duration_seconds",
             "status"
         ]

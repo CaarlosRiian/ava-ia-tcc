@@ -1,5 +1,21 @@
 const API_URL = "http://localhost:8000/api";
 
+export async function getCourses() {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(`${API_URL}/courses/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Erro ao buscar cursos");
+  }
+
+  return response.json();
+}
+
 export async function getMyCourses() {
   const token = localStorage.getItem("access");
 

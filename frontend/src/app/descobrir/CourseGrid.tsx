@@ -1,7 +1,7 @@
 import CourseCard from "../../components/CourseCard";
 
 interface Course {
-  id: number | string;
+  id: number;
   title: string;
   author: string;
   hours: number;
@@ -13,6 +13,7 @@ export default function CourseGrid({ courses }: { courses: Course[] }) {
       {courses.map((course) => (
         <CourseCard
           key={course.id}
+          id={course.id}
           title={course.title}
           author={course.author}
           hours={course.hours}

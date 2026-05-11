@@ -244,6 +244,8 @@ class LessonViewSet(ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['title']
 
+    parser_classes = [MultiPartParser, FormParser]
+
     def get_queryset(self):
         return Lesson.objects.select_related('module').all()
 

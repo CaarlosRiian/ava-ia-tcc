@@ -86,18 +86,45 @@ class Module(models.Model):
         return self.title
 
 class Lesson(models.Model):
-    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
+    STATUS_CHOICES = (
+        ('publicada', 'Publicada'),
+        ('rascunho', 'Rascunho'),
+    )
+
+    module = models.ForeignKey('Module', on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=100)
-    slug = models.SlugField()
-    video_url = models.URLField()
-    duration_seconds = models.IntegerField()
-    order = models.PositiveIntegerField()
+    slug = models.SlugField(unique=True, blank=True)
+    video = models.FileField(upload_to='videos/', blank=True, null=True)
+    duration_seconds = models.IntegerField(default=0)
+    order = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,default='rascunho')
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['order']
+        ordering = ['order', 'created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            count = 1
+
+            while Lesson.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+
+            self.slug = slug
+
+        if self.order == 0:
+            last_order = Lesson.objects.filter(
+                module=self.module
+            ).count()
+            self.order = last_order + 1
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        
         return self.title
 
 class Enrollment(models.Model):
