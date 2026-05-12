@@ -1,0 +1,220 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { CourseUI } from "@/types/course";
+
+import { toast } from "sonner";
+
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+
+  categories: { id: string; name: string }[];
+
+  initialData?: CourseUI | null;
+
+  onCreate: (data: FormData) => Promise<void>;
+
+  onEdit: (
+    courseId: string,
+    data: FormData
+  ) => Promise<void>;
+};
+
+export function CourseFormModal({ open, onOpenChange, categories, initialData, onCreate, onEdit }: Props) {
+  const isEditing = !!initialData;
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [price, setPrice] = useState("");
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || "");
+      setDescription(initialData.description || "");
+      setCategory(
+        typeof initialData.category === "object"
+          ? initialData.category.id
+          : initialData.category || ""
+      );
+      setPrice(initialData.price?.toString() || "");
+
+      setPreview(initialData.thumbnail || null);
+      setThumbnail(null);
+    } else {
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setPrice("");
+      setThumbnail(null);
+      setPreview(null);
+    }
+  }, [initialData]);
+
+  async function handleSubmit() {
+    if (!title.trim()) {
+      return toast.error("Digite o nome do curso");
+    }
+
+    if (!category) {
+      return toast.error("Selecione uma categoria");
+    }
+
+    const formData = new FormData();
+
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("price", price || "0");
+
+    if (thumbnail) {
+      formData.append("thumbnail", thumbnail);
+    }
+    try {
+      if (isEditing && initialData) {
+        await onEdit(initialData.id, formData);
+
+        console.log("EDIT:", isEditing, initialData?.id);
+
+        toast.success("Curso atualizado!");
+      } else {
+        await onCreate(formData);
+
+        toast.success("Curso criado!");
+      }
+
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar curso");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md bg-white">
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? "Editar curso" : "Criar novo curso"}
+          </DialogTitle>
+
+          <DialogDescription>
+            Preencha as informações do curso.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-3">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Nome
+            </Label>
+
+            <Input
+              className="bg-white"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Descrição
+            </Label>
+
+            <Input
+              value={description}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+
+            <select
+              className="w-full border rounded-md p-2 cursor-pointer"
+              value={category}
+              onChange={(e) =>
+                setCategory(e.target.value)
+              }
+            >
+              <option value="">Selecione</option>
+
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Preço</Label>
+
+            <Input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Capa do curso</Label>
+
+            {preview && (
+              <div className="space-y-2">
+                <img
+                  src={preview}
+                  alt="Thumbnail do curso"
+                  className="w-full h-40 object-cover rounded-md border"
+                />
+                <p className="text-xs text-gray-500">
+                  Imagem atual do curso
+                </p>
+              </div>
+            )}
+
+            <Input
+              className="cursor-pointer"
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setThumbnail(
+                  e.target.files?.[0] || null
+                )
+              }
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            className="bg-red-500 text-white hover:bg-red-600 p-4 cursor-pointer"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            onClick={handleSubmit}
+            className="bg-[#2F52E0] hover:bg-[#1e3bb3] p-4 cursor-pointer"
+          >
+            {isEditing
+              ? "Salvar alterações"
+              : "Criar curso"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
