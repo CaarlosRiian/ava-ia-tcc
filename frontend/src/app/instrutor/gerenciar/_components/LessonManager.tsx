@@ -2,29 +2,25 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, GripVertical, BookOpen } from "lucide-react";
-import { CursoGerenciado, ModuloGerenciado, AulaGerenciada } from "@/data/types";
 import { CreateLessonModal } from "../_components/CreateLessonModal";
 import { createLesson } from "@/services/lessons";
+import type { CourseAPI, Module, Lesson } from "@/types/course";
 
-interface Props {
-  curso: CursoGerenciado | undefined;
-    onToggle: (cId: number, aId: number) => void;
-    onDelete: (cId: number, aId: number) => void;
-}
+type Props = {
+  curso?: CourseAPI;
+  onToggle: (cId: string, aId: string) => void;
+  onDelete: (cId: string, aId: string) => void;
+};
 
-  export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
-    const handleCreateLesson = async (data: FormData) => {
-      try {
-        console.log("ENVIANDO:", [...data.entries()]);
-
-        const response = await createLesson(data);
-
-        console.log("AULA CRIADA:", response);
-
-      } catch (error) {
-        console.log("ERRO AO CRIAR AULA:", error);
-      }
-    };
+export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
+  const handleCreateLesson = async (data: FormData) => {
+    try {
+      const response = await createLesson(data);
+      console.log("AULA CRIADA:", response);
+    } catch (error) {
+      console.log("ERRO AO CRIAR AULA:", error);
+    }
+  };
 
   if (!curso) return (
     <div className="h-64 border-2 border-gray-200 rounded-[24px] flex flex-col items-center justify-center text-center p-6 bg-white/50">
@@ -41,16 +37,18 @@ interface Props {
           <p className="text-xs text-muted-foreground mt-1">
             {curso.description}
           </p>
-          <CardDescription className="text-xs">{curso.modules.reduce((acc, mod) => acc + mod.lessons.length, 0)} aulas</CardDescription>
+          <CardDescription className="text-xs">
+            {(curso.modules ?? []).reduce((acc, mod) => acc + (mod.lessons?.length ?? 0), 0
+            )} aulas</CardDescription>
         </div>
-          <CreateLessonModal
-            modules={curso.modules}
-            onCreate={handleCreateLesson}
-          />
+        <CreateLessonModal
+          modules={curso.modules ?? []}
+          onCreate={handleCreateLesson}
+        />
       </CardHeader>
 
       <CardContent className="p-4 space-y-6">
-        {curso.modules.map((module: ModuloGerenciado, moduleIndex: number) => (
+        {curso.modules.map((module: Module, moduleIndex: number) => (
           <div key={module.id} className="space-y-2">
 
             <div className="flex items-center gap-2">
@@ -64,7 +62,7 @@ interface Props {
             </div>
 
             <div className="space-y-2 pl-2 border-l border-gray-100">
-              {module.lessons.map((aula: AulaGerenciada, index: number) => (
+              {module.lessons.map((aula: Lesson, index: number) => (
                 <div
                   key={aula.id}
                   className="flex items-center gap-3 p-3 rounded-xl border border-gray-50 bg-white group hover:border-blue-100 transition-all"
@@ -77,7 +75,7 @@ interface Props {
                     </p>
 
                     <p className="text-[10px] font-medium text-gray-400">
-                      {aula.duracao}
+                      {aula.duration}
                     </p>
                   </div>
 

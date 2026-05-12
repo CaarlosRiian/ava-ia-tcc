@@ -4,10 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-interface Module {
-  id: number;
-  title: string;
-}
+import type { Module } from "@/types/course";
 
 interface Props {
   modules: Module[];

@@ -206,6 +206,8 @@ class InstructorCourseSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
+            "category",
+            "price",
             "published",
             "thumbnail",
             "alunos",
