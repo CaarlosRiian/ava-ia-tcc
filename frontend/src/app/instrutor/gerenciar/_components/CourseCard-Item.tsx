@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Video, Eye, Pencil } from "lucide-react";
+import { Video, Eye, Settings } from "lucide-react";
 
 interface Props {
   curso: {
@@ -42,7 +42,7 @@ export const CourseCard = ({
           }}
           className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-100"
         >
-          <Pencil size={14} />
+          <Settings size={16} className="cursor-pointer" />
         </button>
 
         <div className="flex items-center gap-2 mt-2 text-[10px] font-bold text-muted-foreground/70 uppercase">
