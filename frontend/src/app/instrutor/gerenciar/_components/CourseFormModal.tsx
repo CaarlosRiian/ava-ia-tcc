@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CourseUI } from "@/types/course";
+import { deleteCourse } from "@/app/instrutor/gerenciar/_services/courses";
+import { DeleteCourseModal } from "./DeleteCourseModal";
 
 import { toast } from "sonner";
 
@@ -37,6 +39,9 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || "");
@@ -48,7 +53,11 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
       );
       setPrice(initialData.price?.toString() || "");
 
-      setPreview(initialData.thumbnail || null);
+      setPreview(
+        initialData.thumbnail
+          ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${initialData.thumbnail}`
+          : null
+      );
       setThumbnail(null);
     } else {
       setTitle("");
@@ -99,122 +108,162 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
     }
   }
 
+  async function handleDelete() {
+    if (!initialData) return;
+
+    try {
+      setLoadingDelete(true);
+
+      await deleteCourse(initialData.id);
+
+      toast.success("Curso deletado!");
+
+      setOpenDeleteModal(false);
+
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Erro ao deletar curso");
+    } finally {
+      setLoadingDelete(false);
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar curso" : "Criar novo curso"}
-          </DialogTitle>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Editar curso" : "Criar novo curso"}
+            </DialogTitle>
 
-          <DialogDescription>
-            Preencha as informações do curso.
-          </DialogDescription>
-        </DialogHeader>
+            <DialogDescription>
+              Preencha as informações do curso.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-3">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Nome
-            </Label>
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Nome
+              </Label>
 
-            <Input
-              className="bg-white"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+              <Input
+                className="bg-white"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Descrição
+              </Label>
+
+              <Input
+                value={description}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+
+              <select
+                className="w-full border rounded-md p-2 cursor-pointer"
+                value={category}
+                onChange={(e) =>
+                  setCategory(e.target.value)
+                }
+              >
+                <option value="">Selecione</option>
+
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Preço</Label>
+              <Input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Capa do curso</Label>
+
+              {preview && (
+                <div className="space-y-2">
+                  <img
+                    src={preview}
+                    alt="Thumbnail do curso"
+                    className="w-full h-40 object-cover rounded-md border"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Imagem atual do curso
+                  </p>
+                </div>
+              )}
+
+              <Input
+                className="cursor-pointer"
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setThumbnail(
+                    e.target.files?.[0] || null
+                  )
+                }
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Descrição
-            </Label>
-
-            <Input
-              value={description}
-              onChange={(e) =>
-                setDescription(e.target.value)
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Categoria</Label>
-
-            <select
-              className="w-full border rounded-md p-2 cursor-pointer"
-              value={category}
-              onChange={(e) =>
-                setCategory(e.target.value)
-              }
-            >
-              <option value="">Selecione</option>
-
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Preço</Label>
-
-            <Input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Capa do curso</Label>
-
-            {preview && (
-              <div className="space-y-2">
-                <img
-                  src={preview}
-                  alt="Thumbnail do curso"
-                  className="w-full h-40 object-cover rounded-md border"
-                />
-                <p className="text-xs text-gray-500">
-                  Imagem atual do curso
-                </p>
-              </div>
+          <DialogFooter>
+            {isEditing && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setOpenDeleteModal(true)}
+                className="gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-x shadow-md hover:shadow-red-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+                Excluir curso
+              </Button>
             )}
 
-            <Input
-              className="cursor-pointer"
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                setThumbnail(
-                  e.target.files?.[0] || null
-                )
-              }
-            />
-          </div>
-        </div>
+            <Button
+              className="bg-white text-black border-gray-400 hover:border-red-600 p-4 cursor-pointer"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
 
-        <DialogFooter>
-          <Button
-            className="bg-red-500 text-white hover:bg-red-600 p-4 cursor-pointer"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
-
-          <Button
-            onClick={handleSubmit}
-            className="bg-[#2F52E0] hover:bg-[#1e3bb3] p-4 cursor-pointer"
-          >
-            {isEditing
-              ? "Salvar alterações"
-              : "Criar curso"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <Button
+              onClick={handleSubmit}
+              className="bg-[#2F52E0] hover:bg-[#1e3bb3] p-4 cursor-pointer"
+            >
+              {isEditing
+                ? "Salvar alterações"
+                : "Criar curso"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <DeleteCourseModal
+        open={openDeleteModal}
+        onOpenChange={setOpenDeleteModal}
+        courseTitle={initialData?.title || ""}
+        loading={loadingDelete}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }
