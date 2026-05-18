@@ -91,6 +91,11 @@ class Lesson(models.Model):
         ('rascunho', 'Rascunho'),
     )
 
+    VISIBILITY_CHOICES = (
+        ('publico', 'Público'),
+        ('privado', 'Privado'),
+    )
+
     module = models.ForeignKey('Module', on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -98,6 +103,8 @@ class Lesson(models.Model):
     duration_seconds = models.IntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default='rascunho')
+    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='privado')
+    thumbnail = models.ImageField(upload_to='lesson_thumbnails/', blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
