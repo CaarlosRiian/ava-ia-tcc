@@ -7,6 +7,7 @@ import CourseCard from "@/components/CourseCard";
 import { BookOpen } from "lucide-react";
 import { getMyCourses } from "@/services/courses";
 import LoadingScreen from "@/components/LoadingScreen";
+import { formatName } from "@/utils/formatName"; 
 
 type Course = {
   course_id: number;
@@ -58,14 +59,15 @@ export default function MeusCursos() {
                 key={course.course_id}
                 id={course.course_id}
                 title={course.title}
-                author={course.professor}
+                author={formatName(course.professor)} 
                 hours={0} 
                 progress={course.progress}
+                thumbnail={course.thumbnail} 
               />
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 bg-white rounded-3xl border-gray-200 shadow-sm">
+          <div className="text-center py-24 bg-white rounded-3xl border border-gray-200 shadow-sm">
             <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <BookOpen className="text-[#2F52E0] w-10 h-10" />
             </div>

@@ -16,10 +16,10 @@ interface CourseProps {
   onToggleFavorite?: (e: React.MouseEvent) => void;
 }
 
-export default function CourseCard({ id, title, author, hours, progress, showFavoriteButton = false, isFavorite = false, onToggleFavorite }: CourseProps) {
+export default function CourseCard({ id, title, author, hours, progress, thumbnail, showFavoriteButton = false, isFavorite = false, onToggleFavorite }: CourseProps) {
   return (
     <Link href={`/curso/${id}`} className="block h-full">
-      <div className="group bg-white border border-gray-300 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full relative">
+      <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full relative">
 
         {showFavoriteButton && (
           <button
@@ -40,11 +40,22 @@ export default function CourseCard({ id, title, author, hours, progress, showFav
           </button>
         )}
 
-        <div className="h-40 bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors relative">
-          <PlayCircle className="text-gray-300 group-hover:text-[#2F52E0] w-12 h-12 transition-all" />
+        <div className="h-40 bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors relative overflow-hidden">
+          {thumbnail ? (
+            <img 
+              src={thumbnail} 
+              alt={title} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <PlayCircle className="text-gray-300 group-hover:text-[#2F52E0] w-12 h-12 transition-all" />
+          )}
           
           {progress !== undefined && (
-            <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold text-[#2F52E0]">
+            <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-bold text-[#2F52E0] z-10">
               {progress}% concluído
             </div>
           )}

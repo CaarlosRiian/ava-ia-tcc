@@ -49,12 +49,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)
-
     thumbnail = serializers.ImageField(required=False)
+    hours = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'hours']
+
+    def get_hours(self, obj):
+        total_seconds = Lesson.objects.filter(
+            module__course=obj
+        ).aggregate(
+            total=Sum('duration_seconds')
+        )['total'] or 0
+
+        return round(total_seconds / 3600, 1)
 
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -251,3 +260,31 @@ class FavoriteSerializer(serializers.ModelSerializer):
         )['total'] or 0
 
         return round(total_seconds / 3600, 1)
+    
+class ProfessorProfileSerializer(serializers.ModelSerializer):
+    especialidade = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'bio', 'especialidade', 'stats', 'courses']
+
+    def get_especialidade(self, obj):
+        req = InstructorRequest.objects.filter(user=obj, status='aprovado').first()
+        return req.especialidade if req else "Tecnologia"
+
+    def get_stats(self, obj):
+        courses = Course.objects.filter(professor=obj)
+        courses_count = courses.count()
+
+        lessons = Lesson.objects.filter(module__course__in=courses)
+        lessons_count = lessons.count()
+
+        total_seconds = lessons.aggregate(total=Sum('duration_seconds'))['total'] or 0
+        total_hours = round(total_seconds / 3600, 1)
+
+        return {
+            "coursesCount": courses_count,
+            "hours": total_hours,
+            "lessons": lessons_count
+        }

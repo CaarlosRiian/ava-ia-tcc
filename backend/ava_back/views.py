@@ -380,33 +380,36 @@ def me(request):
     })
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def professor_by_slug(request, slug):
     try:
-        professor = User.objects.get(slug=slug, role="professor")
+        professor = User.objects.get(username=slug, role="professor")
     except User.DoesNotExist:
-        return Response({"error": "Not found"}, status=404)
+        return Response({"error": "Professor não encontrado"}, status=404)
 
-    courses = Course.objects.filter(professor=professor, published=True)
+    courses = Course.objects.filter(professor=professor)
+    
+    published_courses = courses.filter(published=True)
 
-    total_lessons = Lesson.objects.filter(module__course__in=courses).count()
-
-    total_duration = Lesson.objects.filter(module__course__in=courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
-
+    total_lessons = Lesson.objects.filter(module__course__in=published_courses).count()
+    total_duration = Lesson.objects.filter(module__course__in=published_courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
     total_hours = round(total_duration / 3600, 1)
+
+    serialized_courses = CourseSerializer(published_courses, many=True, context={'request': request}).data
 
     return Response({
         "id": professor.id,
         "username": professor.username,
         "email": professor.email,
-        "bio": professor.bio,
-        "especialidade": "Professor",  
+        "bio": professor.bio or "Este professor ainda não adicionou uma bio profissional.",
+        "especialidade": "Instrutor de Tecnologia",  
         "stats": {
-            "coursesCount": courses.count(),
+            "coursesCount": published_courses.count(),
             "lessons": total_lessons,
             "hours": total_hours
         },
-        "courses": CourseSerializer(courses, many=True).data
-    })
+        "courses": serialized_courses
+      })
 
 class FavoriteViewSet(ModelViewSet):
     serializer_class = FavoriteSerializer
@@ -452,3 +455,4 @@ class FavoriteViewSet(ModelViewSet):
         return Response({
             "favorited": True
         })
+    

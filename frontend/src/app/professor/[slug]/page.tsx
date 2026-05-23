@@ -8,6 +8,7 @@ import CourseCard from "@/components/CourseCard";
 import { ArrowLeft } from "lucide-react";
 import { ProfessorHero } from "./_components/professor-hero";
 import LoadingScreen from "@/components/LoadingScreen";
+import { formatName } from "@/utils/formatName";
 
 export default function PerfilProfessor() {
   const params = useParams();
@@ -17,11 +18,21 @@ export default function PerfilProfessor() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      console.log("[FRONT] Slug não foi encontrado.");
+      return;
+    }
 
-    fetch(`http://localhost:8000/api/professor/${slug}/`)
-      .then((res) => res.json())
-      .then((data) => setProfessor(data))
+    const url = `http://localhost:8000/api/professor/${slug}/`;
+
+    fetch(url)
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        setProfessor(data);
+      })
+      .catch((err) => console.error("❌ [FRONT] Erro na requisição fetch:", err))
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -36,7 +47,7 @@ export default function PerfilProfessor() {
         <div className="container mx-auto py-20 text-center">
           <p className="text-gray-400 mb-6">Professor não encontrado.</p>
           <Link href="/descobrir">
-            <button className="px-6 py-2 bg-[#2F52E0] text-white rounded-xl font-bold">
+            <button className="px-6 py-2 bg-[#2F52E0] text-white rounded-xl font-bold cursor-pointer">
               Voltar para Explorar
             </button>
           </Link>
@@ -45,35 +56,26 @@ export default function PerfilProfessor() {
     );
   }
 
+  const rawName = professor.username || professor.name || "";
+  const displayFormattedName = formatName(rawName);
+
+  const initials = rawName
+    ? rawName
+        .replaceAll("_", " ")
+        .trim()
+        .split(/\s+/)
+        .map((n: string) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "PR";
+
   const courses = professor.courses || [];
 
-  const initials =
-    professor.username
-      ?.split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-
-  const formatName = (name: string) => {
-  const cleaned = name.replace(/_/g, " ");
-
-  if (cleaned.length <= 19) return cleaned;
-
-  const truncated = cleaned.slice(0, 19);
-  const lastSpace = truncated.lastIndexOf(" ");
-
-  if (lastSpace > 0) {
-    return truncated.slice(0, lastSpace) + "...";
-  }
-
-  return truncated + "...";
-};
-
-  const stats = professor?.stats || {
-    coursesCount: 0,
-    hours: 0,
-    lessons: 0,
+  const stats = {
+    coursesCount: professor.stats?.coursesCount ?? courses.length,
+    hours: professor.stats?.hours ?? 0,
+    lessons: professor.stats?.lessons ?? 0,
   };
 
   return (
@@ -81,32 +83,41 @@ export default function PerfilProfessor() {
       <Header />
 
       <main className="flex-1 container mx-auto px-6 py-10">
-        <Link href="/descobrir" className="flex items-center gap-2 text-gray-400 hover:text-[#2F52E0] transition-colors mb-8 group">
+        <Link
+          href="/descobrir"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-[#2F52E0] transition-colors mb-8 group"
+        >
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Voltar para cursos</span>
         </Link>
 
-        <ProfessorHero 
-          name={formatName(professor.username)}
-          bio={professor.bio || "Este professor ainda não adicionou uma bio."}
-          specialties={[professor.especialidade]}
+        <ProfessorHero
+          name={displayFormattedName}
+          bio={professor.bio || "Este professor ainda não adicionou uma descrição profissional."}
           initials={initials}
           stats={stats}
         />
 
-        <div className="mb-10">
+        <div className="mb-10 mt-12">
           <h2 className="text-2xl font-black text-[#161B1D]">Cursos publicados</h2>
-          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {formatName(professor.username)}</p>
+          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {displayFormattedName}</p>
         </div>
 
         {courses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {courses.map((course: any) => (
-              <CourseCard key={course.id} {...course} />
+              <CourseCard
+                key={course.id}
+                id={course.id}
+                title={course.title}
+                thumbnail={course.thumbnail}
+                hours={Number(course.hours) || 0}
+                author={displayFormattedName}
+              />
             ))}
           </div>
         ) : (
-          <div className="py-12 bg-white rounded-2xl text-center border-2 border-gray-100">
+          <div className="py-12 bg-white rounded-2xl text-center border-2 border-gray-100 shadow-sm">
             <p className="text-gray-400">
               Este professor ainda não possui cursos publicados.
             </p>
