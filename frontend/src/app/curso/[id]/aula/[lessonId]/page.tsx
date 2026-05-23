@@ -1,21 +1,24 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import VideoPlayer from "./VideoPlayer";
 import LessonContent from "./LessonContent";
 import AIChatPanel from "./AIChatPanel";
-import { getCourseDetail } from "@/services/courses";
+import LoadingScreen from "@/components/LoadingScreen"; 
+import { getCourseDetail, getMyCourses } from "@/services/courses";
 
 export default function Aula() {
   const params = useParams();
+  const router = useRouter(); 
   const courseId = Number(params.id);
   const lessonId = Number(params.lessonId);
 
   const [course, setCourse] = useState<any>(null);
   const [lesson, setLesson] = useState<any>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false); 
 
   const [aiOpen, setAiOpen] = useState(false);
   const [lessonsOpen, setLessonsOpen] = useState(true);
@@ -23,45 +26,81 @@ export default function Aula() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getCourseDetail(courseId);
+        const token = localStorage.getItem("access");
 
-        const allLessons =
-          data.modules?.flatMap((m: any) => m.lessons) || [];
+        if (!token) {
+          router.replace(`/curso/${courseId}/detalhes`);
+          return;
+        }
+
+        const [myCourses, data] = await Promise.all([
+          getMyCourses(),
+          getCourseDetail(courseId)
+        ]);
+
+        const isEnrolled = myCourses?.some((c: any) => {
+          if (!c) return false;
+
+          if (c.course_id !== undefined && c.course_id !== null) {
+            return Number(c.course_id) === courseId;
+          }
+
+          if (typeof c === "number" || typeof c === "string") {
+            return Number(c) === courseId;
+          }
+
+          if (c.course && typeof c.course === "object") {
+            return Number(c.course.id) === courseId;
+          }
+
+          if (c.course) {
+            return Number(c.course) === courseId;
+          }
+
+          return Number(c.id) === courseId;
+        });
+
+        if (!isEnrolled) {
+          router.replace(`/curso/${courseId}/detalhes`);
+          return;
+        }
+
+        const allLessons = data.modules?.flatMap((m: any) => m.lessons) || [];
 
         const currentLesson = allLessons.find(
-          (l: any) => l.id === lessonId
+          (l: any) => Number(l.id) === lessonId
         );
 
         const index = allLessons.findIndex(
-          (l: any) => l.id === lessonId
+          (l: any) => Number(l.id) === lessonId
         );
 
-        setCourse({
-          ...data,
-          lessons: allLessons,
-        });
+        if (currentLesson) {
+          setCourse({
+            ...data,
+            lessons: allLessons,
+          });
 
-        setLesson({
-          ...currentLesson,
-          index,
-        });
+          setLesson({
+            ...currentLesson,
+            index,
+          });
+
+          setIsAuthorized(true); 
+        } else {
+          console.warn(`Aula com ID ${lessonId} não encontrada.`);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Erro na verificação de acesso à aula:", err);
+        router.replace(`/curso/${courseId}/detalhes`);
       }
     }
 
     if (courseId && lessonId) load();
-  }, [courseId, lessonId]);
+  }, [courseId, lessonId, router]);
 
-  if (!course || !lesson) {
-    return (
-      <div className="flex flex-col h-screen">
-        <Header />
-        <div className="flex-1 flex items-center justify-center">
-          Carregando aula...
-        </div>
-      </div>
-    );
+  if (!isAuthorized || !course || !lesson) {
+    return <LoadingScreen text="Validando seu acesso à aula..." />;
   }
 
   const lessonIndex = lesson.index;

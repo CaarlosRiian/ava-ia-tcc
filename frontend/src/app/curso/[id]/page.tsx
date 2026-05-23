@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseHero from "./CourseHero";
 import CourseLessonsSidebar from "./CourseLessonsSidebar";
-import { getCourseDetail, getMyCourses } from "@/services/courses";
+import { getCourseDetail, getMyCourses, toggleCourseFavorite } from "@/services/courses";
 
 export default function CursoDetalhe() {
   const params = useParams();
@@ -18,6 +18,7 @@ export default function CursoDetalhe() {
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false); 
 
   useEffect(() => {
     async function checkAuthAndFetchCourse() {
@@ -29,6 +30,19 @@ export default function CursoDetalhe() {
           return;
         }
 
+        const responseFavorites = await fetch(`http://localhost:8000/api/favorites/`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (responseFavorites.status === 401) {
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          window.location.href = "/login";
+          return;
+        }
+
+        const favoritesData = responseFavorites.ok ? await responseFavorites.json() : [];
+
         const [myCourses, courseData] = await Promise.all([
           getMyCourses(),
           getCourseDetail(courseId)
@@ -36,23 +50,10 @@ export default function CursoDetalhe() {
 
         const isEnrolled = myCourses?.some((c: any) => {
           if (!c) return false;
-          
-          if (c.course_id !== undefined && c.course_id !== null) {
-            return Number(c.course_id) === courseId;
-          }
-
-          if (typeof c === "number" || typeof c === "string") {
-            return Number(c) === courseId;
-          }
-
-          if (c.course && typeof c.course === "object") {
-            return Number(c.course.id) === courseId;
-          }
-
-          if (c.course) {
-            return Number(c.course) === courseId;
-          }
-
+          if (c.course_id !== undefined && c.course_id !== null) return Number(c.course_id) === courseId;
+          if (typeof c === "number" || typeof c === "string") return Number(c) === courseId;
+          if (c.course && typeof c.course === "object") return Number(c.course.id) === courseId;
+          if (c.course) return Number(c.course) === courseId;
           return Number(c.id) === courseId;
         });
 
@@ -61,6 +62,9 @@ export default function CursoDetalhe() {
           return;
         }
 
+        const alreadyFavorited = favoritesData?.some((f: any) => Number(f.course) === courseId);
+        
+        setIsFavorited(alreadyFavorited);
         setCourse(courseData);
         setIsAuthorized(true);
       } catch (err) {
@@ -75,6 +79,22 @@ export default function CursoDetalhe() {
       checkAuthAndFetchCourse();
     }
   }, [courseId, router]);
+
+  const handleToggleFavorite = async () => {
+    const previousState = isFavorited;
+    try {
+      setIsFavorited(!isFavorited);
+
+      const data = await toggleCourseFavorite(courseId);
+      
+      if (data && typeof data.favorited === "boolean") {
+        setIsFavorited(data.favorited);
+      }
+    } catch (error) {
+      console.error("Erro ao favoritar curso:", error);
+      setIsFavorited(previousState);
+    }
+  };
 
   if (loading || !isAuthorized) {
     return <LoadingScreen text="Validando sua inscrição no curso..." />;
@@ -98,15 +118,33 @@ export default function CursoDetalhe() {
       <main className="container mx-auto px-6 py-8">
         <Link
           href="/meus-cursos"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 mb-8 hover:text-gray-700"
-        >
+          className="inline-flex items-center gap-2 text-sm text-gray-500 mb-8 hover:text-gray-700" >
           <ArrowLeft className="h-4 w-4" />
           Voltar para meus cursos
         </Link>
 
         <div className="grid lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2">
-            <CourseHero course={course} />
+            <CourseHero
+              course={course}
+              isFavorited={isFavorited}
+              onFavoriteToggle={handleToggleFavorite}
+              onPlayClick={(e) => {
+                if (e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+
+                const allLessons = course.modules?.flatMap((m: any) => m.lessons) || [];
+
+                if (allLessons.length > 0) {
+                  const targetLessonId = course.current_lesson_id || allLessons[0].id;
+                  const urlFinal = `/curso/${courseId}/aula/${targetLessonId}`;
+
+                  router.push(urlFinal);
+                }
+              }}
+            />
             <div className="mt-10">
               <h2 className="text-xl font-bold mb-4">O que você vai aprender</h2>
               <div className="grid sm:grid-cols-2 gap-3 text-gray-600">

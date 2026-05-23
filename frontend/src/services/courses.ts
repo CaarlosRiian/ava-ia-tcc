@@ -97,3 +97,29 @@ export async function enrollInCourse(courseId: number) {
 
   return result;
 }
+
+export async function toggleCourseFavorite(courseId: number) {
+  const token = localStorage.getItem("access");
+  
+  const response = await fetch(`${API_URL}/favorites/toggle/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ course: courseId }),
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/login";
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error("Erro ao alternar favorito");
+  }
+
+  return response.json(); 
+}
