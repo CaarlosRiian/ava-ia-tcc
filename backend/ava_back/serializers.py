@@ -49,12 +49,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)
-
     thumbnail = serializers.ImageField(required=False)
+    hours = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'hours']
+
+    def get_hours(self, obj):
+        total_seconds = Lesson.objects.filter(
+            module__course=obj
+        ).aggregate(
+            total=Sum('duration_seconds')
+        )['total'] or 0
+
+        return round(total_seconds / 3600, 1)
 
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -69,10 +78,11 @@ class AIAssistantSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     module_title = serializers.CharField(source='module.title', read_only=True)
     ai_content = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'duration_seconds', 'order', 'ai_content']
+        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'thumbnail', 'status', 'visibility','duration_seconds', 'order', 'ai_content']
 
     def get_ai_content(self, obj):
         ai = AIAssistant.objects.filter(lesson=obj).first()
@@ -85,7 +95,16 @@ class LessonSerializer(serializers.ModelSerializer):
             "quiz_json": ai.quiz_json,
             "generated_at": ai.generated_at
         }
+    
+    def get_thumbnail(self, obj):
+        request = self.context.get('request')
 
+        if obj.thumbnail:
+            return request.build_absolute_uri(
+                obj.thumbnail.url
+            )
+
+        return None
 
 class ModuleDetailSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)
@@ -160,27 +179,27 @@ class InstructorRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ["user", "status"]
 
 class InstructorLessonSerializer(serializers.ModelSerializer):
-    status = serializers.SerializerMethodField()
+    thumbnail = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Lesson
-        fields = [
-            "id",
-            "title",
-            "order",
-            "video",
-            "duration_seconds",
-            "status"
-        ]
+        fields = ["id", "module", "title", "slug", "video", "thumbnail", "duration_seconds", "order", "status", "visibility",]
 
-    def get_status(self, obj):
-        return "publicada" if obj.module.course.published else "rascunho"
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get("request")
+        
+        if instance.thumbnail and request:
+            ret['thumbnail'] = request.build_absolute_uri(instance.thumbnail.url)
+        elif instance.thumbnail:
+            ret['thumbnail'] = instance.thumbnail.url
+        else:
+            ret['thumbnail'] = None
+            
+        return ret
 
 class InstructorModuleSerializer(serializers.ModelSerializer):
-    lessons = InstructorLessonSerializer(
-        many=True,
-        read_only=True
-    )
+    lessons = serializers.SerializerMethodField()
 
     class Meta:
         model = Module
@@ -191,12 +210,12 @@ class InstructorModuleSerializer(serializers.ModelSerializer):
             "lessons"
         ]
 
-class InstructorCourseSerializer(serializers.ModelSerializer):
-    modules = InstructorModuleSerializer(
-        many=True,
-        read_only=True
-    )
+    def get_lessons(self, obj):
+        lessons = obj.lessons.all().order_by('order') 
+        return InstructorLessonSerializer(lessons, many=True, context=self.context).data
 
+class InstructorCourseSerializer(serializers.ModelSerializer):
+    modules = serializers.SerializerMethodField()
     alunos = serializers.SerializerMethodField()
     thumbnail = serializers.ImageField(required=False)
 
@@ -213,6 +232,10 @@ class InstructorCourseSerializer(serializers.ModelSerializer):
             "alunos",
             "modules"
         ]
+    
+    def get_modules(self, obj):
+        modules = obj.modules.all().order_by('order')
+        return InstructorModuleSerializer(modules, many=True, context=self.context).data
 
     def get_alunos(self, obj):
         return Enrollment.objects.filter(
@@ -237,3 +260,31 @@ class FavoriteSerializer(serializers.ModelSerializer):
         )['total'] or 0
 
         return round(total_seconds / 3600, 1)
+    
+class ProfessorProfileSerializer(serializers.ModelSerializer):
+    especialidade = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'bio', 'especialidade', 'stats', 'courses']
+
+    def get_especialidade(self, obj):
+        req = InstructorRequest.objects.filter(user=obj, status='aprovado').first()
+        return req.especialidade if req else "Tecnologia"
+
+    def get_stats(self, obj):
+        courses = Course.objects.filter(professor=obj)
+        courses_count = courses.count()
+
+        lessons = Lesson.objects.filter(module__course__in=courses)
+        lessons_count = lessons.count()
+
+        total_seconds = lessons.aggregate(total=Sum('duration_seconds'))['total'] or 0
+        total_hours = round(total_seconds / 3600, 1)
+
+        return {
+            "coursesCount": courses_count,
+            "hours": total_hours,
+            "lessons": lessons_count
+        }

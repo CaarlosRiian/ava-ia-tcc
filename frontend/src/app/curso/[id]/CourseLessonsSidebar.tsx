@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Play } from "lucide-react";
 
 interface SidebarProps {
@@ -6,8 +6,20 @@ interface SidebarProps {
 }
 
 export default function CourseLessonsSidebar({ course }: SidebarProps) {
-  const lessons =
-    course.modules?.flatMap((m: any) => m.lessons) || [];
+  const router = useRouter();
+  
+  const lessons = course.modules?.flatMap((m: any) => m.lessons) || [];
+
+  const handleNavigateToLesson = (lessonId: number | string) => {
+    if (!course.id || !lessonId) return;
+    router.push(`/curso/${course.id}/aula/${lessonId}`);
+  };
+
+  const handleStartOrCreateProgress = () => {
+    if (lessons.length > 0) {
+      handleNavigateToLesson(lessons[0].id);
+    }
+  };
 
   return (
     <div className="lg:col-span-1">
@@ -21,7 +33,6 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
         </h2>
 
         <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          
           {course.modules?.map((module: any) => (
             <div key={module.id} className="mb-4">
 
@@ -29,11 +40,11 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
                 {module.title}
               </p>
 
-              {module.lessons.map((lesson: any, i: number) => (
-                <Link
+              {module.lessons?.map((lesson: any, i: number) => (
+                <div
                   key={lesson.id}
-                  href={`/curso/${course.id}/aula/${lesson.id}`}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all group"
+                  onClick={() => handleNavigateToLesson(lesson.id)}
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all group cursor-pointer"
                 >
                   <span className="text-xs font-bold text-gray-300 group-hover:text-[#2F52E0]">
                     {String(i + 1).padStart(2, "0")}
@@ -49,14 +60,17 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
                       {Math.floor(lesson.duration_seconds / 60)} min
                     </p>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ))}
         </div>
 
-        <button className="w-full mt-8 py-4 bg-[#2F52E0] text-white rounded-xl font-bold shadow-lg cursor-pointer hover:opacity-90 transition-all active:scale-[0.98]">
-          Começar agora
+        <button 
+          onClick={handleStartOrCreateProgress}
+          className="w-full mt-8 py-4 bg-[#2F52E0] text-white rounded-xl font-bold shadow-lg cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] text-center"
+        >
+          {course?.progress > 0 ? "Continuar curso" : "Continuar"}
         </button>
       </div>
     </div>

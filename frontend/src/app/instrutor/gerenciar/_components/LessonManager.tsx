@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, GripVertical, BookOpen, Settings } from "lucide-react";
+import { BookOpen, Settings } from "lucide-react";
 import { CreateLessonModal } from "../_components/CreateLessonModal";
-import { createLesson } from "@/services/lessons";
+import { createLesson, updateLesson, deleteLesson } from "@/services/lessons";
 import { createModule, updateModule, deleteModule } from "../_services/modules";
-import type { CourseAPI, Module, Lesson } from "@/types/course";
+import type { CourseAPI, Module } from "@/types/course";
 import { CreateModuleModal } from "../_components/CreateModuleModal";
-
+import { ModuleLessons } from "../_components/ModuleLessons";
 
 type Props = {
   curso?: CourseAPI;
@@ -59,6 +58,60 @@ export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
         };
       });
 
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleUpdateLesson = async (
+    lessonId: string,
+    formData: FormData
+  ) => {
+    try {
+      await updateLesson(lessonId, formData);
+
+      setLocalCurso((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            lessons: m.lessons.map((l) =>
+              l.id === lessonId
+                ? {
+                  ...l,
+                  ...Object.fromEntries(
+                    formData.entries()
+                  ),
+                }
+                : l
+            ),
+          })),
+        };
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleDeleteLesson = async (cursoId: string, lessonId: string) => {
+    try {
+      await deleteLesson(lessonId);
+
+      setLocalCurso((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            lessons: m.lessons.filter(
+              (l) => l.id !== lessonId
+            ),
+          })),
+        };
+      });
     } catch (error) {
       console.log(error);
     }
@@ -122,8 +175,7 @@ export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
               {curso.title}
             </CardTitle>
 
-            <CardDescription className="text-sm text-zinc-500 leading-relaxed max-w-2xl
-      ">
+            <CardDescription className="text-sm text-zinc-500 leading-relaxed max-w-2xl ">
               {curso.description}
             </CardDescription>
           </div>
@@ -167,10 +219,7 @@ export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
                 onSubmit={(title) => handleEditModule(module.id, title)}
                 onDelete={() => handleDeleteModule(module.id)}
                 trigger={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   >
                     <Settings size={14} />
                   </Button>
@@ -179,49 +228,14 @@ export const LessonManager = ({ curso, onToggle, onDelete }: Props) => {
             </div>
 
             <div className="space-y-2 pl-2 border-l border-gray-100">
-              {module.lessons.map((aula: Lesson, index: number) => (
-                <div
-                  key={aula.id}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-gray-50 bg-white group hover:border-blue-100 transition-all"
-                >
-                  <GripVertical size={14} className="text-gray-300 cursor-grab" />
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-xs truncate text-gray-800">
-                      {index + 1}. {aula.title}
-                    </p>
-
-                    <p className="text-[10px] font-medium text-gray-400">
-                      {aula.duration}
-                    </p>
-                  </div>
-
-                  <Badge
-                    onClick={() => onToggle(curso.id, aula.id)}
-                    className={`cursor-pointer text-[9px] uppercase font-black px-2 py-0.5 border-none ${aula.status === "publicada"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-500"
-                      }`}
-                  >
-                    {aula.status === "publicada" ? "Ativa" : "Rascunho"}
-                  </Badge>
-
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer">
-                      <Pencil size={12} />
-                    </Button>
-
-                    <Button
-                      onClick={() => onDelete(curso.id, aula.id)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-red-500"
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              <ModuleLessons
+                lessons={module.lessons ?? []}
+                cursoId={localCurso?.id ?? ""}
+                modules={curso.modules ?? []}
+                onToggle={onToggle}
+                onDelete={handleDeleteLesson}
+                onUpdate={handleUpdateLesson}
+              />
             </div>
 
           </div>

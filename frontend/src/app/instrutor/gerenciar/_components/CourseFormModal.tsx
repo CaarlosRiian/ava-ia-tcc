@@ -67,7 +67,16 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
       setThumbnail(null);
       setPreview(null);
     }
-  }, [initialData]);
+  }, [initialData, open]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnail(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+    }
+  };
 
   async function handleSubmit() {
     if (!title.trim()) {
@@ -210,7 +219,7 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
                     className="w-full h-40 object-cover rounded-md border"
                   />
                   <p className="text-xs text-gray-500">
-                    Imagem atual do curso
+                    {thumbnail ? "Nova imagem selecionada" : "Imagem atual do curso"}
                   </p>
                 </div>
               )}

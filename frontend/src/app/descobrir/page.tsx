@@ -20,10 +20,6 @@ export default function Explorar() {
       try {
         setLoading(true);
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        setLoading(false);
-
         const [coursesData, categoriesData] = await Promise.all([
           getCourses(),
           getCategories(),
@@ -33,7 +29,7 @@ export default function Explorar() {
         setCategories(categoriesData);
 
       } catch (error) {
-        console.log(error);
+        console.error("Erro ao carregar a página de explorar:", error);
       } finally {
         setLoading(false);
       }

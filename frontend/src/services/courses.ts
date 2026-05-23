@@ -66,3 +66,60 @@ export async function getCourseDetail(courseId: number) {
 
   return response.json();
 }
+
+export async function enrollInCourse(courseId: number) {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(`${API_URL}/enrollments/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      course: courseId,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/login";
+    return;
+  }
+
+  if (!response.ok) {
+    const errorMsg = Array.isArray(result) ? result[0] : result.detail || result[0];
+    throw new Error(errorMsg || "Erro ao realizar matrícula");
+  }
+
+  return result;
+}
+
+export async function toggleCourseFavorite(courseId: number) {
+  const token = localStorage.getItem("access");
+  
+  const response = await fetch(`${API_URL}/favorites/toggle/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ course: courseId }),
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/login";
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error("Erro ao alternar favorito");
+  }
+
+  return response.json(); 
+}

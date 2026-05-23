@@ -1,8 +1,14 @@
 export type Lesson = {
   id: string;
   title: string;
-  status?: string;
+
+  module: string;
+  status: "rascunho" | "publicada";
+  visibility: "publico" | "privado";
   duration?: string;
+  duration_seconds?: number;
+  thumbnail?: string | null;
+  video?: string | null;
 };
 
 export type Module = {

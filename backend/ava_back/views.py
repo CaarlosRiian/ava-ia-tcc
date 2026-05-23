@@ -13,7 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
 
@@ -224,7 +224,8 @@ class CourseViewSet(ModelViewSet):
 
         serializer = InstructorCourseSerializer(
             courses,
-            many=True
+            many=True,
+            context={"request": request}
         )
 
         return Response(serializer.data)
@@ -239,15 +240,20 @@ class ModuleViewSet(ModelViewSet):
         return Module.objects.select_related('course').all()
 
 class LessonViewSet(ModelViewSet):
-    serializer_class = LessonSerializer
     queryset = Lesson.objects.all()
     filter_backends = [filters.SearchFilter]
     search_fields = ['title']
 
     parser_classes = [MultiPartParser, FormParser]
 
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update', 'create']:
+            return InstructorLessonSerializer
+        
+        return LessonSerializer
+
     def get_queryset(self):
-        return Lesson.objects.select_related('module').all()
+        return Lesson.objects.select_related('module__course').all()
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def complete(self, request, pk=None):
@@ -322,12 +328,6 @@ class EnrollmentViewSet(ModelViewSet):
 
 @api_view(['POST'])
 def generate_ai(request, lesson_id):
-
-
-
-
-
-    
     data = generate_ai_for_lesson(lesson_id)
 
     if not data:
@@ -380,33 +380,36 @@ def me(request):
     })
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def professor_by_slug(request, slug):
     try:
-        professor = User.objects.get(slug=slug, role="professor")
+        professor = User.objects.get(username=slug, role="professor")
     except User.DoesNotExist:
-        return Response({"error": "Not found"}, status=404)
+        return Response({"error": "Professor não encontrado"}, status=404)
 
-    courses = Course.objects.filter(professor=professor, published=True)
+    courses = Course.objects.filter(professor=professor)
+    
+    published_courses = courses.filter(published=True)
 
-    total_lessons = Lesson.objects.filter(module__course__in=courses).count()
-
-    total_duration = Lesson.objects.filter(module__course__in=courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
-
+    total_lessons = Lesson.objects.filter(module__course__in=published_courses).count()
+    total_duration = Lesson.objects.filter(module__course__in=published_courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
     total_hours = round(total_duration / 3600, 1)
+
+    serialized_courses = CourseSerializer(published_courses, many=True, context={'request': request}).data
 
     return Response({
         "id": professor.id,
         "username": professor.username,
         "email": professor.email,
-        "bio": professor.bio,
-        "especialidade": "Professor",  
+        "bio": professor.bio or "Este professor ainda não adicionou uma bio profissional.",
+        "especialidade": "Instrutor de Tecnologia",  
         "stats": {
-            "coursesCount": courses.count(),
+            "coursesCount": published_courses.count(),
             "lessons": total_lessons,
             "hours": total_hours
         },
-        "courses": CourseSerializer(courses, many=True).data
-    })
+        "courses": serialized_courses
+      })
 
 class FavoriteViewSet(ModelViewSet):
     serializer_class = FavoriteSerializer
@@ -452,3 +455,4 @@ class FavoriteViewSet(ModelViewSet):
         return Response({
             "favorited": True
         })
+    
