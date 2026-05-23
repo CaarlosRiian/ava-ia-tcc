@@ -29,6 +29,16 @@ export default function CourseSidebar({ course }: CourseSidebarProps) {
     return acc + lessonsCount;
   }, 0) || 0;
 
+  const handleAcquire = () => {
+    const token = localStorage.getItem("access");
+
+    if (!token) {
+      router.push(`/login?redirect=/curso/${course.id}/pagamentos`);
+    } else {
+      router.push(`/curso/${course.id}/pagamentos`);
+    }
+  };
+
   return (
     <div className="rounded-2xl border bg-card shadow-sm p-6 sticky top-20">
       <div className="mb-5">
@@ -38,10 +48,10 @@ export default function CourseSidebar({ course }: CourseSidebarProps) {
 
       <Button 
         size="lg" 
-        onClick={() => router.push(`/curso/${course.id}/detalhe/pagamento`)}
+        onClick={handleAcquire}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer" 
       >
-        Adquirir Curso (Simulação)
+        Adquirir Curso
       </Button>
 
       <ul className="mt-6 space-y-3 text-sm">

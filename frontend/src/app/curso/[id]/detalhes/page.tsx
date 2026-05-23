@@ -1,8 +1,8 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCourseDetail } from "@/services/courses"; 
+import { getCourseDetail, getMyCourses } from "@/services/courses"; 
 import Header from "@/components/Header";
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseHero from "./_components/course-hero";
@@ -11,28 +11,57 @@ import CourseModules from "./_components/course-modules";
 import CourseSidebar from "./_components/course-sidebar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 
 export default function CursoDetalhePage() {
   const { id } = useParams();
+  const router = useRouter();
+  
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const courseIdNum = Number(Array.isArray(id) ? id[0] : id);
+
   useEffect(() => {
-    async function loadCourse() {
-      if (!id) return;
+    async function loadCourseAndCheckAccess() {
+      if (!id || isNaN(courseIdNum)) {
+        setError("ID de curso inválido");
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
-        const courseIdNum = Number(Array.isArray(id) ? id[0] : id);
-        
-        if (isNaN(courseIdNum)) {
-          throw new Error("ID de curso inválido");
-        }
+        const token = localStorage.getItem("access");
 
-        const data = await getCourseDetail(courseIdNum);
-        setCourse(data);
+        if (token) {
+          const [myCourses, courseData] = await Promise.all([
+            getMyCourses(),
+            getCourseDetail(courseIdNum)
+          ]);
+
+          const isEnrolled = myCourses?.some((c: any) => {
+            if (!c) return false;
+            
+            if (c.course_id !== undefined && c.course_id !== null) {
+              return Number(c.course_id) === courseIdNum;
+            }
+            if (typeof c === "number" || typeof c === "string") return Number(c) === courseIdNum;
+            if (c.course && typeof c.course === "object") return Number(c.course.id) === courseIdNum;
+            if (c.course) return Number(c.course) === courseIdNum;
+            return Number(c.id) === courseIdNum;
+          });
+
+          if (isEnrolled) {
+            router.replace(`/curso/${courseIdNum}`);
+            return;
+          }
+
+          setCourse(courseData);
+        } else {
+          const data = await getCourseDetail(courseIdNum);
+          setCourse(data);
+        }
       } catch (err: any) {
         console.error(err);
         setError(err.message || "Erro ao carregar o curso.");
@@ -41,8 +70,8 @@ export default function CursoDetalhePage() {
       }
     }
 
-    loadCourse();
-  }, [id]);
+    loadCourseAndCheckAccess();
+  }, [id, courseIdNum, router]);
 
   if (loading) {
     return <LoadingScreen text="Carregando curso" />
@@ -58,14 +87,6 @@ export default function CursoDetalhePage() {
       </div>
     );
   }
-
-  const lessons = course.lessons ?? [];
-  const modules = Array.from({ 
-    length: Math.max(1, Math.ceil(lessons.length / 4)) 
-  }).map((_, i) => ({
-    title: `Módulo ${i + 1}`,
-    lessonsCount: lessons.slice(i * 4, i * 4 + 4).length,
-  }));
 
   return (
     <div className="bg-background min-h-screen flex flex-col">
