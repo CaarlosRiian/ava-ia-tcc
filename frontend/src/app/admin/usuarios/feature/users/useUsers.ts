@@ -9,11 +9,16 @@ import { api } from "@/services/api";
 
 export function useUsers() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [totalUsuarios, setTotalUsuarios] = useState(0); 
   const [busca, setBusca] = useState("");
   const [filtroRole, setFiltroRole] = useState<Role | "todos">("todos");
   const [filtroStatus, setFiltroStatus] = useState<Status | "todos">("todos");
   const [pagina, setPagina] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busca, filtroRole, filtroStatus]);
 
   async function fetchUsuarios() {
     try {
@@ -26,7 +31,9 @@ export function useUsers() {
         status: filtroStatus !== "todos" ? filtroStatus : undefined,
       });
 
-      setUsuarios(data);
+      setUsuarios(data.results);         
+      setTotalUsuarios(data.totalCount); 
+      
     } catch {
       toast.error("Erro ao carregar usuários");
     } finally {
@@ -40,37 +47,46 @@ export function useUsers() {
 
   async function handleChangeRole(user: Usuario, role: Role) {
     try {
-      await api.patch(`/api/users/${user.id}/change_role/`, { role });
+      await api.patch(`/users/${user.id}/change_role/`, { role });
 
-      toast.success("Papel atualizado!");
+      const nomeExibicao = user.username || "Usuário";
+      toast.success(`Papel de ${nomeExibicao} atualizado para ${role}!`);
+      
       fetchUsuarios();
     } catch {
-      toast.error("Erro ao atualizar papel");
+      const nomeExibicao = user.username || "do usuário";
+      toast.error(`Erro ao atualizar papel de ${nomeExibicao}`);
     }
   }
 
   async function handleBanUser(user: Usuario) {
     try {
-      await api.patch(`/api/users/${user.id}/toggle_ban/`);
+      await api.patch(`/users/${user.id}/toggle_ban/`);
 
-      toast.success(
-        user.status === "ativo"
-          ? "Usuário banido!"
-          : "Usuário reativado!"
-      );
+      const nomeExibicao = user.username || "Usuário";
+      
+      if (user.status === "ativo") {
+        toast.success(`${nomeExibicao} foi banido com sucesso!`);
+      } else {
+        toast.success(`O acesso de ${nomeExibicao} foi restaurado.`);
+      }
 
       fetchUsuarios();
     } catch {
-      toast.error("Erro ao atualizar usuário");
+      toast.error("Erro ao alterar o status do usuário");
     }
   }
 
   const stats = useMemo(() => ({
-    total: usuarios.length,
+    total: totalUsuarios, 
     admins: usuarios.filter((u) => u.role === "admin").length,
     professores: usuarios.filter((u) => u.role === "professor").length,
     banidos: usuarios.filter((u) => u.status === "banido").length,
-  }), [usuarios]);
+  }), [usuarios, totalUsuarios]);
+
+  const ITENS_POR_PAGINA = 10; 
+  const temProximaPagina = pagina * ITENS_POR_PAGINA < totalUsuarios;
+  const temPaginaAnterior = pagina > 1;
 
   return {
     usuarios,
@@ -89,6 +105,8 @@ export function useUsers() {
     setPagina,
 
     stats,
+    temProximaPagina,  
+    temPaginaAnterior, 
 
     handleChangeRole,
     handleBanUser,

@@ -1,8 +1,18 @@
 import { api } from "@/services/api";
 import { Usuario } from "@/data/admType";
 
-function mapUser(u: any): Usuario {
-  return {
+export async function getUsers(params: {
+  page?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+}): Promise<{ results: Usuario[]; totalCount: number }> { 
+  const res = await api.get("/users/", { params });
+
+  const results = res.data.results ?? res.data;
+  const totalCount = res.data.count ?? results.length;
+
+  const usuariosMapeados = results.map((u: any) => ({
     id: u.id,
     username: u.username,
     email: u.email,
@@ -10,18 +20,7 @@ function mapUser(u: any): Usuario {
     status: u.status,
     created_at: u.created_at,
     avatar_url: u.avatar_url,
-  };
-}
+  }));
 
-export async function getUsers(params: {
-  page?: number;
-  search?: string;
-  role?: string;
-  status?: string;
-}) {
-  const res = await api.get("/api/users/", { params });
-
-  const data = res.data.results ?? res.data ?? [];
-
-  return data.map(mapUser);
+  return { results: usuariosMapeados, totalCount };
 }

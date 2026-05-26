@@ -1,4 +1,5 @@
 import { ShieldAlert } from "lucide-react";
+import { Toaster } from "sonner";
 
 export default function AdminLayout({
   children,
@@ -13,6 +14,18 @@ export default function AdminLayout({
       </div>
       
       {children}
+
+      <Toaster 
+          position="bottom-right" 
+          richColors 
+          closeButton
+          toastOptions={{
+            style: {
+              borderRadius: '12px', 
+              padding: '16px',
+            },
+          }}
+        />
     </div>
   );
 }

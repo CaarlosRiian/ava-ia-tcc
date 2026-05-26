@@ -11,15 +11,22 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.pagination import PageNumberPagination
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
 from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
 
+class UsuariosPaginacaoCustomizada(PageNumberPagination):
+    page_size = 8  
+    page_size_query_param = 'page_size'  
+    max_page_size = 100
+
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    pagination_class = UsuariosPaginacaoCustomizada
 
     filter_backends = [
         filters.SearchFilter,

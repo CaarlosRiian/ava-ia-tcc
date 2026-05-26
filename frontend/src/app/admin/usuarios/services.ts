@@ -6,7 +6,7 @@ export async function getUsers(params: {
   role?: string;
   status?: string;
 }) {
-  const res = await api.get("/api/users/", { params });
+  const res = await api.get("/users/", { params });
 
   const data = res.data.results ?? res.data;
 
