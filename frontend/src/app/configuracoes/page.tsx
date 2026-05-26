@@ -1,33 +1,38 @@
 "use client";
 
-// Integrar essa página
-
 import { useState, useEffect } from "react";
-import { getMe } from "@/services/auth";
-import { User, Mail, Shield, Save } from "lucide-react";
+import { getMe, updateMe } from "@/services/auth";
+import { Save, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { ProfileHeader } from "./_components/profile-header";
 import { ProfileSkeleton } from "./_components/ProfileSkeleton";
+import { ProfileDataForm } from "./_components/ProfileDataForm";
+import { SecurityForm } from "./_components/SecurityForm";
+import { FormStatusBadge } from "./_components/FormStatusBadge";
+import { formatName } from "@/utils/formatName";
 
 export default function ConfiguracoesPerfil() {
-  const [name, setName] = useState("Rian Carlos");
-  const [email, setEmail] = useState("rian.carlos@estudante.com");
-  const [bio, setBio] = useState("Estudante de Engenharia focado em desenvolvimento Full Stack e IA.");
-  const [isProfessor, setIsProfessor] = useState(false);
-  const [userRole, setUserRole] = useState("")
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [userRole, setUserRole] = useState(""); 
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [initialData, setInitialData] = useState({ name: "", email: "", bio: "" });
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     async function load() {
       const token = localStorage.getItem("access");
-
       if (!token) {
         setLoading(false);
         return;
@@ -35,36 +40,93 @@ export default function ConfiguracoesPerfil() {
 
       try {
         setLoading(true);
-
         const data = await getMe(token);
+        const formattedName = data.name ? formatName(data.name) : "";
+        const userEmail = data.email || "";
+        const userBio = data.bio || "";
 
-        setName(data.name);
-        setEmail(data.email);
-        setBio(data.bio || "");
-        setUserRole(data.role);
-        setIsProfessor(data.role === "professor");
+        setName(formattedName);
+        setEmail(userEmail);
+        setBio(userBio);
+        setUserRole(data.role || "");
 
+        setInitialData({ name: formattedName, email: userEmail, bio: userBio });
       } catch (error) {
-        console.log(error);
+        console.error("Erro ao buscar dados do usuário:", error);
+        toast.error("Não foi possível carregar os dados do perfil.");
       } finally {
         setLoading(false);
       }
     }
-
     load();
   }, []);
 
-  const formatName = (name: string) => name.replace(/_/g, " ");
+  const hasUnsavedChanges =
+    name !== initialData.name ||
+    email !== initialData.email ||
+    bio !== initialData.bio ||
+    password !== "";
 
-  const handleSave = () => {
-    toast.success("Perfil atualizado!");
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      setSaveSuccess(false);
+      setErrorMessage(null);
+    }
+  }, [name, email, bio, password]);
+
+  const handleSave = async () => {
+    setErrorMessage(null);
+    setSaveSuccess(false);
+
+    const token = localStorage.getItem("access");
+    if (!token) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+
+    if (password || confirmPassword) {
+      if (password !== confirmPassword) {
+        setErrorMessage("As senhas não coincidem!");
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMessage("A senha deve ter ao menos 6 caracteres.");
+        return;
+      }
+    }
+
+    try {
+      setIsSaving(true);
+      const payload: any = { name, email, bio };
+
+      if (password) {
+        payload.password = password;
+      }
+
+      await updateMe(token, payload);
+
+      setSaveSuccess(true);
+      setInitialData({ name, email, bio });
+      setPassword("");
+      setConfirmPassword("");
+      toast.success("Perfil atualizado!");
+
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 4000);
+
+    } catch (error: any) {
+      console.error("Erro ao atualizar o perfil:", error);
+      setErrorMessage(error.message || "Erro ao salvar alterações.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
         <Header />
-
         <main className="flex-1 container max-w-3xl mx-auto px-6 py-12">
           <ProfileSkeleton />
         </main>
@@ -72,13 +134,23 @@ export default function ConfiguracoesPerfil() {
     );
   }
 
-  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const initials = name
+    ? name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "U";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="flex-1 container max-w-3xl mx-auto px-6 py-12">
+      <main className="flex-1 container max-w-3xl mx-auto px-6 py-12 relative">
+        <div className="mb-6">
+          <Link href="/descobrir">
+            <Button variant="ghost" className="gap-2 text-gray-600 hover:text-[#2F52E0] pl-0 cursor-pointer transition-colors">
+              <ArrowLeft className="h-4 w-4" /> Voltar para Descobrir
+            </Button>
+          </Link>
+        </div>
+
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#161B1D] tracking-tight text-inter">Configurações</h1>
           <p className="text-gray-500">Gerencie sua conta e preferências.</p>
@@ -87,47 +159,52 @@ export default function ConfiguracoesPerfil() {
         <div className="space-y-8">
           <ProfileHeader name={name} email={email} initials={initials} role={userRole} />
 
-          <Card className="border-none bg-white shadow-sm rounded-[16px]">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <User className="h-5 w-5 text-[#2F52E0]" /> Dados do Perfil
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-2">
-                <Label className="font-bold text-gray-700">Nome completo</Label>
-                <Input value={formatName(name)} />
-              </div>
-              <div className="grid gap-2">
-                <Label className="font-bold text-gray-700">E-mail</Label>
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-md p-4" />
-              </div>
-              <div className="grid gap-2">
-                <Label className="font-bold text-gray-700">Biografia</Label>
-                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} className="rounded-md p-3 resize-none" />
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileDataForm
+            name={name} setName={setName}
+            email={email} setEmail={setEmail}
+            bio={bio} setBio={setBio}
+          />
 
-          <Card className="border-none shadow-sm rounded-[16px] bg-white">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <Shield className="h-5 w-5 text-[#2F52E0]" /> Segurança
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              <Input type="password" placeholder="Nova senha" className="rounded-md p-4" />
-              <Input type="password" placeholder="Confirmar senha" className="rounded-md p-4" />
-            </CardContent>
-          </Card>
+          <SecurityForm
+            password={password} setPassword={setPassword}
+            confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+          />
 
           <div className="flex justify-end gap-4 pb-12">
-            <Button variant="ghost" className="p-5 font-bold border-gray-400 cursor-pointer text-gray-400">Descartar</Button>
-            <Button onClick={handleSave} className="bg-[#2F52E0] text-white font-black px-8 py-6 rounded-x cursor-pointer flex gap-2">
-              <Save className="h-5 w-5" /> Salvar Alterações
+            <Button
+              variant="ghost"
+              className="p-5 font-bold border-gray-400 cursor-pointer text-gray-400 hover:text-gray-600"
+              disabled={isSaving}
+              onClick={() => {
+                setName(initialData.name);
+                setEmail(initialData.email);
+                setBio(initialData.bio);
+                setPassword("");
+                setConfirmPassword("");
+                setErrorMessage(null);
+                setSaveSuccess(false);
+                toast.info("Alterações descartadas.");
+              }}
+            >
+              Descartar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !hasUnsavedChanges}
+              className="bg-[#2F52E0] hover:bg-[#2442b8] text-white font-black px-8 py-6 rounded-xl cursor-pointer flex gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <Save className="h-5 w-5" />
+              Salvar Alterações
             </Button>
           </div>
         </div>
+
+        <FormStatusBadge
+          isSaving={isSaving}
+          hasUnsavedChanges={hasUnsavedChanges}
+          errorMessage={errorMessage}
+          saveSuccess={saveSuccess}
+        />
       </main>
     </div>
   );

@@ -367,17 +367,43 @@ class InstructorRequestViewSet(ModelViewSet):
         obj.save()
         return Response({"status": "rejeitado"})
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"]) 
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
 
-    return Response({
-        "id": user.id,
-        "name": user.username,   
-        "email": user.email,
-        "role": user.role
-    })
+    if request.method == "GET":
+        return Response({
+            "id": user.id,
+            "name": user.username,   
+            "email": user.email,
+            "role": user.role,
+            "bio": getattr(user, "bio", "") 
+        })
+
+    elif request.method == "PATCH":
+        data = request.data
+        
+        if "name" in data:
+            user.username = data["name"] 
+        if "email" in data:
+            user.email = data["email"]
+        if "bio" in data and hasattr(user, "bio"):
+            user.bio = data["bio"]
+            
+        if "password" in data and data["password"]:
+            user.set_password(data["password"])
+
+        user.save()
+
+        return Response({
+            "id": user.id,
+            "name": user.username,   
+            "email": user.email,
+            "role": user.role,
+            "bio": getattr(user, "bio", ""),
+            "message": "Perfil atualizado com sucesso!"
+        }, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

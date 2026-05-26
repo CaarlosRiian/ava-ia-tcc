@@ -86,3 +86,22 @@ export function getAccessToken() {
 export function getRefreshToken() {
   return localStorage.getItem("refresh");
 }
+
+export async function updateMe(token: string, profileData: any) {
+  const response = await fetch(`${API_URL}/me/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(profileData)
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.detail || JSON.stringify(result) || "Erro ao atualizar dados do perfil");
+  }
+
+  return result;
+}
