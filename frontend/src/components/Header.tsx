@@ -169,6 +169,10 @@ export default function Header() {
                           <Users className="h-5 w-5 text-gray-500" />
                           Gerenciar usuários
                         </Link>
+                        <Link href="/admin/categorias" className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                          <ShieldCheck className="h-5 w-5 text-gray-500" />
+                          Categorias
+                        </Link>
                       </>
                     )}
                   </div>
