@@ -11,15 +11,22 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.pagination import PageNumberPagination
 
 from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
 from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
 
+class UsuariosPaginacaoCustomizada(PageNumberPagination):
+    page_size = 8  
+    page_size_query_param = 'page_size'  
+    max_page_size = 100
+
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    pagination_class = UsuariosPaginacaoCustomizada
 
     filter_backends = [
         filters.SearchFilter,
@@ -367,17 +374,43 @@ class InstructorRequestViewSet(ModelViewSet):
         obj.save()
         return Response({"status": "rejeitado"})
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"]) 
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
 
-    return Response({
-        "id": user.id,
-        "name": user.username,   
-        "email": user.email,
-        "role": user.role
-    })
+    if request.method == "GET":
+        return Response({
+            "id": user.id,
+            "name": user.username,   
+            "email": user.email,
+            "role": user.role,
+            "bio": getattr(user, "bio", "") 
+        })
+
+    elif request.method == "PATCH":
+        data = request.data
+        
+        if "name" in data:
+            user.username = data["name"] 
+        if "email" in data:
+            user.email = data["email"]
+        if "bio" in data and hasattr(user, "bio"):
+            user.bio = data["bio"]
+            
+        if "password" in data and data["password"]:
+            user.set_password(data["password"])
+
+        user.save()
+
+        return Response({
+            "id": user.id,
+            "name": user.username,   
+            "email": user.email,
+            "role": user.role,
+            "bio": getattr(user, "bio", ""),
+            "message": "Perfil atualizado com sucesso!"
+        }, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

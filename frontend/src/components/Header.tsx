@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookOpen, Search, Heart, ChevronDown, User, Settings, LogOut, BookMarked,
-  GraduationCap, LayoutDashboard, ShieldCheck, } from "lucide-react";
+  GraduationCap, LayoutDashboard, ShieldCheck, Users } from "lucide-react";
 
 export default function Header() {
   const [isAuth, setIsAuth] = useState(false);
@@ -21,7 +21,6 @@ export default function Header() {
     setUserRole(role || "");
     setUserName(name || "");
     setUserEmail(email || "");
-
   }, []);
 
   const formatName = (name: string) => {
@@ -83,8 +82,10 @@ export default function Header() {
         <div className="flex-1 max-w-md hidden sm:block">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#6366F1]" />
-            <input type="text" placeholder="Buscar cursos, aulas..." className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none bg-white border border-gray-400 transition-all duration-500 ease-in-out
-    focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
+            <input 
+              type="text" 
+              placeholder="Buscar cursos, aulas..." 
+              className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none bg-white border border-gray-400 transition-all duration-500 ease-in-out focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
             />
           </div>
         </div>
@@ -110,8 +111,7 @@ export default function Header() {
                     {getInitials(userName)}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[15px] font-bold text-gray-800">{formatName(userName)}
-                    </span>
+                    <span className="text-[15px] font-bold text-gray-800">{formatName(userName)}</span>
                     <span className="text-xs text-gray-500">{userEmail}</span>
                     <span className="mt-1 w-fit bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                       {userRole}
@@ -124,9 +124,13 @@ export default function Header() {
                 <div className="p-2">
                   <span className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Conta</span>
                   <div className="mt-1 space-y-0.5 text-[14px] text-gray-700 font-medium">
-                    <Link href="/perfil" className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors">
-                      <User className="h-5 w-5 text-gray-500" /> Meu perfil
-                    </Link>
+                    
+                    {userRole === 'professor' && (
+                      <Link href={`/professor/${userName.toLowerCase()}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors">
+                        <User className="h-5 w-5 text-gray-500" /> Meu perfil
+                      </Link>
+                    )}
+
                     <Link href="/meus-cursos" className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors">
                       <BookMarked className="h-5 w-5 text-gray-500" /> Meus cursos
                     </Link>
@@ -143,11 +147,10 @@ export default function Header() {
                   <div className="mt-1 space-y-0.5 text-[14px] text-gray-700 font-medium">
 
                     {userRole === 'aluno' && (
-                     
-                        <Link href="/instrutor/cadastro" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"
-                        > <GraduationCap className="h-5 w-5 text-gray-500" />
-                          Quero ser instrutor
-                        </Link>
+                      <Link href="/instrutor/cadastro" className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors text-left cursor-pointer"> 
+                        <GraduationCap className="h-5 w-5 text-gray-500" />
+                        Quero ser instrutor
+                      </Link>
                     )}
 
                     {userRole === 'professor' && (
@@ -157,11 +160,20 @@ export default function Header() {
                     )}
 
                     {userRole === 'admin' && (
-                      <Link href="/admin/solicitacoes" className="flex -center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-[14px] text-gray-700 font-medium"
-                      >
-                        <ShieldCheck className="h-5 w-5 text-gray-500" />
-                        Painel do admin
-                      </Link>
+                      <>
+                        <Link href="/admin/solicitacoes" className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                          <ShieldCheck className="h-5 w-5 text-gray-500" />
+                          Painel do admin
+                        </Link>
+                        <Link href="/admin/usuarios" className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                          <Users className="h-5 w-5 text-gray-500" />
+                          Gerenciar usuários
+                        </Link>
+                        <Link href="/admin/categorias" className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                          <ShieldCheck className="h-5 w-5 text-gray-500" />
+                          Categorias
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>
@@ -169,9 +181,7 @@ export default function Header() {
                 <div className="h-[1px] bg-gray-50 w-full" />
 
                 <div className="p-2">
-                  <button onClick={logout}
-                    className="flex items-center gap-3 w-full px-3 py-3 text-red-500 font-bold text-[14px] hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                  >
+                  <button onClick={logout} className="flex items-center gap-3 w-full px-3 py-3 text-red-500 font-bold text-[14px] hover:bg-red-50 rounded-xl transition-colors cursor-pointer">
                     <LogOut className="h-5 w-5" /> Sair
                   </button>
                 </div>
