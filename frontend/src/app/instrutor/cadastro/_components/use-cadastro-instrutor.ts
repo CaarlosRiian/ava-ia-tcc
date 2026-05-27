@@ -1,58 +1,92 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cadastroInstrutorSchema } from "./schema";
+import * as z from "zod";
 import { toast } from "sonner";
+import { api } from "@/services/api";
+
+interface Categoria {
+  id: string;
+  name: string;
+}
+
+const cadastroInstrutorSchema = z.object({
+  especialidade: z.string().min(1, "Selecione uma área de especialidade."),
+  bio: z.string().min(15, "A sua bio profissional deve conter ao menos 15 caracteres."),
+  linkedin: z.string().optional(),
+  portfolio: z.string().optional(),
+  arquivo: z.any().refine((file) => file instanceof File, "O upload do currículo/documento é obrigatório."),
+  termos: z.boolean().refine((val) => val === true, "Você precisa aceitar os termos para prosseguir."),
+});
+
+type CadastroInstrutorFormData = z.infer<typeof cadastroInstrutorSchema>;
 
 export function useCadastroInstrutor() {
-  const form = useForm({
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
+
+  const defaultValues = {
+    especialidade: "",
+    bio: "",
+    linkedin: "",
+    portfolio: "",
+    arquivo: null,
+    termos: false,
+  };
+
+  const form = useForm<CadastroInstrutorFormData>({
     resolver: zodResolver(cadastroInstrutorSchema),
-    defaultValues: {
-      especialidade: "",
-      bio: "",
-      linkedin: "",
-      portfolio: "",
-      arquivo: null,
-    },
+    defaultValues,
   });
 
-  const onSubmit = async (data: any) => {
+  async function fetchCategorias() {
     try {
-      const token = localStorage.getItem("access");
+      setLoadingCategorias(true);
+      const response = await api.get<Categoria[]>("/categories/");
+      setCategorias(response.data);
+    } catch {
+      toast.error("Erro ao carregar as especialidades disponíveis.");
+    } finally {
+      setLoadingCategorias(false);
+    }
+  }
 
+  useEffect(() => {
+    fetchCategorias();
+  }, []);
+
+  const onSubmit = async (data: CadastroInstrutorFormData) => {
+    try {
       const formData = new FormData();
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formData.append(key, value as any);
-        }
-      });
+      formData.append("especialidade", data.especialidade);
+      formData.append("bio", data.bio);
 
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+      if (data.linkedin) formData.append("linkedin", data.linkedin);
+      if (data.portfolio) formData.append("portfolio", data.portfolio);
 
-      const res = await fetch("http://127.0.0.1:8000/api/instructor-requests/", {
-        method: "POST",
+      if (data.arquivo) formData.append("arquivo", data.arquivo);
+
+      await api.post("/instructor-requests/", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-        body: formData,
       });
 
-      const text = await res.text();
+      toast.success("Sua solicitação de cadastro foi enviada!");
+      form.reset(defaultValues);
 
-      if (!res.ok) {
-        throw new Error(text);
-      }
-
-      toast.success("Enviado com sucesso!");
-      form.reset();
-    } catch {
-      toast.error("Erro ao enviar");
+    } catch (error: any) {
+      toast.error("Erro ao enviar formulário.");
     }
   };
 
-  return { form, onSubmit };
+  return {
+    form,
+    onSubmit,
+    categorias,
+    loadingCategorias,
+  };
 }

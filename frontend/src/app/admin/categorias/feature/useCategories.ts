@@ -19,7 +19,6 @@ export function useCategories() {
   const [nomeArquivo, setNomeArquivo] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Buscar categorias do Back-end Django
   async function fetchCategorias() {
     try {
       setLoading(true);
@@ -36,7 +35,6 @@ export function useCategories() {
     fetchCategorias();
   }, []);
 
-  // 2. Processar arquivo para Preview e validação
   const handleArquivo = (file: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -67,35 +65,31 @@ export function useCategories() {
   };
 
   const handleEditar = async (id: string, novoNome: string, novoArquivo?: File | null) => {
-  try {
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("name", novoNome.trim());
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("name", novoNome.trim());
 
-    // Se o usuário escolheu uma nova imagem na edição, adiciona ela ao FormData
-    if (novoArquivo) {
-      formData.append("avatar_url", novoArquivo);
+      if (novoArquivo) {
+        formData.append("avatar_url", novoArquivo);
+      }
+
+      await api.patch(`/categories/${id}/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.success("Categoria atualizada com sucesso!");
+      fetchCategorias();
+    } catch (error: any) {
+      const mensagemErro = error.response?.data?.name?.[0] || "Erro ao atualizar categoria.";
+      toast.error(mensagemErro);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Enviando via PATCH para atualizar parcialmente os dados no Django
-    await api.patch(`/categories/${id}/`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    toast.success("Categoria atualizada com sucesso!");
-    fetchCategorias(); // Recarrega a lista atualizada do banco
-  } catch (error: any) {
-    console.log("ERRO AO EDITAR NO DJANGO:", error.response?.data);
-    const mensagemErro = error.response?.data?.name?.[0] || "Erro ao atualizar categoria.";
-    toast.error(mensagemErro);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // 3. Salvar Categoria enviando o Arquivo Real via FormData na chave avatar_url
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -111,12 +105,10 @@ export function useCategories() {
     try {
       setLoading(true);
 
-      // 🌟 Usando FormData para enviar o arquivo binário real
       const formData = new FormData();
       formData.append("name", nome.trim());
-      
-      // 🌟 Chave correta (avatar_url) + Arquivo real (arquivoReal)
-      formData.append("avatar_url", arquivoReal); 
+
+      formData.append("avatar_url", arquivoReal);
 
       await api.post("/categories/", formData, {
         headers: {
@@ -128,20 +120,18 @@ export function useCategories() {
       limparFormulario();
       fetchCategorias();
     } catch (error: any) {
-      console.log("ERRO DETALHADO DO DJANGO:", error.response?.data);
-      
-      const mensagemErro = 
-        error.response?.data?.avatar_url?.[0] || 
-        error.response?.data?.name?.[0] || 
+
+      const mensagemErro =
+        error.response?.data?.avatar_url?.[0] ||
+        error.response?.data?.name?.[0] ||
         "Erro ao salvar categoria.";
-        
+
       toast.error(mensagemErro);
     } finally {
       setLoading(false);
     }
   };
 
-  // 4. Remover Categoria do Banco
   const handleRemover = async (id: string) => {
     try {
       await api.delete(`/categories/${id}/`);
