@@ -30,7 +30,7 @@ export async function getMyCourses() {
   if (response.status === 401) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    window.location.href = "/login";
+    window.location.href = "/entrar";
     return;
   }
 
@@ -56,7 +56,7 @@ export async function getCourseDetail(courseId: number) {
   if (response.status === 401) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    window.location.href = "/login";
+    window.location.href = "/entrar";
     return;
   }
 
@@ -86,7 +86,7 @@ export async function enrollInCourse(courseId: number) {
   if (response.status === 401) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    window.location.href = "/login";
+    window.location.href = "/entrar";
     return;
   }
 
@@ -113,7 +113,7 @@ export async function toggleCourseFavorite(courseId: number) {
   if (response.status === 401) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    window.location.href = "/login";
+    window.location.href = "/entrar";
     return;
   }
 

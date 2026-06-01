@@ -12,7 +12,7 @@ export async function getCategories() {
   if (response.status === 401) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    window.location.href = "/login";
+    window.location.href = "/entrar";
     return;
   }
 
