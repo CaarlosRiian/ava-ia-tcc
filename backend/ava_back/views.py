@@ -5,7 +5,7 @@ from django.db.models import Prefetch, Sum
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -17,6 +17,7 @@ from .models import User, Course, Category, Module, Lesson, Enrollment, LessonPr
 from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
+from .services import LessonService
 
 class UsuariosPaginacaoCustomizada(PageNumberPagination):
     page_size = 8  
@@ -251,7 +252,7 @@ class LessonViewSet(ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['title']
 
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_serializer_class(self):
         if self.action in ['update', 'partial_update', 'create']:
@@ -297,24 +298,45 @@ class LessonViewSet(ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def generate_ai(self, request, pk=None):
         lesson = self.get_object()
+        
+        try:
+            ai_content = LessonService.processar_ia_da_aula(lesson)
+            
+            return Response({
+                "message": "Conteúdo gerado via Inteligência Artificial com sucesso!",
+                "resumo": ai_content.summary,
+                "quiz": ai_content.quiz_json
+            }, status=status.HTTP_200_OK)
+            
+        except ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
-        ai_content, created = AIAssistant.objects.get_or_create(lesson=lesson)
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def chat(self, request, pk=None):
+        lesson = self.get_object()
+        pergunta = request.data.get("message")
 
-        ai_content.summary = "Resumo gerado automaticamente (mock)"
-        ai_content.quiz_json = {
-            "questions": [
-                {
-                    "question": "O que foi visto na aula?",
-                    "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-                    "correct": "Opção A"
-                }
-            ]
-        }
-        ai_content.save()
+        if not pergunta:
+            return Response(
+                {"error": "A mensagem não pode estar vazia."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        return Response({
-            "message": "Conteúdo de IA gerado com sucesso"
-        }, status=status.HTTP_200_OK)
+        try:
+            resposta_ia = LessonService.responder_duvida_da_aula(lesson, pergunta)
+            
+            
+            return Response({
+                "response": resposta_ia
+            }, status=status.HTTP_200_OK)   
+            
+        except Exception as e:
+            return Response(
+                {"error": f"Erro ao obter resposta do tutor: {str(e)}"}, 
+                status=status.HTTP_502_BAD_GATEWAY
+            )
 
 class EnrollmentViewSet(ModelViewSet):
     queryset = Enrollment.objects.all()

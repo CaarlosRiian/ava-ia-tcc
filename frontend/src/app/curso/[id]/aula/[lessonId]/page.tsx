@@ -7,18 +7,18 @@ import Header from "@/components/Header";
 import VideoPlayer from "./VideoPlayer";
 import LessonContent from "./LessonContent";
 import AIChatPanel from "./AIChatPanel";
-import LoadingScreen from "@/components/LoadingScreen"; 
+import LoadingScreen from "@/components/LoadingScreen";
 import { getCourseDetail, getMyCourses } from "@/services/courses";
 
 export default function Aula() {
   const params = useParams();
-  const router = useRouter(); 
+  const router = useRouter();
   const courseId = Number(params.id);
   const lessonId = Number(params.lessonId);
 
   const [course, setCourse] = useState<any>(null);
   const [lesson, setLesson] = useState<any>(null);
-  const [isAuthorized, setIsAuthorized] = useState(false); 
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const [aiOpen, setAiOpen] = useState(false);
   const [lessonsOpen, setLessonsOpen] = useState(true);
@@ -86,18 +86,21 @@ export default function Aula() {
             index,
           });
 
-          setIsAuthorized(true); 
+          setIsAuthorized(true);
         } else {
           console.warn(`Aula com ID ${lessonId} não encontrada.`);
         }
       } catch (err) {
         console.error("Erro na verificação de acesso à aula:", err);
-        router.replace(`/curso/${courseId}/detalhes`);
+        // router.replace(`/curso/${courseId}/detalhes`);
+        alert("Erro de conexão com o servidor backend. Verifique o terminal do Django.");
       }
     }
 
-    if (courseId && lessonId) load();
-  }, [courseId, lessonId, router]);
+    if (params.id !== undefined && params.lessonId !== undefined) {
+      load();
+    }
+  }, [params.id, params.lessonId, router]);
 
   if (!isAuthorized || !course || !lesson) {
     return <LoadingScreen text="Validando seu acesso à aula..." />;
@@ -110,7 +113,7 @@ export default function Aula() {
       <Header />
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        
+
         <div className="flex-1 flex flex-col overflow-hidden">
 
           <VideoPlayer
@@ -136,6 +139,7 @@ export default function Aula() {
         {aiOpen && (
           <AIChatPanel
             lessonTitle={lesson.title}
+            lessonId={lessonId} 
             onClose={() => setAiOpen(false)}
           />
         )}
