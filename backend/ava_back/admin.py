@@ -1,7 +1,11 @@
 from django.contrib import admin
-from .models import User, Category, Course, Module, Lesson, Enrollment, AIAssistant, InstructorRequest, Favorite
-
 from django.utils.html import format_html
+from .models import User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, AIAssistant, InstructorRequest, Favorite
+
+class LessonMaterialInline(admin.StackedInline):
+    model = LessonMaterial
+    extra = 1
+    fields = ('title', 'material_type', 'raw_content', 'file')
 
 class LessonInline(admin.TabularInline):
     model = Lesson
@@ -35,7 +39,6 @@ class CourseAdmin(admin.ModelAdmin):
                 )
             }
         ),
-
         (
             "Thumbnail",
             {
@@ -55,7 +58,6 @@ class CourseAdmin(admin.ModelAdmin):
                 '<img src="{}" width="200" style="border-radius:10px;" />',
                 obj.thumbnail.url
             )
-
         return "Sem imagem"
 
     preview_thumbnail.short_description = "Preview"
@@ -64,6 +66,20 @@ class CourseAdmin(admin.ModelAdmin):
 class ModuleAdmin(admin.ModelAdmin):
     list_display = ('title', 'course', 'order')
     inlines = [LessonInline]
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'status', 'visibility', 'order')
+    list_filter = ('status', 'visibility', 'module__course')
+    search_fields = ('title', 'slug')
+    prepopulated_fields = {'slug': ('title',)}
+    inlines = [LessonMaterialInline]  
+
+@admin.register(LessonMaterial)
+class LessonMaterialAdmin(admin.ModelAdmin):
+    list_display = ('title', 'lesson', 'material_type', 'created_at')
+    list_filter = ('material_type', 'created_at')
+    search_fields = ('title', 'raw_content', 'lesson__title')
 
 admin.site.register(User)
 admin.site.register(Category)
@@ -86,7 +102,6 @@ class InstructorRequestAdmin(admin.ModelAdmin):
         "status",
         "created_at",
     )
-
     list_filter = ("status", "created_at")
     search_fields = ("especialidade", "bio", "user__username")
 
