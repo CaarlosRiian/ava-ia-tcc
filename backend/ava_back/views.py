@@ -13,8 +13,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.pagination import PageNumberPagination
 
-from .models import User, Course, Category, Module, Lesson, Enrollment, LessonProgress, InstructorRequest, Favorite
-from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
+from .models import User, Course, Category, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, InstructorRequest, Favorite
+from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
 from .services import LessonService
@@ -337,6 +337,25 @@ class LessonViewSet(ModelViewSet):
                 {"error": f"Erro ao obter resposta do tutor: {str(e)}"}, 
                 status=status.HTTP_502_BAD_GATEWAY
             )
+        
+class LessonMaterialViewSet(ModelViewSet):
+    serializer_class = LessonMaterialSerializer
+    queryset = LessonMaterial.objects.all()
+    permission_classes = [IsAuthenticated] 
+
+    def get_queryset(self):
+        queryset = LessonMaterial.objects.all()
+        lesson_id = self.request.query_params.get('lesson_id')
+        if lesson_id:
+            queryset = queryset.filter(lesson_id=lesson_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        lesson = serializer.validated_data['lesson']
+        if self.request.user.role != "professor" or lesson.module.course.professor != self.request.user:
+            raise PermissionDenied("Você não tem permissão para adicionar materiais a esta aula.")
+        
+        serializer.save()
 
 class EnrollmentViewSet(ModelViewSet):
     queryset = Enrollment.objects.all()

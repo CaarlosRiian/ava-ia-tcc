@@ -133,6 +133,26 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.title
+    
+class LessonMaterial(models.Model):
+    MATERIAL_TYPES = [
+        ('text', 'Texto Escrito'),
+        ('pdf', 'Documento PDF/Arquivo'),
+        ('link', 'Link Externo/Vídeo'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='materials')
+    title = models.CharField(max_length=255, verbose_name="Nome do Material")
+    material_type = models.CharField(max_length=10, choices=MATERIAL_TYPES)
+    
+    raw_content = models.TextField(blank=True, null=True, verbose_name="Conteúdo de Texto ou URL")
+    
+    file = models.FileField(upload_to='lesson_materials/', blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.get_material_type_display()})"
 
 class Enrollment(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='enrollments')
