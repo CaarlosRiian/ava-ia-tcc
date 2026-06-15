@@ -123,3 +123,31 @@ export async function toggleCourseFavorite(courseId: number) {
 
   return response.json(); 
 }
+
+export async function completeLesson(lessonId: number): Promise<any> {
+  const token = localStorage.getItem("access");
+
+  if (!token) throw new Error("Usuário não autenticado");
+
+  const response = await fetch(`${API_URL}/lessons/${lessonId}/complete/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/entrar";
+    return;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Erro ao concluir a aula");
+  }
+
+  return response.json();
+}

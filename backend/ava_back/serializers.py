@@ -79,12 +79,13 @@ class LessonSerializer(serializers.ModelSerializer):
     module_title = serializers.CharField(source='module.title', read_only=True)
     ai_content = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
+    completed = serializers.SerializerMethodField()
     
     materials = LessonMaterialSerializer(many=True, read_only=True)
 
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'thumbnail', 'status', 'visibility', 'duration_seconds', 'order', 'ai_content', 'materials']
+        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'thumbnail', 'status', 'visibility', 'duration_seconds', 'order', 'ai_content', 'materials', 'completed']
 
     def get_ai_content(self, obj):
         ai = AIAssistant.objects.filter(lesson=obj).first()
@@ -101,6 +102,16 @@ class LessonSerializer(serializers.ModelSerializer):
         if obj.thumbnail:
             return request.build_absolute_uri(obj.thumbnail.url)
         return None
+    
+    def get_completed(self, obj):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            return LessonProgress.objects.filter(
+                user=request.user,
+                lesson=obj,
+                completed=True
+            ).exists()
+        return False
 
 class ModuleSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)

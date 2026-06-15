@@ -142,6 +142,11 @@ class CourseViewSet(ModelViewSet):
 
         return qs
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         if self.request.user.role != "professor":
             raise PermissionDenied("Apenas professores podem criar cursos")
@@ -220,7 +225,6 @@ class CourseViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def instructor_dashboard(self, request):
-
         courses = Course.objects.filter(
             professor=request.user
         ).select_related(
@@ -237,6 +241,11 @@ class CourseViewSet(ModelViewSet):
         )
 
         return Response(serializer.data)
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer
