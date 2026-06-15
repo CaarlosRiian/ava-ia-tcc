@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import VideoPlayer from "./VideoPlayer";
@@ -22,6 +21,7 @@ export default function Aula() {
 
   const [aiOpen, setAiOpen] = useState(false);
   const [lessonsOpen, setLessonsOpen] = useState(true);
+  const [chatWidth, setChatWidth] = useState(400);
 
   useEffect(() => {
     async function load() {
@@ -40,23 +40,10 @@ export default function Aula() {
 
         const isEnrolled = myCourses?.some((c: any) => {
           if (!c) return false;
-
-          if (c.course_id !== undefined && c.course_id !== null) {
-            return Number(c.course_id) === courseId;
-          }
-
-          if (typeof c === "number" || typeof c === "string") {
-            return Number(c) === courseId;
-          }
-
-          if (c.course && typeof c.course === "object") {
-            return Number(c.course.id) === courseId;
-          }
-
-          if (c.course) {
-            return Number(c.course) === courseId;
-          }
-
+          if (c.course_id !== undefined && c.course_id !== null) return Number(c.course_id) === courseId;
+          if (typeof c === "number" || typeof c === "string") return Number(c) === courseId;
+          if (c.course && typeof c.course === "object") return Number(c.course.id) === courseId;
+          if (c.course) return Number(c.course) === courseId;
           return Number(c.id) === courseId;
         });
 
@@ -66,33 +53,18 @@ export default function Aula() {
         }
 
         const allLessons = data.modules?.flatMap((m: any) => m.lessons) || [];
-
-        const currentLesson = allLessons.find(
-          (l: any) => Number(l.id) === lessonId
-        );
-
-        const index = allLessons.findIndex(
-          (l: any) => Number(l.id) === lessonId
-        );
+        const currentLesson = allLessons.find((l: any) => Number(l.id) === lessonId);
+        const index = allLessons.findIndex((l: any) => Number(l.id) === lessonId);
 
         if (currentLesson) {
-          setCourse({
-            ...data,
-            lessons: allLessons,
-          });
-
-          setLesson({
-            ...currentLesson,
-            index,
-          });
-
+          setCourse({ ...data, lessons: allLessons });
+          setLesson({ ...currentLesson, index });
           setIsAuthorized(true);
         } else {
           console.warn(`Aula com ID ${lessonId} não encontrada.`);
         }
       } catch (err) {
         console.error("Erro na verificação de acesso à aula:", err);
-        // router.replace(`/curso/${courseId}/detalhes`);
         alert("Erro de conexão com o servidor backend. Verifique o terminal do Django.");
       }
     }
@@ -100,7 +72,7 @@ export default function Aula() {
     if (params.id !== undefined && params.lessonId !== undefined) {
       load();
     }
-  }, [params.id, params.lessonId, router]);
+  }, [params.id, params.lessonId, router, courseId, lessonId]);
 
   if (!isAuthorized || !course || !lesson) {
     return <LoadingScreen text="Validando seu acesso à aula..." />;
@@ -112,16 +84,17 @@ export default function Aula() {
     <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden">
       <Header />
 
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-row flex-1 overflow-hidden w-full relative">
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-y-auto h-full items-center bg-gray-50 p-4 lg:p-6 custom-scrollbar">
+          
+          <div className="w-full max-w-5xl flex flex-col justify-start gap-6 pb-12">
+            
+            <VideoPlayer
+              lesson={lesson}
+              onToggleAI={() => setAiOpen(!aiOpen)}
+            />
 
-          <VideoPlayer
-            lesson={lesson}
-            onToggleAI={() => setAiOpen(!aiOpen)}
-          />
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
             <LessonContent
               course={course}
               lesson={lesson}
@@ -133,6 +106,7 @@ export default function Aula() {
               prevLesson={course.lessons[lessonIndex - 1]}
               nextLesson={course.lessons[lessonIndex + 1]}
             />
+
           </div>
         </div>
 
@@ -141,6 +115,8 @@ export default function Aula() {
             lessonTitle={lesson.title}
             lessonId={lessonId} 
             onClose={() => setAiOpen(false)}
+            chatWidth={chatWidth}
+            setChatWidth={setChatWidth}
           />
         )}
       </div>
