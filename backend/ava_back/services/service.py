@@ -1,11 +1,15 @@
 import json
+import os  
+from pathlib import Path
+from dotenv import load_dotenv  # <-- Import para ler o .env na marra
 from google import genai
 from google.genai import types 
 from rest_framework.exceptions import ValidationError
 from ..models import AIAssistant, Lesson, LessonMaterial 
 
-# Remover essa KEY
-GEMINI_KEY = "AQ.Ab8RN6Im9qUH8rh3AXklmTj8yBJSBoNVWBQw2A0EVBiN6KqHhw"
+# Descobre a pasta raiz do projeto e carrega o arquivo .env
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 class LessonService:
     @staticmethod
@@ -29,13 +33,43 @@ class LessonService:
     @staticmethod
     def processar_ia_da_aula(lesson: Lesson):
         texto_material = LessonService.obter_contexto_da_aula(lesson)
+
+        if not texto_material or len(texto_material.strip()) < 10:
+            texto_material = f"Esta é uma aula de nível superior intitulada '{lesson.title}'. O foco principal é guiar os estudantes nos conceitos iniciais e fundamentais sobre este assunto dentro do escopo acadêmico."
+
+        prompt = f"""
+            Você é um tutor educacional focado em tecnologia e desenvolvimento de sistemas.
+            Gere um resumo detalhado e exatamente 3 questões de múltipla escolha em formato JSON estrito sobre o seguinte conteúdo didático:
+
+            {texto_material}
+
+            Regras estritas de resposta:
+            1. Responda ÚNICA e EXCLUSIVAMENTE com um objeto JSON válido.
+            2. Siga exatamente a estrutura do schema JSON abaixo (com as chaves em inglês para compatibilidade do sistema):
+
+            {{
+            "resumo": "Texto detalhado do resumo formatado estruturadamente em Markdown, utilizando tópicos, negritos e parágrafos didáticos.",
+            "questions": [
+                {{
+                "question": "Texto da pergunta de múltipla escolha aqui?",
+                "options": ["Texto da opção A", "Texto da opção B", "Texto da opção C", "Texto da opção D"],
+                "answer": "Texto exato da opção correta (deve ser idêntico a uma das strings contidas no array 'options')",
+                "explanation": "Uma breve explicação pedagógica do porquê essa resposta está correta."
+                }}
+            ]
+            }}
+            """
+
+        gemini_key = os.environ.get("GEMINI_API_KEY")
         
-        if len(texto_material.strip()) < 10:
-            raise ValidationError({"error": "Esta aula não possui materiais de texto suficientes cadastrados para a IA."})
+        print("\n" + "="*50)
+        print(f"DEBUG QUIZ - CHAVE ENCONTRADA: {gemini_key}")
+        print("="*50 + "\n")
 
-        prompt = f"Gere um resumo detalhado e 5 questões de múltipla escolha (A, B, C, D, indicando a correta) em formato JSON estrito sobre o seguinte conteúdo didático:\n\n{texto_material}\n\nEstrutura esperada: {{'resumo': '...', 'questoes': [{{'enunciado': '...', 'alternativas': {{'A': '...'}}, 'resposta_correta': 'A'}}]}}"
+        if not gemini_key:
+            raise ValidationError("A chave GEMINI_API_KEY não foi encontrada no ambiente do servidor.")
 
-        client = genai.Client(api_key=GEMINI_KEY)
+        client = genai.Client(api_key=gemini_key)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
@@ -48,7 +82,7 @@ class LessonService:
 
         ai_content, _ = AIAssistant.objects.get_or_create(lesson=lesson)
         ai_content.summary = dados.get("resumo", "")
-        ai_content.quiz_json = {"questions": dados.get("questoes", [])}
+        ai_content.quiz_json = {"questions": dados.get("questions", [])}
         ai_content.save()
         
         return ai_content
@@ -73,7 +107,12 @@ class LessonService:
         Instruções de resposta: Responda diretamente ao aluno, mantenha um tom encorajador. Se o aluno fugir do assunto da aula (pedindo códigos de programação fora do contexto, piadas ou assuntos aleatórios), reforce amigavelmente o foco na disciplina atual.
         """
 
-        client = genai.Client(api_key=GEMINI_KEY)
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+
+        if not gemini_key:
+            raise ValidationError("A chave GEMINI_API_KEY não foi encontrada no ambiente do servidor.")
+
+        client = genai.Client(api_key=gemini_key)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,

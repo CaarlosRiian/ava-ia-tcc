@@ -17,7 +17,8 @@ from .models import User, Course, Category, Module, Lesson, LessonMaterial, Enro
 from .serializers import CourseSerializer, UserSerializer, CategorySerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, EnrollmentSerializer, EmailTokenSerializer, InstructorRequestSerializer, FavoriteSerializer, InstructorCourseSerializer, InstructorLessonSerializer
 from .services.ai_service import generate_ai_for_lesson
 from .permissions import IsAdminUserRole
-from .services import LessonService
+from .services.service import LessonService
+from .permissions import IsAdminUserRole
 
 class UsuariosPaginacaoCustomizada(PageNumberPagination):
     page_size = 8  
@@ -325,27 +326,46 @@ class LessonViewSet(ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def chat(self, request, pk=None):
         lesson = self.get_object()
-        pergunta = request.data.get("message")
-
-        if not pergunta:
-            return Response(
-                {"error": "A mensagem não pode estar vazia."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        
+        pergunta_aluno = request.data.get("message") or request.data.get("pergunta") or request.data.get("text")
+        
+        if pergunta_aluno == "Gerar Exercícios de Fixação" or not pergunta_aluno:
+            try:
+                ai_content = LessonService.processar_ia_da_aula(lesson)
+                return Response({
+                    "response": f"Aqui está o resumo da aula e os exercícios que preparei para você!\n\n**Resumo:**\n{ai_content.summary}",
+                    "resumo": ai_content.summary,
+                    "quiz": ai_content.quiz_json
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+            
         try:
-            resposta_ia = LessonService.responder_duvida_da_aula(lesson, pergunta)
+            resposta_ia = LessonService.responder_duvida_da_aula(lesson, pergunta_aluno)
+            return Response({"response": resposta_ia}, status=status.HTTP_200_OK)
             
+        except ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def get_quiz(self, request, pk=None):
+        lesson = self.get_object()
+        try:
+            from .models import AIAssistant
+            ai_content = AIAssistant.objects.filter(lesson=lesson).first()
             
+            if not ai_content:
+                return Response({"quiz": {"questions": []}, "resumo": ""}, status=status.HTTP_200_OK)
+                
             return Response({
-                "response": resposta_ia
-            }, status=status.HTTP_200_OK)   
+                "resumo": ai_content.summary,
+                "quiz": ai_content.quiz_json
+            }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            return Response(
-                {"error": f"Erro ao obter resposta do tutor: {str(e)}"}, 
-                status=status.HTTP_502_BAD_GATEWAY
-            )
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class LessonMaterialViewSet(ModelViewSet):
     serializer_class = LessonMaterialSerializer
