@@ -247,6 +247,20 @@ class CourseViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
+    
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def certificado(self, request, pk=None):
+        course = self.get_object()
+        
+        try:
+            html_content = LessonService.gerar_html_certificado(request.user, course)
+            from django.http import HttpResponse
+            return HttpResponse(html_content, content_type="text/html")
+            
+        except ValidationError as e:
+            return Response({"error": e.detail[0]}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer

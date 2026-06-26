@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, ChevronDown, CheckCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award } from "lucide-react";
 import { completeLesson } from "@/services/courses"; 
 
 interface LessonContentProps {
@@ -15,6 +15,9 @@ interface LessonContentProps {
   setLessonsOpen: (open: boolean) => void;
   prevLesson?: any;
   nextLesson?: any;
+  
+  onEmitirCertificado: () => Promise<void>;
+  isGeneratingCertificate: boolean;
 }
 
 export default function LessonContent({
@@ -27,9 +30,17 @@ export default function LessonContent({
   setLessonsOpen,
   prevLesson,
   nextLesson,
+  onEmitirCertificado, 
+  isGeneratingCertificate 
 }: LessonContentProps) {
   const [isCompleted, setIsCompleted] = useState(lesson?.completed || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const todasAulas = course.modules?.flatMap((m: any) => m.lessons) || [];
+  const cursoConcluido = todasAulas.length > 0 && todasAulas.every((l: any) => {
+    if (l.id === lesson.id) return isCompleted;
+    return l.completed;
+  });
 
   const handleComplete = async () => {
     if (isCompleted || isSubmitting) return;
@@ -99,17 +110,28 @@ export default function LessonContent({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-10 pb-10 border-b border-gray-100">
+      <div className="flex flex-col sm:flex-row items-center gap-3 mb-10 pb-10 border-b border-gray-100">
         {prevLesson && (
-          <Link href={`/curso/${course.id}/aula/${prevLesson.id}`} className="flex-1">
+          <Link href={`/curso/${course.id}/aula/${prevLesson.id}`} className="w-full sm:flex-1">
             <button className="w-full py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer">
               ← Anterior
             </button>
           </Link>
         )}
 
+        {cursoConcluido && (
+          <button
+            onClick={onEmitirCertificado}
+            disabled={isGeneratingCertificate}
+            className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 shadow-md transition-all active:scale-95 disabled:bg-gray-300 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Award className="h-4 w-4" />
+            {isGeneratingCertificate ? "Emitindo Certificado..." : "Emitir Certificado"}
+          </button>
+        )}
+
         {nextLesson && (
-          <Link href={`/curso/${course.id}/aula/${nextLesson.id}`} className="flex-1">
+          <Link href={`/curso/${course.id}/aula/${nextLesson.id}`} className="w-full sm:flex-1">
             <button className="w-full py-3 px-4 rounded-xl bg-[#161B1D] text-white text-sm font-semibold hover:bg-black shadow-md cursor-pointer">
               Próxima →
             </button>

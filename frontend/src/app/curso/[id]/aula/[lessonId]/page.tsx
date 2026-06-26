@@ -22,6 +22,7 @@ export default function Aula() {
   const [aiOpen, setAiOpen] = useState(false);
   const [lessonsOpen, setLessonsOpen] = useState(true);
   const [chatWidth, setChatWidth] = useState(400);
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false); 
 
   useEffect(() => {
     async function load() {
@@ -74,6 +75,37 @@ export default function Aula() {
     }
   }, [params.id, params.lessonId, router, courseId, lessonId]);
 
+  const handleEmitirCertificado = async () => {
+    setIsGeneratingCertificate(true);
+    try {
+      const token = localStorage.getItem("access");
+
+      const response = await fetch(`http://localhost:8000/api/courses/${courseId}/certificado/`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || "Você precisa concluir todas as aulas antes de emitir seu certificado.");
+        return;
+      }
+
+      const htmlContent = await response.text();
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const blobUrl = URL.createObjectURL(blob);
+
+      window.open(blobUrl, "_blank");
+    } catch (error) {
+      console.error("Erro ao emitir certificado:", error);
+      alert("Não foi possível conectar ao servidor backend.");
+    } finally {
+      setIsGeneratingCertificate(false);
+    }
+  };
+
   if (!isAuthorized || !course || !lesson) {
     return <LoadingScreen text="Validando seu acesso à aula..." />;
   }
@@ -85,11 +117,8 @@ export default function Aula() {
       <Header />
 
       <div className="flex flex-row flex-1 overflow-hidden w-full relative">
-
         <div className="flex-1 flex flex-col overflow-y-auto h-full items-center bg-gray-50 p-4 lg:p-6 custom-scrollbar">
-          
           <div className="w-full max-w-5xl flex flex-col justify-start gap-6 pb-12">
-            
             <VideoPlayer
               lesson={lesson}
               onToggleAI={() => setAiOpen(!aiOpen)}
@@ -105,8 +134,9 @@ export default function Aula() {
               setLessonsOpen={setLessonsOpen}
               prevLesson={course.lessons[lessonIndex - 1]}
               nextLesson={course.lessons[lessonIndex + 1]}
+              onEmitirCertificado={handleEmitirCertificado}
+              isGeneratingCertificate={isGeneratingCertificate}
             />
-
           </div>
         </div>
 
