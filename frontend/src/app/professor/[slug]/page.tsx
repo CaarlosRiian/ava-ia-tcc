@@ -19,20 +19,18 @@ export default function PerfilProfessor() {
 
   useEffect(() => {
     if (!slug) {
-      console.log("[FRONT] Slug não foi encontrado.");
+      console.log("FRONT - Slug não foi encontrado.");
       return;
     }
 
     const url = `http://localhost:8000/api/professor/${slug}/`;
 
     fetch(url)
-      .then((res) => {
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         setProfessor(data);
       })
-      .catch((err) => console.error("❌ [FRONT] Erro na requisição fetch:", err))
+      .catch((err) => console.error("FRONT Erro na requisição fetch:", err))
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -61,21 +59,45 @@ export default function PerfilProfessor() {
 
   const initials = rawName
     ? rawName
-        .replaceAll("_", " ")
-        .trim()
-        .split(/\s+/)
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+      .replaceAll("_", " ")
+      .trim()
+      .split(/\s+/)
+      .map((n: string) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
     : "PR";
 
   const courses = professor.courses || [];
 
+  const totalLessons = courses.reduce((acc: number, course: any) => {
+    return acc + (course.modules?.length || 0);
+  }, 0);
+
+  const totalStudents = courses.reduce((acc: number, course: any) => {
+    return acc + (course.students_count || course.students || 3);
+  }, 0);
+
+  let formattedJoinedAt = "Jun/2026";
+  const rawDate = professor.created_at || professor.date_joined;
+
+  if (rawDate) {
+    try {
+      const date = new Date(rawDate);
+      const month = date.toLocaleDateString("pt-BR", { month: "short" });
+      const year = date.getFullYear();
+      const formattedMonth = month.charAt(0).toUpperCase() + month.slice(1).replace(".", "");
+      formattedJoinedAt = `${formattedMonth}/${year}`;
+    } catch (e) {
+      console.error("Erro ao formatar data do professor:", e);
+    }
+  }
+
   const stats = {
-    coursesCount: professor.stats?.coursesCount ?? courses.length,
-    hours: professor.stats?.hours ?? 0,
-    lessons: professor.stats?.lessons ?? 0,
+    coursesCount: courses.length,
+    students: Number(totalStudents),
+    lessons: Number(totalLessons),
+    joinedAt: formattedJoinedAt,
   };
 
   return (
@@ -111,7 +133,7 @@ export default function PerfilProfessor() {
                 id={course.id}
                 title={course.title}
                 thumbnail={course.thumbnail}
-                hours={Number(course.hours) || 0}
+                lessonsCount={course.modules?.length || 0}
                 author={displayFormattedName}
               />
             ))}

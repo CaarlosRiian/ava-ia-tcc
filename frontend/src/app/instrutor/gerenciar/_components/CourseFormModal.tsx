@@ -53,11 +53,17 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
       );
       setPrice(initialData.price?.toString() || "");
 
-      setPreview(
-        initialData.thumbnail
-          ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${initialData.thumbnail}`
-          : null
-      );
+      if (initialData.thumbnail) {
+        if (initialData.thumbnail.startsWith("http://") || initialData.thumbnail.startsWith("https://")) {
+          setPreview(initialData.thumbnail);
+        } else {
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "").replace(/\/$/, "") || "";
+          const thumbUrl = initialData.thumbnail.startsWith("/") ? initialData.thumbnail : `/${initialData.thumbnail}`;
+          setPreview(`${baseUrl}${thumbUrl}`);
+        }
+      } else {
+        setPreview(null);
+      }
       setThumbnail(null);
     } else {
       setTitle("");
