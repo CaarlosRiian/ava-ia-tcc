@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 
 export default function NotFound() {
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     console.error("404 - Rota não encontrada:", pathname);
@@ -32,11 +33,13 @@ export default function NotFound() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Button asChild variant="outline" className="rounded-x cursor-pointer p-5">
-              <Link href="javascript:history.back()">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Link>
+            <Button 
+              variant="outline" 
+              className="rounded-xl cursor-pointer p-5"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
             </Button>
             
             <Button asChild className="rounded-x bg-blue-600 hover:bg-blue-700 cursor-pointer p-5">

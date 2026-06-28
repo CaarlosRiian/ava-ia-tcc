@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { Heart } from "lucide-react";
 import { useFavorites } from "./useFavorites";
 import { formatName } from "@/utils/formatName";
@@ -15,7 +16,9 @@ export default function Favoritos() {
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="flex-1 container mx-auto px-6 py-10">
+      <Breadcrumb items={[{ label: "Meus Favoritos" }]} />
+
+      <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         <h1 className="text-3xl font-black text-[#161B1D] mb-2">
           Meus Favoritos
         </h1>
@@ -42,19 +45,21 @@ export default function Favoritos() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-32 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100 mt-4">
-            <Heart className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+          <div className="text-center py-32 bg-white rounded-3xl border border-gray-200 shadow-sm">
+            <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Heart className="h-10 w-10 text-red-500" />
+            </div>
 
-            <h2 className="text-xl font-bold mb-2">
+            <h2 className="text-xl font-bold text-[#161B1D] mb-2">
               Sua lista está vazia
             </h2>
 
-            <p className="text-gray-400 mb-8">
+            <p className="text-gray-400 mb-8 font-light max-w-sm mx-auto">
               Navegue pelo catálogo e salve os cursos que mais te interessam.
             </p>
 
             <Link href="/descobrir">
-              <button className="px-8 py-3 bg-[#2F52E0] text-white rounded-xl font-bold hover:bg-blue-700 transition-all cursor-pointer">
+              <button className="px-8 py-3 bg-[#2F52E0] text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md cursor-pointer">
                 Explorar Cursos
               </button>
             </Link>

@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { User, Mail, LockKeyhole, UserPlus } from "lucide-react";
-import { registerUser } from "@/services/auth";
+import { User, Mail, LockKeyhole, UserPlus, Eye, EyeOff } from "lucide-react";
+import { registerUser, loginUser, saveTokens, getMe } from "@/services/auth"; 
 
 export default function RegisterForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,10 +34,19 @@ export default function RegisterForm() {
         password,
       });
 
+      const tokenData = await loginUser({ email, password });
+
+      saveTokens(tokenData.access, tokenData.refresh);
+
+      const me = await getMe(tokenData.access);
+      localStorage.setItem("username", me.name || me.username);
+      localStorage.setItem("user_email", me.email);
+      localStorage.setItem("user_role", me.role);
+
       window.location.href = "/descobrir";
 
     } catch (err: any) {
-      setError(err.message || "Erro ao criar conta");
+      setError(err.message || "Erro ao criar conta ou fazer login automático");
     } finally {
       setLoading(false);
     }
@@ -53,8 +65,13 @@ export default function RegisterForm() {
             <User size={18} />
           </span>
 
-          <input type="text" placeholder="Ex: John Kennedy Doe" value={username}
-            onChange={(e) => setUsername(e.target.value)} className="w-full pl-10 pr-3 py-3 border rounded-lg" />
+          <input 
+            type="text" 
+            placeholder="Ex: John Kennedy Doe" 
+            value={username}
+            onChange={(e) => setUsername(e.target.value)} 
+            className="w-full pl-10 pr-3 py-3 border rounded-lg" 
+          />
         </div>
       </div>
 
@@ -69,7 +86,12 @@ export default function RegisterForm() {
           </span>
 
           <input
-            type="email" placeholder="user@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-3 py-3 border rounded-lg" />
+            type="email" 
+            placeholder="user@email.com" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            className="w-full pl-10 pr-3 py-3 border rounded-lg" 
+          />
         </div>
       </div>
 
@@ -83,8 +105,21 @@ export default function RegisterForm() {
             <LockKeyhole size={18} />
           </span>
 
-          <input type="password" placeholder="••••••••••••" value={password}
-            onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-3 py-3 border rounded-lg" />
+          <input 
+            type={showPassword ? "text" : "password"} 
+            placeholder="••••••••••••" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)} 
+            className="w-full pl-10 pr-12 py-3 border rounded-lg" 
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
       </div>
 
@@ -98,7 +133,21 @@ export default function RegisterForm() {
             <LockKeyhole size={18} />
           </span>
 
-          <input type="password" placeholder="••••••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full pl-10 pr-3 py-3 border rounded-lg" />
+          <input 
+            type={showConfirmPassword ? "text" : "password"} 
+            placeholder="••••••••••••" 
+            value={confirmPassword} 
+            onChange={(e) => setConfirmPassword(e.target.value)} 
+            className="w-full pl-10 pr-12 py-3 border rounded-lg" 
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
       </div>
 
@@ -110,7 +159,7 @@ export default function RegisterForm() {
 
       <div className="max-w-[410px] mx-auto pt-2">
         <button type="submit" disabled={loading} className="w-full py-3 bg-[#2F52E0] text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer" >
-          {loading ? "Criando conta..." : "Cadastrar-se"}
+          {loading ? "Criando e entrando..." : "Cadastrar-se"}
           {!loading && <UserPlus size={18} />}
         </button>
       </div>

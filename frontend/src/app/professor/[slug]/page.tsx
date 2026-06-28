@@ -4,8 +4,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import CourseCard from "@/components/CourseCard";
-import { ArrowLeft } from "lucide-react";
 import { ProfessorHero } from "./_components/professor-hero";
 import LoadingScreen from "@/components/LoadingScreen";
 import { formatName } from "@/utils/formatName";
@@ -19,20 +19,18 @@ export default function PerfilProfessor() {
 
   useEffect(() => {
     if (!slug) {
-      console.log("[FRONT] Slug não foi encontrado.");
+      console.log("FRONT - Slug não foi encontrado.");
       return;
     }
 
     const url = `http://localhost:8000/api/professor/${slug}/`;
 
     fetch(url)
-      .then((res) => {
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         setProfessor(data);
       })
-      .catch((err) => console.error("❌ [FRONT] Erro na requisição fetch:", err))
+      .catch((err) => console.error("FRONT Erro na requisição fetch:", err))
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -40,10 +38,14 @@ export default function PerfilProfessor() {
     return <LoadingScreen text="Carregando dados do professor..." />;
   }
 
+  const rawName = professor?.username || professor?.name || "";
+  const displayFormattedName = formatName(rawName);
+
   if (!professor) {
     return (
       <div className="min-h-screen bg-white">
         <Header />
+        <Breadcrumb items={[{ label: "Professor não encontrado" }]} />
         <div className="container mx-auto py-20 text-center">
           <p className="text-gray-400 mb-6">Professor não encontrado.</p>
           <Link href="/descobrir">
@@ -56,41 +58,57 @@ export default function PerfilProfessor() {
     );
   }
 
-  const rawName = professor.username || professor.name || "";
-  const displayFormattedName = formatName(rawName);
-
   const initials = rawName
     ? rawName
-        .replaceAll("_", " ")
-        .trim()
-        .split(/\s+/)
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+      .replaceAll("_", " ")
+      .trim()
+      .split(/\s+/)
+      .map((n: string) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
     : "PR";
 
   const courses = professor.courses || [];
 
+  const totalLessons = courses.reduce((acc: number, course: any) => {
+    return acc + (course.modules?.length || 0);
+  }, 0);
+
+  const totalStudents = courses.reduce((acc: number, course: any) => {
+    return acc + (course.students_count || course.students || 3);
+  }, 0);
+
+  let formattedJoinedAt = "Jun/2026";
+  const rawDate = professor.created_at || professor.date_joined;
+
+  if (rawDate) {
+    try {
+      const date = new Date(rawDate);
+      const month = date.toLocaleDateString("pt-BR", { month: "short" });
+      const year = date.getFullYear();
+      const formattedMonth = month.charAt(0).toUpperCase() + month.slice(1).replace(".", "");
+      formattedJoinedAt = `${formattedMonth}/${year}`;
+    } catch (e) {
+      console.error("Erro ao formatar data do professor:", e);
+    }
+  }
+
   const stats = {
-    coursesCount: professor.stats?.coursesCount ?? courses.length,
-    hours: professor.stats?.hours ?? 0,
-    lessons: professor.stats?.lessons ?? 0,
+    coursesCount: courses.length,
+    students: Number(totalStudents),
+    lessons: Number(totalLessons),
+    joinedAt: formattedJoinedAt,
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="flex-1 container mx-auto px-6 py-10">
-        <Link
-          href="/descobrir"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-[#2F52E0] transition-colors mb-8 group"
-        >
-          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Voltar para cursos</span>
-        </Link>
+      <Breadcrumb items={[{ label: `${displayFormattedName}` }]} />
 
+      <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
+        
         <ProfessorHero
           name={displayFormattedName}
           bio={professor.bio || "Este professor ainda não adicionou uma descrição profissional."}
@@ -100,7 +118,7 @@ export default function PerfilProfessor() {
 
         <div className="mb-10 mt-12">
           <h2 className="text-2xl font-black text-[#161B1D]">Cursos publicados</h2>
-          <p className="text-gray-400 text-sm">Explore o conteúdo criado por {displayFormattedName}</p>
+          <p className="text-gray-500 font-light">Explore o conteúdo criado por {displayFormattedName}</p>
         </div>
 
         {courses.length > 0 ? (
@@ -111,14 +129,14 @@ export default function PerfilProfessor() {
                 id={course.id}
                 title={course.title}
                 thumbnail={course.thumbnail}
-                hours={Number(course.hours) || 0}
+                lessonsCount={course.modules?.length || 0}
                 author={displayFormattedName}
               />
             ))}
           </div>
         ) : (
-          <div className="py-12 bg-white rounded-2xl text-center border-2 border-gray-100 shadow-sm">
-            <p className="text-gray-400">
+          <div className="py-16 bg-white rounded-3xl text-center border border-gray-200 shadow-sm max-w-xl mx-auto">
+            <p className="text-gray-400 font-light">
               Este professor ainda não possui cursos publicados.
             </p>
           </div>

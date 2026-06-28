@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { StatsCards } from "./_components/stats-cards";
@@ -29,7 +30,14 @@ export default function AdminSolicitacoes() {
     <div className="min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="container mx-auto max-w-5xl py-12 px-4 space-y-8">
+      <Breadcrumb
+        items={[
+          { label: "Painel do Administrador" },
+          { label: "Gerenciar Solicitações" }
+        ]}
+      />
+
+      <main className="container mx-auto max-w-5xl pt-6 pb-12 px-4 space-y-8">
         <h1 className="text-3xl font-black text-[#161B1D]">
           Painel do Administrador
         </h1>

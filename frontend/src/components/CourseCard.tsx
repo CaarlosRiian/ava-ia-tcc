@@ -1,13 +1,14 @@
 "use client";
 
-import { PlayCircle, Clock, Heart } from "lucide-react";
+import { PlayCircle, BookOpen, Clock, Heart } from "lucide-react";
 import Link from "next/link"; 
 
 interface CourseProps {
   id: number;      
   title: string;
   author: string;
-  hours: number;
+  hours?: number;          
+  lessonsCount?: number;   
   progress?: number; 
   thumbnail?: string;
 
@@ -16,7 +17,18 @@ interface CourseProps {
   onToggleFavorite?: (e: React.MouseEvent) => void;
 }
 
-export default function CourseCard({ id, title, author, hours, progress, thumbnail, showFavoriteButton = false, isFavorite = false, onToggleFavorite }: CourseProps) {
+export default function CourseCard({ 
+  id, 
+  title, 
+  author, 
+  hours, 
+  lessonsCount, 
+  progress, 
+  thumbnail, 
+  showFavoriteButton = false, 
+  isFavorite = false, 
+  onToggleFavorite 
+}: CourseProps) {
   return (
     <Link href={`/curso/${id}`} className="block h-full">
       <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer flex flex-col h-full relative">
@@ -79,8 +91,17 @@ export default function CourseCard({ id, title, author, hours, progress, thumbna
               </div>
             ) : (
               <div className="flex items-center text-xs text-gray-400 gap-1 font-medium">
-                <Clock size={14} />
-                {hours} horas de conteúdo
+                {lessonsCount !== undefined && lessonsCount > 0 ? (
+                  <>
+                    <BookOpen size={14} className="text-[#2F52E0]" />
+                    <span>{lessonsCount} {lessonsCount === 1 ? 'aula' : 'aulas'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock size={14} className="text-gray-300" />
+                    <span className="text-gray-400/80">Nenhuma aula</span>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -20,7 +20,7 @@ export default function CourseGrid({ courses }: CourseGridProps) {
             id={course.id}
             title={course.title}
             author={formattedAuthor} 
-            hours={Number(course.hours) || 0} 
+            lessonsCount={course.modules?.length || 0} 
             thumbnail={course.thumbnail} 
           />
         );

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { getMe, updateMe } from "@/services/auth";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save } from "lucide-react";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { toast } from "sonner";
 
 import { ProfileHeader } from "./_components/profile-header";
@@ -109,7 +109,7 @@ export default function ConfiguracoesPerfil() {
       setInitialData({ name, email, bio });
       setPassword("");
       setConfirmPassword("");
-      toast.success("Perfil atualizado!");
+      toast.success("Perfil updated!");
 
       setTimeout(() => {
         setSaveSuccess(false);
@@ -142,15 +142,10 @@ export default function ConfiguracoesPerfil() {
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="flex-1 container max-w-3xl mx-auto px-6 py-12 relative">
-        <div className="mb-6">
-          <Link href="/descobrir">
-            <Button variant="ghost" className="gap-2 text-gray-600 hover:text-[#2F52E0] pl-0 cursor-pointer transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Voltar para Descobrir
-            </Button>
-          </Link>
-        </div>
+      <Breadcrumb items={[{ label: "Configurações" }]} />
 
+      <main className="flex-1 container max-w-3xl mx-auto px-6 pt-6 pb-12 relative">
+        
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#161B1D] tracking-tight text-inter">Configurações</h1>
           <p className="text-gray-500">Gerencie sua conta e preferências.</p>

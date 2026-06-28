@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { UserStats } from "./_components/UserStats";
@@ -54,12 +55,19 @@ export default function AdminUsuarios() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC]">
+    <div className="min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+      <Breadcrumb 
+        items={[
+          { label: "Painel do Administrador" },
+          { label: "Gerenciamento de Usuários" }
+        ]} 
+      />
 
-        <h1 className="text-2xl font-black">
+      <main className="max-w-5xl mx-auto pt-6 pb-12 px-4 space-y-6">
+
+        <h1 className="text-2xl font-black text-[#161B1D]">
           Gerenciamento de Usuários
         </h1>
 

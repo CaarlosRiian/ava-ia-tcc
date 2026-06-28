@@ -3,8 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseHero from "./CourseHero";
 import CourseLessonsSidebar from "./CourseLessonsSidebar";
@@ -104,6 +105,7 @@ export default function CursoDetalhe() {
     return (
       <div className="min-h-screen bg-[#F8F9FA]">
         <Header />
+        <Breadcrumb items={[{ label: "Meus Cursos", href: "/meus-cursos" }, { label: "Curso não encontrado" }]} />
         <div className="container mx-auto py-20 text-center">
           <p className="text-gray-500 mb-4">Curso não encontrado.</p>
           <Link href="/meus-cursos" className="text-blue-600 hover:underline">Voltar</Link>
@@ -113,17 +115,18 @@ export default function CursoDetalhe() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header />
-      <main className="container mx-auto px-6 py-8">
-        <Link
-          href="/meus-cursos"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 mb-8 hover:text-gray-700" >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar para meus cursos
-        </Link>
 
-        <div className="grid lg:grid-cols-3 gap-10">
+      <Breadcrumb 
+        items={[
+          { label: "Meus Cursos", href: "/meus-cursos" },
+          { label: course.title || "Detalhes do Curso" }
+        ]} 
+      />
+
+      <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2">
             <CourseHero
               course={course}
@@ -145,19 +148,23 @@ export default function CursoDetalhe() {
                 }
               }}
             />
+            
             <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4">O que você vai aprender</h2>
+              <h2 className="text-xl font-bold mb-4 text-[#161B1D]">O que você vai aprender</h2>
               <div className="grid sm:grid-cols-2 gap-3 text-gray-600">
                 {["Conceitos Fundamentais", "Práticas do Mundo Real", "Projetos práticos", "Suporte da comunidade"].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[#2F52E0]" />
-                    <span className="text-sm">{item}</span>
+                    <span className="text-sm font-light">{item}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <CourseLessonsSidebar course={course} />
+          
+          <div className="lg:col-span-1">
+            <CourseLessonsSidebar course={course} />
+          </div>
         </div>
       </main>
     </div>
