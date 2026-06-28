@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -87,7 +88,11 @@ export default function CadastroInstrutor() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col relative">
       <Header />
-      <main className="flex-1 py-12 px-4 max-w-6xl w-full mx-auto space-y-10">
+
+      <Breadcrumb items={[{ label: "Quero ser instrutor" }]} />
+
+      <main className="flex-1 pt-6 pb-12 px-4 max-w-6xl w-full mx-auto space-y-10">
+        
         <div className="flex items-center gap-6 text-left max-w-4xl">
           <div className="flex items-center justify-center w-20 h-20 bg-[#2F52E0] text-white rounded-[28px] shadow-md shrink-0">
             <GraduationCap className="w-10 h-10 stroke-[1.8]" />

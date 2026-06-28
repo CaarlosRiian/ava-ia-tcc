@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import VideoPlayer from "./VideoPlayer";
 import LessonContent from "./LessonContent";
 import AIChatPanel from "./AIChatPanel";
@@ -116,9 +117,17 @@ export default function Aula() {
     <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden">
       <Header />
 
+      <Breadcrumb 
+        items={[
+          { label: "Meus Cursos", href: "/meus-cursos" },
+          { label: course.title || "Detalhes do Curso", href: `/curso/${courseId}` },
+          { label: lesson.title || "Aula" }
+        ]} 
+      />
+
       <div className="flex flex-row flex-1 overflow-hidden w-full relative">
-        <div className="flex-1 flex flex-col overflow-y-auto h-full items-center bg-gray-50 p-4 lg:p-6 custom-scrollbar">
-          <div className="w-full max-w-5xl flex flex-col justify-start gap-6 pb-12">
+        <main className="flex-1 flex flex-col overflow-y-auto h-full items-center bg-gray-50 pt-4 pb-12 px-4 lg:px-6 custom-scrollbar">
+          <div className="w-full max-w-5xl flex flex-col justify-start gap-6">
             <VideoPlayer
               lesson={lesson}
               onToggleAI={() => setAiOpen(!aiOpen)}
@@ -138,7 +147,7 @@ export default function Aula() {
               isGeneratingCertificate={isGeneratingCertificate}
             />
           </div>
-        </div>
+        </main>
 
         {aiOpen && (
           <AIChatPanel

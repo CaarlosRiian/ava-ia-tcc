@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { useCategories } from "./feature/useCategories";
 import { CategoryForm } from "./_components/CategoryForm";
 import { CategoryList } from "./_components/CategoryList";
@@ -10,12 +11,19 @@ export default function AdminCategorias() {
   } = useCategories();
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC]">
+    <div className="min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <main className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+      <Breadcrumb 
+        items={[
+          { label: "Painel do Administrador" },
+          { label: "Gerenciar Categorias" }
+        ]} 
+      />
+
+      <main className="max-w-5xl mx-auto pt-6 pb-12 px-4 space-y-6">
         <header>
-          <h1 className="text-2xl font-black">Gerenciar Categorias</h1>
+          <h1 className="text-2xl font-black text-[#161B1D]">Gerenciar Categorias</h1>
           <p className="text-gray-500 text-sm mt-1">
             Cadastre e controle as categorias estruturais de cursos da plataforma.
           </p>

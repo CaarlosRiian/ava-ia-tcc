@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Settings } from "lucide-react";
 
 import Header from "@/components/Header";
+import Breadcrumb from "@/components/BreadCrumb"; 
 import { CourseCard } from "./_components/CourseCard-Item";
 import { StatsCards } from "./_components/StatsCards";
 import { LessonManager } from "./_components/LessonManager";
@@ -71,7 +72,7 @@ export default function GerenciamentoAulas() {
       )
     );
 
-    toast.success("Status updated.");
+    toast.success("Status atualizado.");
   };
 
   const handleDelete = (cId: string, aId: string) => {
@@ -124,7 +125,7 @@ export default function GerenciamentoAulas() {
         )
       );
 
-      toast.success("Curso updated!");
+      toast.success("Curso atualizado!");
     } catch (err) {
       console.error(err);
       toast.error("Erro ao atualizar curso");
@@ -201,16 +202,19 @@ export default function GerenciamentoAulas() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC]">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header />
-      <div className="max-w-5xl mx-auto py-6 px-4 space-y-5">
+
+      <Breadcrumb items={[{ label: "Gerenciar cursos" }]} />
+
+      <main className="flex-1 max-w-5xl w-full mx-auto pt-6 pb-12 px-4 space-y-5">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">
               Gerenciamento
             </h1>
             <p className="text-sm text-muted-foreground">
-              Administre seus cursos
+              Administre seus cursos e conteúdos didáticos
             </p>
           </div>
           <button onClick={() => {
@@ -265,7 +269,7 @@ export default function GerenciamentoAulas() {
             />
           </div>
         </div>
-      </div>
+      </main>
 
       <AddOptionsModal
         isOpen={openAddOptionsModal}
