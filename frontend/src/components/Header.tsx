@@ -2,14 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { BookOpen, Search, Heart, ChevronDown, User, Settings, LogOut, BookMarked,
   GraduationCap, LayoutDashboard, ShieldCheck, Users } from "lucide-react";
 
-export default function Header() {
+interface HeaderProps {
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export default function Header({ value, onChange }: HeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  
   const [isAuth, setIsAuth] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  
+  const [localSearch, setLocalSearch] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("access");
@@ -25,11 +36,9 @@ export default function Header() {
 
   const formatName = (name: string) => {
     const cleaned = name.replace(/_/g, " ");
-
     if (cleaned.length > 15) {
       return cleaned.slice(0, 15) + "...";
     }
-
     return cleaned;
   };
 
@@ -51,8 +60,16 @@ export default function Header() {
     localStorage.removeItem("user_role");
     localStorage.removeItem("username");
     localStorage.removeItem("user_email");
-
     window.location.href = "/entrar";
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const term = value !== undefined ? value : localSearch;
+      if (term.trim()) {
+        router.push(`/?search=${encodeURIComponent(term.trim())}`);
+      }
+    }
   };
 
   return (
@@ -60,7 +77,7 @@ export default function Header() {
       <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
 
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <Link href="/descobrir" className="flex items-center gap-2 font-bold text-xl">
             <div className="bg-[#6366F1] rounded-lg p-1.5 text-white">
               <BookOpen className="h-5 w-5" />
             </div>
@@ -70,9 +87,9 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-            <button className="flex items-center gap-1 hover:text-[#2F52E0] transition-colors cursor-pointer">
+            <Link href="/" className="flex items-center gap-1 hover:text-[#2F52E0] transition-colors cursor-pointer">
               Explorar <ChevronDown className="h-4 w-4" />
-            </button>
+            </Link>
             <Link href="/meus-cursos" className="hover:text-[#2F52E0] transition-colors">
               Meus Cursos
             </Link>
@@ -85,6 +102,9 @@ export default function Header() {
             <input 
               type="text" 
               placeholder="Buscar cursos, aulas..." 
+              value={value !== undefined ? value : localSearch} 
+              onChange={onChange || ((e) => setLocalSearch(e.target.value))}
+              onKeyDown={handleKeyDown}
               className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none bg-white border border-gray-400 transition-all duration-500 ease-in-out focus:ring-2 focus:ring-[#6366F1] focus:border-transparent"
             />
           </div>

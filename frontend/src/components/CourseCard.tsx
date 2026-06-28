@@ -98,8 +98,8 @@ export default function CourseCard({
                   </>
                 ) : (
                   <>
-                    <Clock size={14} />
-                    <span>{hours || 0} horas de conteúdo</span>
+                    <Clock size={14} className="text-gray-300" />
+                    <span className="text-gray-400/80">Nenhuma aula</span>
                   </>
                 )}
               </div>
