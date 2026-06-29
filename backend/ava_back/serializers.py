@@ -49,7 +49,17 @@ class LessonMaterialSerializer(serializers.ModelSerializer):
         model = LessonMaterial
         fields = ['id', 'lesson', 'title', 'material_type', 'raw_content', 'file', 'created_at']
         read_only_fields = ['id', 'created_at']
+        extra_kwargs = {
+            'raw_content': {'required': False, 'allow_blank': True}
+        }
 
+    def create(self, validated_data):
+        file_obj = validated_data.get('file')
+        
+        if file_obj and not validated_data.get('raw_content'):
+            validated_data['raw_content'] = file_obj.name
+            
+        return super().create(validated_data)
 class InstructorLessonSerializer(serializers.ModelSerializer):
     thumbnail = serializers.ImageField(required=False, allow_null=True)
     

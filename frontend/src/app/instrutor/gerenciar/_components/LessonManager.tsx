@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { updateModule, deleteModule } from "../_services/modules";
 import type { CourseAPI, Module } from "@/types/course";
 import { CreateModuleModal } from "../_components/CreateModuleModal";
 import { ModuleLessons } from "../_components/ModuleLessons";
+import { toast } from "sonner";
 
 type Props = {
   curso?: CourseAPI;
@@ -25,6 +27,35 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions }: P
       setLocalCurso(curso);
     }
   }, [curso]);
+
+  const handleCreateLesson = async (formData: FormData) => {
+    try {
+      console.log("=== 1. DISPAROU CREATE LESSON ===");
+      const novaAula = await createLesson(formData);
+
+      const moduloIdTarget = formData.get("module");
+
+      setLocalCurso((prev) => {
+        if (!prev) return prev;
+
+        const novosModulos = prev.modules.map((m) => {
+          if (String(m.id) === String(moduloIdTarget)) {
+            return {
+              ...m,
+              lessons: [...(m.lessons || []), novaAula],
+            };
+          }
+          return m;
+        });
+
+        return { ...prev, modules: novosModulos };
+      });
+
+      toast.success("Aula criada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao criar a aula.");
+    }
+  };
 
   const handleUpdateLesson = async (lessonId: string, formData: FormData) => {
     try {
@@ -43,8 +74,10 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions }: P
           })),
         };
       });
+      toast.success("Aula atualizada com sucesso!");
     } catch (error) {
       console.log(error);
+      toast.error("Erro ao atualizar aula.");
     }
   };
 
@@ -61,8 +94,47 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions }: P
           })),
         };
       });
+      toast.success("Aula removida com sucesso.");
     } catch (error) {
       console.log(error);
+      toast.error("Erro ao remover aula.");
+    }
+  };
+
+  const handleDeleteMaterial = async (lessonId: string, materialId: string) => {
+    try {
+      const token = localStorage.getItem("access");
+
+      await axios.delete(`http://localhost:8000/api/materials/${materialId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setLocalCurso((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            lessons: m.lessons.map((l) => {
+              if (String(l.id) === String(lessonId)) {
+                return {
+                  ...l,
+                  materials: (l as any).materials?.filter(
+                    (mat: any) => String(mat.id) !== String(materialId)
+                  ) || []
+                };
+              }
+              return l;
+            })
+          }))
+        };
+      });
+
+      toast.success("Material removido com sucesso.");
+    } catch (error) {
+      toast.error("Erro ao remover material.");
     }
   };
 
@@ -166,6 +238,8 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions }: P
                 onToggle={onToggle}
                 onDelete={handleDeleteLesson}
                 onUpdate={handleUpdateLesson}
+                onCreate={handleCreateLesson}
+                onDeleteMaterial={handleDeleteMaterial}
               />
             </div>
           </div>

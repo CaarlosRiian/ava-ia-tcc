@@ -9,33 +9,32 @@ import { LessonForm } from "./LessonForm";
 
 interface Props {
   modules: Module[];
-
   mode?: "create" | "edit";
-
   lesson?: Lesson;
-
   trigger?: React.ReactNode;
-
-  onCreate?: (
-    data: FormData
-  ) => Promise<void>;
-
-  onUpdate?: (
-    lessonId: string,
-    data: FormData
-  ) => Promise<void>;
+  onCreate?: (data: FormData) => Promise<void>;
+  onUpdate?: (lessonId: string, data: FormData) => Promise<void>;
 }
 
 export const CreateLessonModal = ({ modules, mode = "create", lesson, trigger, onCreate, onUpdate, }: Props) => {
+  const [open, setOpen] = useState(false);
 
-  const [open, setOpen] =
-    useState(false);
+  const handleCreateSubmit = async (data: FormData) => {
+    if (onCreate) {
+      await onCreate(data);
+      setOpen(false); 
+    }
+  };
+
+  const handleUpdateSubmit = async (lessonId: string, data: FormData) => {
+    if (onUpdate) {
+      await onUpdate(lessonId, data);
+      setOpen(false); 
+    }
+  };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button
@@ -51,11 +50,8 @@ export const CreateLessonModal = ({ modules, mode = "create", lesson, trigger, o
       <DialogContent className="bg-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create"
-              ? "Nova aula"
-              : "Editar aula"}
+            {mode === "create" ? "Nova aula" : "Editar aula"}
           </DialogTitle>
-
           <DialogDescription>
             Configure os dados da aula.
           </DialogDescription>
@@ -66,8 +62,8 @@ export const CreateLessonModal = ({ modules, mode = "create", lesson, trigger, o
           modules={modules}
           mode={mode}
           lesson={lesson}
-          onCreate={onCreate}
-          onUpdate={onUpdate}
+          onCreate={handleCreateSubmit}
+          onUpdate={handleUpdateSubmit}
           onSuccess={() => setOpen(false)}
         />
       </DialogContent>

@@ -11,12 +11,11 @@ interface AddOptionsModalProps {
   onClose: () => void;
   cursoAtivo: any;
   onAddMaterial: (payload: any) => Promise<void>;
-
   onCreateModule: (title: string) => Promise<void>;
   onCreateLesson: (data: FormData) => Promise<void>;
 }
 
-export function AddOptionsModal({ isOpen, onClose, cursoAtivo, onAddMaterial, onCreateModule,
+export function AddOptionsModal({isOpen, onClose, cursoAtivo, onAddMaterial, onCreateModule,
   onCreateLesson, }: AddOptionsModalProps) {
   const [step, setStep] = useState<"options" | "material">("options");
 
@@ -57,6 +56,7 @@ export function AddOptionsModal({ isOpen, onClose, cursoAtivo, onAddMaterial, on
         title: materialTitle,
         material_type: materialType,
         raw_content: materialType === "pdf" ? (pdfFile ? pdfFile.name : null) : rawContent,
+        file: materialType === "pdf" ? pdfFile : null, 
       });
       handleClose();
     } catch (err) {

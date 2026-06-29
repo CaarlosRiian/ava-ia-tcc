@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 
 import { Lesson, Module } from "@/types/course";
 
-import { Settings, Eye, EyeOff, FileText, Trash2, BookOpen } from "lucide-react";
+import { Settings, Eye, EyeOff, FileText, Trash2, BookOpen, Link2, Download } from "lucide-react";
 
 import { CreateLessonModal } from "./CreateLessonModal";
 import { DeleteLessonModal } from "./DeleteLessonModal";
+import { DeleteMaterialModal } from "./DeleteMaterialModal"; 
 
 type Props = {
     lessons: Lesson[];
@@ -20,13 +21,19 @@ type Props = {
     onToggle: (cursoId: string, aulaId: string) => void;
     onDelete: (cursoId: string, aulaId: string) => void;
     onUpdate: (lessonId: string, data: FormData) => Promise<void>;
+    onCreate: (formData: FormData) => Promise<void>; 
+    onDeleteMaterial: (lessonId: string, materialId: string) => void;
 };
 
-export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, onUpdate }: Props) {
+export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, onUpdate, onCreate, onDeleteMaterial }: Props) {
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [loadingDelete, setLoadingDelete] = useState(false);
+
+    const [deleteMaterialOpen, setDeleteMaterialOpen] = useState(false);
+    const [selectedMaterial, setSelectedMaterial] = useState<{ lessonId: string, id: string, title: string } | null>(null);
+    const [loadingMaterialDelete, setLoadingMaterialDelete] = useState(false);
 
     if (!lessons.length) {
         return (
@@ -89,15 +96,9 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
                             `}
                         >
                             {aula.visibility === "publico" ? (
-                                <>
-                                    <Eye size={11} />
-                                    Público
-                                </>
+                                <> <Eye size={11} /> Público </>
                             ) : (
-                                <>
-                                    <EyeOff size={11} />
-                                    Privado
-                                </>
+                                <> <EyeOff size={11} /> Privado </>
                             )}
                         </Badge>
 
@@ -107,6 +108,7 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
                                 lesson={aula}
                                 modules={modules}
                                 onUpdate={onUpdate}
+                                onCreate={onCreate} 
                                 trigger={
                                     <Button
                                         variant="ghost"
@@ -131,16 +133,66 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
                     </div>
 
                     {((aula as any).materials && (aula as any).materials.length > 0) && (
-                        <div className="mt-1 pl-1 flex flex-wrap gap-1.5 border-t border-dashed border-zinc-100 pt-2 animate-in fade-in duration-200">
-                            {(aula as any).materials.map((mat: any, idx: number) => (
-                                <div 
-                                    key={mat.id || idx}
-                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-medium"
-                                >
-                                    <BookOpen size={10} className="text-purple-500 shrink-0" />
-                                    <span className="truncate max-w-[220px]">{mat.title}</span>
-                                </div>
-                            ))}
+                        <div className="mt-1 pl-1 flex flex-col gap-1.5 border-t border-dashed border-zinc-100 pt-2.5 animate-in fade-in duration-200">
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
+                                Base de Dados da IA & Apoio:
+                            </p>
+                            <div className="grid grid-cols-1 gap-1.5">
+                                {(aula as any).materials.map((mat: any, idx: number) => {
+                                    const isText = mat.formato === "Texto Escrito / Artigo Didático";
+                                    const isLink = mat.formato === "Link de Referência Externo";
+                                    const tituloMaterial = mat.identificacao || mat.title;
+
+                                    return (
+                                        <div 
+                                            key={mat.id || idx}
+                                            className="flex items-center justify-between p-2 rounded-xl bg-zinc-50 border border-zinc-100 hover:border-zinc-200/80 transition-all text-xs"
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`p-1 rounded-md shrink-0 ${
+                                                    isText ? "bg-purple-100 text-purple-700" :
+                                                    isLink ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                                                }`}>
+                                                    {isLink ? <Link2 size={12} /> : <FileText size={12} />}
+                                                </div>
+                                                <div className="truncate">
+                                                    <p className="font-medium text-zinc-700 truncate max-w-[240px]">{tituloMaterial}</p>
+                                                    <p className="text-[9px] text-zinc-400 font-normal leading-none">{mat.formato}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-0.5">
+                                                {!isText && (
+                                                    <a 
+                                                        href={mat.arquivo_url || mat.arquivo || mat.link_externo} 
+                                                        target="_blank" 
+                                                        rel="noreferrer"
+                                                        className="p-1 text-zinc-400 hover:text-zinc-600 rounded-md hover:bg-white transition"
+                                                        title="Acessar material"
+                                                    >
+                                                        <Download size={13} />
+                                                    </a>
+                                                )}
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedMaterial({ 
+                                                            lessonId: aula.id, 
+                                                            id: mat.id || mat._id, 
+                                                            title: tituloMaterial 
+                                                        });
+                                                        setDeleteMaterialOpen(true);
+                                                    }}
+                                                    className="p-1 text-zinc-400 hover:text-red-500 rounded-md hover:bg-white transition cursor-pointer"
+                                                    title="Excluir material"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -155,16 +207,34 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
                     onConfirm={async () => {
                         try {
                             setLoadingDelete(true);
-
-                            await onDelete(
-                                cursoId,
-                                selectedLesson.id
-                            );
-
+                            await onDelete(cursoId, selectedLesson.id);
                             setDeleteOpen(false);
                             setSelectedLesson(null);
-                        } finally {
+                        } catch {
                             setLoadingDelete(false);
+                        }
+                    }}
+                />
+            )}
+
+            {selectedMaterial && (
+                <DeleteMaterialModal
+                    open={deleteMaterialOpen}
+                    onOpenChange={setDeleteMaterialOpen}
+                    materialTitle={selectedMaterial.title}
+                    loading={loadingMaterialDelete}
+                    onConfirm={async () => {
+                        try {
+                            setLoadingMaterialDelete(true);
+                            
+                            await onDeleteMaterial(selectedMaterial.lessonId, selectedMaterial.id);
+                            
+                            setDeleteMaterialOpen(false);
+                            setSelectedMaterial(null);
+                        } catch (error) {
+                            console.error("Erro capturado ao deletar material:", error);
+                        } finally {
+                            setLoadingMaterialDelete(false);
                         }
                     }}
                 />
