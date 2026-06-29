@@ -20,6 +20,11 @@ export default function RegisterForm() {
     e.preventDefault();
     setError("");
 
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+      setError("Por favor, preencha todos os campos.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("As senhas não coincidem");
       return;
@@ -27,26 +32,38 @@ export default function RegisterForm() {
 
     setLoading(true);
 
+    const formattedUsername = username.trim().replace(/\s/g, "_");
+    const cleanEmail = email.trim();
+
     try {
       await registerUser({
-        username: username.replace(/\s/g, "_"),
-        email,
+        username: formattedUsername,
+        email: cleanEmail,
         password,
       });
 
-      const tokenData = await loginUser({ email, password });
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      saveTokens(tokenData.access, tokenData.refresh);
+      const tokenData = await loginUser({ 
+        email: cleanEmail, 
+        password 
+      });
 
-      const me = await getMe(tokenData.access);
-      localStorage.setItem("username", me.name || me.username);
-      localStorage.setItem("user_email", me.email);
-      localStorage.setItem("user_role", me.role);
+      if (tokenData && tokenData.access) {
+        const me = await getMe(tokenData.access);
+        
+        localStorage.setItem("username", me.name || me.username || username);
+        localStorage.setItem("user_email", me.email || cleanEmail);
+        localStorage.setItem("user_role", me.role || "student");
 
-      window.location.href = "/descobrir";
+        window.location.href = "/descobrir";
+      } else {
+        throw new Error("Tokens não foram gerados corretamente.");
+      }
 
     } catch (err: any) {
-      setError(err.message || "Erro ao criar conta ou fazer login automático");
+      console.error("Erro completo no cadastro/login:", err);
+      setError(err.message || "Usuário cadastrado, mas houve um problema no login automático. Vá para a tela de login.");
     } finally {
       setLoading(false);
     }

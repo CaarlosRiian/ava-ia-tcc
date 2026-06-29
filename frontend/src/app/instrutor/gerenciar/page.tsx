@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Settings } from "lucide-react";
 
 import Header from "@/components/Header";
-import Breadcrumb from "@/components/BreadCrumb"; 
+import Breadcrumb from "@/components/BreadCrumb";
 import { CourseCard } from "./_components/CourseCard-Item";
 import { StatsCards } from "./_components/StatsCards";
 import { LessonManager } from "./_components/LessonManager";
@@ -14,8 +14,8 @@ import { AddOptionsModal } from "./_components/AddOptionsModal";
 import { createMaterial } from "./_services/materials";
 import { getCourses, createCourse, updateCourse } from "./_services/courses";
 import { getCategories } from "@/services/categories";
-import { createModule } from "./_services/modules"; 
-import { createLesson } from "@/services/lessons";   
+import { createModule } from "./_services/modules";
+import { createLesson } from "@/services/lessons";
 import type { CourseAPI, CourseUI, Category } from "@/types/course";
 
 export default function GerenciamentoAulas() {
@@ -155,8 +155,32 @@ export default function GerenciamentoAulas() {
 
   const handleCreateLesson = async (formData: FormData) => {
     try {
-      await createLesson(formData);
+      const novaAula = await createLesson(formData);
       toast.success("Aula criada com sucesso!");
+
+      const moduloIdAlvo = formData.get("module");
+
+      setCursos((prevCursos) =>
+        prevCursos.map((curso) => {
+          if (String(curso.id) === String(cursoSelecionado)) {
+            return {
+              ...curso,
+              aulas: [...curso.aulas, novaAula],
+              modules: curso.modules?.map((modulo) => {
+                if (String(modulo.id) === String(moduloIdAlvo)) {
+                  return {
+                    ...modulo,
+                    lessons: [...(modulo.lessons || []), novaAula],
+                  };
+                }
+                return modulo;
+              }),
+            };
+          }
+          return curso;
+        })
+      );
+
     } catch (err) {
       console.error(err);
       toast.error("Erro ao criar aula");
@@ -201,6 +225,37 @@ export default function GerenciamentoAulas() {
     }
   };
 
+  const handleDeleteMaterial = async (lessonId: string, materialId: string) => {
+    try {
+      toast.success("Material removido com sucesso!");
+
+      const updatedCourses = cursos.map((c) => {
+        if (String(c.id) === String(cursoSelecionado)) {
+          return {
+            ...c,
+            modules: c.modules?.map((m) => ({
+              ...m,
+              lessons: m.lessons?.map((l) => {
+                if (String(l.id) === String(lessonId)) {
+                  return {
+                    ...l,
+                    materials: (l as any).materials?.filter((mat: any) => mat.id !== materialId) || [],
+                  };
+                }
+                return l;
+              }),
+            })),
+          };
+        }
+        return c;
+      });
+
+      setCursos(updatedCourses);
+    } catch (err) {
+      toast.error("Erro ao remover material.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header />
@@ -218,9 +273,9 @@ export default function GerenciamentoAulas() {
             </p>
           </div>
           <button onClick={() => {
-              setEditingCourse(null);
-              setOpenModal(true);
-            }}
+            setEditingCourse(null);
+            setOpenModal(true);
+          }}
             className="bg-[#2F52E0] hover:bg-[#1e3bb3] h-9 px-4 rounded-lg text-sm font-semibold cursor-pointer shadow-sm text-white transition" >
             + Novo Curso
           </button>
