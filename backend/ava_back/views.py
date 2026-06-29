@@ -385,6 +385,7 @@ class LessonMaterialViewSet(ModelViewSet):
     serializer_class = LessonMaterialSerializer
     queryset = LessonMaterial.objects.all()
     permission_classes = [IsAuthenticated] 
+    parser_classes = [MultiPartParser, FormParser] 
 
     def get_queryset(self):
         queryset = LessonMaterial.objects.all()
@@ -398,7 +399,11 @@ class LessonMaterialViewSet(ModelViewSet):
         if self.request.user.role != "professor" or lesson.module.course.professor != self.request.user:
             raise PermissionDenied("Você não tem permissão para adicionar materiais a esta aula.")
         
-        serializer.save()
+        file_obj = self.request.data.get('file')
+        if file_obj and not serializer.validated_data.get('raw_content'):
+            serializer.save(raw_content=file_obj.name)
+        else:
+            serializer.save()
 
 class EnrollmentViewSet(ModelViewSet):
     queryset = Enrollment.objects.all()

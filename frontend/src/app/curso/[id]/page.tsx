@@ -3,7 +3,6 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import LoadingScreen from "@/components/LoadingScreen";
@@ -38,7 +37,7 @@ export default function CursoDetalhe() {
         if (responseFavorites.status === 401) {
           localStorage.removeItem("access");
           localStorage.removeItem("refresh");
-          window.location.href = "/login";
+          window.location.href = "/entrar";
           return;
         }
 
@@ -127,7 +126,7 @@ export default function CursoDetalhe() {
 
       <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
             <CourseHero
               course={course}
               isFavorited={isFavorited}
@@ -148,18 +147,6 @@ export default function CursoDetalhe() {
                 }
               }}
             />
-            
-            <div className="mt-10">
-              <h2 className="text-xl font-bold mb-4 text-[#161B1D]">O que você vai aprender</h2>
-              <div className="grid sm:grid-cols-2 gap-3 text-gray-600">
-                {["Conceitos Fundamentais", "Práticas do Mundo Real", "Projetos práticos", "Suporte da comunidade"].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#2F52E0]" />
-                    <span className="text-sm font-light">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
           
           <div className="lg:col-span-1">

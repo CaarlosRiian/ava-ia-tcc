@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award, FileText, Link2, Download } from "lucide-react";
 import { completeLesson } from "@/services/courses"; 
 
 interface LessonContentProps {
@@ -15,22 +15,11 @@ interface LessonContentProps {
   setLessonsOpen: (open: boolean) => void;
   prevLesson?: any;
   nextLesson?: any;
-  
   onEmitirCertificado: () => Promise<void>;
   isGeneratingCertificate: boolean;
 }
 
-export default function LessonContent({
-  course,
-  lesson,
-  lessonIndex,
-  aiOpen,
-  setAiOpen,
-  lessonsOpen,
-  setLessonsOpen,
-  prevLesson,
-  nextLesson,
-  onEmitirCertificado, 
+export default function LessonContent({course, lesson, lessonIndex, aiOpen, setAiOpen, lessonsOpen, setLessonsOpen, prevLesson, nextLesson, onEmitirCertificado, 
   isGeneratingCertificate 
 }: LessonContentProps) {
   const [isCompleted, setIsCompleted] = useState(lesson?.completed || false);
@@ -49,7 +38,6 @@ export default function LessonContent({
     try {
       await completeLesson(lesson.id);
       setIsCompleted(true);
-      
       lesson.completed = true;
     } catch (error: any) {
       console.error(error);
@@ -58,6 +46,8 @@ export default function LessonContent({
       setIsSubmitting(false);
     }
   };
+
+  const listagemMateriais = lesson.materials || [];
 
   return (
     <div className="max-w-4xl mx-auto p-6 lg:p-10 bg-white rounded-2xl border border-gray-100 shadow-sm">
@@ -75,11 +65,6 @@ export default function LessonContent({
           <h1 className="text-2xl md:text-3xl font-black text-[#161B1D]">
             {lessonIndex + 1}. {lesson.title}
           </h1>
-
-          <p className="text-sm text-gray-400 mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            Duração: {Math.floor(lesson.duration_seconds / 60)} min
-          </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -108,6 +93,79 @@ export default function LessonContent({
             Assistente IA
           </button>
         </div>
+      </div>
+
+      <div className="space-y-3 mb-8 pt-4 border-t border-gray-100">
+        <h3 className="font-bold text-base text-gray-800 flex items-center gap-2">
+          Materiais de Apoio 
+        </h3>
+
+        {listagemMateriais.length === 0 ? (
+          <p className="text-xs text-gray-400">
+            Nenhum material complementar cadastrado para esta aula.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {listagemMateriais.map((material: any) => {
+              const isLink = material.material_type === "link" || material.type === "link";
+
+              let urlFinal = "";
+              if (isLink) {
+                urlFinal = material.raw_content || material.url;
+              } else if (material.file) {
+                urlFinal = material.file.startsWith("http") 
+                  ? material.file 
+                  : `http://localhost:8000${material.file}`;
+              } else if (material.raw_content) {
+                urlFinal = `http://localhost:8000/media/lesson_materials/${material.raw_content}`;
+              }
+
+              const obterExtensao = (nomeArquivo: string) => {
+                if (!nomeArquivo || isLink) return "";
+                const partes = nomeArquivo.split(".");
+                if (partes.length > 1) {
+                  return `.${partes.pop()?.toUpperCase()}`;
+                }
+                return "";
+              };
+
+              const extensao = obterExtensao(material.raw_content || material.file || "");
+
+              return (
+                <button
+                  key={material.id}
+                  type="button"
+                  onClick={() => {
+                    if (urlFinal) {
+                      window.open(urlFinal, "_blank");
+                    } else {
+                      alert("Não foi possível carregar o arquivo.");
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-3 bg-[#F8F9FA] border border-gray-200 rounded-xl hover:border-[#2F52E0] hover:bg-white transition group cursor-pointer shadow-sm text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isLink ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"}`}>
+                      {isLink ? <Link2 size={16} /> : <FileText size={16} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 line-clamp-1 group-hover:text-[#2F52E0]">
+                        {material.title || "Material sem título"}
+                      </p>
+                      <p className="text-[11px] text-gray-400 font-medium">
+                        {isLink ? "Link Externo" : `Arquivo ${extensao || "PDF"}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-gray-400 group-hover:text-[#2F52E0] pr-1 shrink-0">
+                    <Download size={14} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-3 mb-10 pb-10 border-b border-gray-100">

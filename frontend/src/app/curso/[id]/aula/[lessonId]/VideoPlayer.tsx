@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Sparkles } from "lucide-react";
+import { Play } from "lucide-react"; 
 
 interface VideoPlayerProps {
   lesson: any;
@@ -59,14 +59,6 @@ export default function VideoPlayer({ lesson, onToggleAI }: VideoPlayerProps) {
           </p>
         </div>
       )}
-
-      <button
-        onClick={onToggleAI}
-        className="absolute top-4 right-4 bg-black/40 backdrop-blur-md border border-white/10 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 hover:bg-black/60 transition-all z-20 cursor-pointer active:scale-95 shadow-md"
-      >
-        <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
-        Dúvidas nesta parte?
-      </button>
     </div>
   );
 }

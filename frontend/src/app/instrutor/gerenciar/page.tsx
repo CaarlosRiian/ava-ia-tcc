@@ -189,7 +189,18 @@ export default function GerenciamentoAulas() {
 
   const handleAddMaterial = async (payload: any) => {
     try {
-      await createMaterial(payload);
+      const formData = new FormData();
+      formData.append("lesson", String(payload.lesson));
+      formData.append("title", payload.title);
+      formData.append("material_type", payload.material_type);
+
+      if (payload.file) {
+        formData.append("file", payload.file);
+      } else if (payload.raw_content) {
+        formData.append("raw_content", payload.raw_content);
+      }
+
+      const novoMaterialSalvo = await createMaterial(formData);
       toast.success("Material de apoio integrado ao banco da IA!");
 
       if (cursoAtivo) {
@@ -204,7 +215,7 @@ export default function GerenciamentoAulas() {
                     if (String(l.id) === String(payload.lesson)) {
                       return {
                         ...l,
-                        materials: [...((l as any).materials || []), payload],
+                        materials: [...((l as any).materials || []), novoMaterialSalvo],
                       };
                     }
                     return l;
