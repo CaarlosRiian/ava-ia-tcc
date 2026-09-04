@@ -95,9 +95,6 @@ export default function Explorar() {
       <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="bg-[#2F52E0] p-2 rounded-lg shadow-lg shadow-blue-100">
-              <Sparkles className="text-white h-5 w-5" />
-            </div>
             <h1 className="text-3xl font-extrabold text-[#161B1D]">
               {hasActiveFilters ? "Resultados da Busca" : "O que aprender em seguida"}
             </h1>

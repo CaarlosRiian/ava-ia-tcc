@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite
+from .models import User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite, StudentPerformance
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -274,3 +274,16 @@ class ProfessorProfileSerializer(serializers.ModelSerializer):
             "hours": total_hours,
             "lessons": lessons_count
         }
+
+class QuizSubmissionSerializer(serializers.Serializer):
+    score_percentage = serializers.FloatField(min_value=0.0, max_value=100.0)
+    weak_topics = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        default=list
+    )
+    strong_topics = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        default=list
+    )

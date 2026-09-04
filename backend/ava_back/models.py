@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
+from django.conf import settings
 
 class User(AbstractUser):
     STATUS_CHOICES = (
@@ -177,6 +178,17 @@ class LessonProgress(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.lesson.title} - {self.completed}'
+
+class StudentPerformance(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE)
+    score_percentage = models.FloatField(default=0.0) 
+    weak_topics = models.JSONField(default=list, blank=True) 
+    strong_topics = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Aula {self.lesson.id} ({self.score_percentage}%)"
 
 class AIAssistant(models.Model):
     lesson = models.OneToOneField('Lesson', on_delete=models.CASCADE, related_name='ai_assistant')
