@@ -16,7 +16,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import AIAssistant, Lesson, StudentPerformance
+from ..models import AIAssistant, Lesson, StudentPerformance, Course, LessonProgress
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -37,7 +37,6 @@ class LessonService:
     
     @staticmethod
     def _obter_cliente_gemini() -> genai.Client:
-        """Método auxiliar interno para inicializar e validar o cliente Gemini."""
         gemini_key = os.environ.get("GEMINI_API_KEY")
         if not gemini_key:
             raise ValidationError({"error": "A chave GEMINI_API_KEY não foi configurada no ambiente do servidor."})
@@ -45,7 +44,6 @@ class LessonService:
 
     @staticmethod
     def obter_contexto_da_aula(lesson: Lesson) -> str:
-        """Unifica os conteúdos dos materiais de apoio de texto em uma única string."""
         materiais_texto = lesson.materials.filter(material_type='text')
         
         if not materiais_texto.exists():
@@ -119,9 +117,6 @@ class LessonService:
 
     @staticmethod
     def handle_chat_action(viewset, request, lesson: Lesson):
-        """
-        Handler chamado pela action 'chat' do LessonViewSet em views.py
-        """
         pergunta_aluno = (
             request.data.get("message") or 
             request.data.get("pergunta") or 
@@ -170,10 +165,6 @@ class LessonService:
 
     @staticmethod
     def handle_get_quiz(viewset, lesson: Lesson):
-        """
-        Handler responsável por buscar o quiz existente da aula
-        ou acionar a IA para processar caso ainda não tenha sido gerado.
-        """
         try:
             ai_content = lesson.ai_assistant
         except AIAssistant.DoesNotExist:
@@ -371,3 +362,29 @@ class LessonService:
         </body>
         </html>
         """
+
+class CourseService:
+    @staticmethod
+    def get_recommended_courses(user):
+        from ..models import Course
+        from django.db.models import Q
+
+        queryset = Course.objects.filter(published=True)
+
+        user_age = getattr(user, 'age', None)
+        user_interests = getattr(user, 'interests', []) or []
+
+        if not user_age and not user_interests:
+            return queryset.order_by('-created_at')[:10]
+
+        query = Q()
+
+        if user_interests:
+            query &= (Q(target_area__in=user_interests) | Q(category__name__in=user_interests))
+
+        if user_age is not None:
+            query &= Q(min_age__lte=user_age, max_age__gte=user_age)
+
+        recommended = queryset.filter(query).distinct()
+
+        return recommended.order_by('-created_at')

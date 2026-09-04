@@ -20,6 +20,8 @@ class User(AbstractUser):
     bio = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
+    birth_date = models.DateField(null=True, blank=True)
+    interests = models.JSONField(default=list, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -34,6 +36,19 @@ class User(AbstractUser):
             self.slug = slug
 
         super().save(*args, **kwargs)
+
+    @property
+    def age(self):
+        if not self.birth_date:
+            return None
+        from datetime import date
+        today = date.today()
+        return today.year - self.birth_date.year - (
+                (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
+            )
+    
+    def __str__(self):
+        return self.username
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -58,6 +73,10 @@ class Course(models.Model):
     published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    min_age = models.PositiveIntegerField(default=0)     
+    max_age = models.PositiveIntegerField(default=100)   
+    target_area = models.CharField(max_length=100, blank=True, null=True)
+
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)
@@ -72,8 +91,6 @@ class Course(models.Model):
 
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.title
 
 class Module(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')

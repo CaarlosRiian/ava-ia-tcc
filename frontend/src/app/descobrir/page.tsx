@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, SlidersHorizontal, RotateCcw, Flame, Calendar, GraduationCap, ArrowRight } from "lucide-react";
+import { SlidersHorizontal, RotateCcw, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
-import { getCourses } from "@/services/courses";
+import { getCourses, getRecommendedCourses } from "@/services/courses";
 import { getCategories } from "@/services/categories";
 
 export default function Explorar() {
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,12 +28,20 @@ export default function Explorar() {
     async function load() {
       try {
         setLoading(true);
-        const [coursesData, categoriesData] = await Promise.all([
+        const [coursesData, categoriesData, recommendedData] = await Promise.all([
           getCourses(),
           getCategories(),
+          getRecommendedCourses().catch(() => []), 
         ]);
-        setCourses(coursesData);
-        setCategories(categoriesData);
+
+        setCourses(coursesData || []);
+        setCategories(categoriesData || []);
+
+        const normalizedRecommendations = (recommendedData || []).map((item: any) => 
+          item.course ? item.course : item
+        );
+        setRecommendedCourses(normalizedRecommendations);
+
       } catch (error) {
         console.error("Erro ao carregar a página de explorar:", error);
       } finally {
@@ -43,8 +52,10 @@ export default function Explorar() {
   }, []);
 
   const filteredCourses = courses.filter((course) => {
-    const matchesCategory = activeCategory ? course.category === activeCategory : true;
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const courseCatId = typeof course.category === "object" ? course.category?.id : course.category;
+    const matchesCategory = activeCategory ? courseCatId === activeCategory : true;
+    
+    const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const totalLessons = course.modules?.length || 0;
     let matchesDuration = true;
@@ -60,6 +71,7 @@ export default function Explorar() {
     return 0;
   });
 
+  const recommendedCoursesData = expandedTopic === "recommended" ? recommendedCourses : recommendedCourses.slice(0, 4);
   const popularCoursesData = [...courses].sort((a, b) => (b.students_count || b.id) - (a.students_count || a.id));
   const recentCoursesData = [...courses].reverse();
   const completeCoursesData = [...courses].sort((a, b) => (b.modules?.length || 0) - (a.modules?.length || 0));
@@ -79,18 +91,14 @@ export default function Explorar() {
   };
 
   if (loading) {
-    return <LoadingScreen text="Carregando cursos..." />
+    return <LoadingScreen text="Carregando cursos..." />;
   }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} />
 
-      <Breadcrumb 
-        items={[
-          { label: "Explorar" }
-        ]} 
-      />
+      <Breadcrumb items={[{ label: "Explorar" }]} />
 
       <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -175,11 +183,29 @@ export default function Explorar() {
         ) : (
           <div className="space-y-14 mt-8">
             
+            {recommendedCourses.length > 0 && (expandedTopic === null || expandedTopic === "recommended") && (
+              <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-[#161B1D]">Recomendados para Você</h2>
+                  </div>
+                  {expandedTopic === null && recommendedCourses.length > 4 && (
+                    <button 
+                      onClick={() => setExpandedTopic("recommended")}
+                      className="text-[#2F52E0] text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      Ver todos <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <CourseGrid courses={recommendedCoursesData} />
+              </section>
+            )}
+
             {popularCourses.length > 0 && (expandedTopic === null || expandedTopic === "popular") && (
               <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Flame className="text-amber-500 h-5 w-5 fill-amber-500" />
                     <h2 className="text-2xl font-bold text-[#161B1D]">Cursos em destaque</h2>
                   </div>
                   {expandedTopic === null && popularCoursesData.length > 4 && (
@@ -199,7 +225,6 @@ export default function Explorar() {
               <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="text-[#2F52E0] h-5 w-5" />
                     <h2 className="text-2xl font-bold text-[#161B1D]">Novidades na plataforma</h2>
                   </div>
                   {expandedTopic === null && recentCoursesData.length > 4 && (
@@ -219,7 +244,6 @@ export default function Explorar() {
               <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="text-emerald-500 h-5 w-5" />
                     <h2 className="text-2xl font-bold text-[#161B1D]">Formações completas e detalhadas</h2>
                   </div>
                   {expandedTopic === null && completeCoursesData.length > 4 && (

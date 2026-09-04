@@ -37,3 +37,18 @@ export type Category = {
   id: string;
   name: string;
 };
+
+export interface CourseRecommendation {
+  id: number;
+  title: string;
+  description?: string;
+  thumbnail?: string | null;
+  professor: string;
+  category?: {
+    id: number;
+    name: string;
+  };
+  min_age?: number;
+  max_age?: number;
+  target_area?: string;
+}

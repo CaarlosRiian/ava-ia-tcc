@@ -1,22 +1,21 @@
 from django.db.models import Prefetch
-from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Favorite
 from ..serializers import (
     CourseSerializer, CategorySerializer, CourseDetailSerializer, 
     InstructorCourseSerializer, FavoriteSerializer
 )
-from ..services.service import LessonService
-
+from ..services.service import LessonService, CourseService 
 
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
@@ -52,6 +51,11 @@ class CourseViewSet(ModelViewSet):
             )
         return qs
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, context={"request": request})
@@ -64,12 +68,16 @@ class CourseViewSet(ModelViewSet):
 
     def calculate_progress(self, user, course):
         total = Lesson.objects.filter(module__course=course).count()
+        if not total:
+            return 0.0
+
         completed = LessonProgress.objects.filter(
             user=user,
             lesson__module__course=course,
             completed=True
         ).count()
-        return round((completed / total * 100), 2) if total else 0
+        
+        return round((completed / total * 100), 2)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_courses(self, request):
@@ -116,7 +124,7 @@ class CourseViewSet(ModelViewSet):
 
         progress_percentage = (
             round((completed_lessons / total_lessons * 100), 2)
-            if total_lessons else 0
+            if total_lessons else 0.0
         )
 
         return Response({
@@ -144,12 +152,7 @@ class CourseViewSet(ModelViewSet):
         )
 
         return Response(serializer.data)
-    
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({"request": self.request})
-        return context
-    
+
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def certificado(self, request, pk=None):
         course = self.get_object()
@@ -158,10 +161,16 @@ class CourseViewSet(ModelViewSet):
             html_content = LessonService.gerar_html_certificado(request.user, course)
             return HttpResponse(html_content, content_type="text/html")
         except ValidationError as e:
-            return Response({"error": e.detail[0]}, status=status.HTTP_400_BAD_REQUEST)
+            error_msg = e.detail[0] if isinstance(e.detail, list) else e.detail
+            return Response({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='recommendations')
+    def recommendations(self, request):
+        courses = CourseService.get_recommended_courses(request.user)
+        serializer = self.get_serializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class FavoriteViewSet(ModelViewSet):
     serializer_class = FavoriteSerializer
@@ -184,7 +193,7 @@ class FavoriteViewSet(ModelViewSet):
 
         if not course_id:
             return Response(
-                {"error": "course é obrigatório"},
+                {"error": "O campo 'course' é obrigatório."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -195,11 +204,11 @@ class FavoriteViewSet(ModelViewSet):
 
         if favorite:
             favorite.delete()
-            return Response({"favorited": False})
+            return Response({"favorited": False}, status=status.HTTP_200_OK)
 
         Favorite.objects.create(
             user=request.user,
             course_id=course_id
         )
 
-        return Response({"favorited": True})
+        return Response({"favorited": True}, status=status.HTTP_201_CREATED)
