@@ -11,6 +11,8 @@ interface ProfileDataFormProps {
     setEmail: (value: string) => void;
     bio: string;
     setBio: (value: string) => void;
+    birthDate: string;
+    setBirthDate: (value: string) => void;
 }
 
 export function ProfileDataForm({
@@ -20,6 +22,8 @@ export function ProfileDataForm({
     setEmail,
     bio,
     setBio,
+    birthDate,
+    setBirthDate,
 }: ProfileDataFormProps) {
     return (
         <Card className="border-none bg-white shadow-sm rounded-[16px]">
@@ -37,6 +41,7 @@ export function ProfileDataForm({
                         placeholder="Seu nome"
                     />
                 </div>
+
                 <div className="grid gap-4">
                     <Label className="font-bold text-gray-700">E-mail</Label>
                     <Input
@@ -46,6 +51,17 @@ export function ProfileDataForm({
                         placeholder="seu.email@exemplo.com"
                     />
                 </div>
+
+                <div className="grid gap-4">
+                    <Label className="font-bold text-gray-700">Data de Nascimento</Label>
+                    <Input
+                        type="date"
+                        value={birthDate}
+                        onChange={(e) => setBirthDate(e.target.value)}
+                        className="rounded-md p-4 cursor-pointer"
+                    />
+                </div>
+
                 <div className="grid gap-4">
                     <Label className="font-bold text-gray-700">Biografia</Label>
                     <Textarea

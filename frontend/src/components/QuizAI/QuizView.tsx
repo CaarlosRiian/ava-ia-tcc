@@ -8,7 +8,7 @@ interface Question {
   options: string[];
   answer: string;
   explanation: string;
-  topic?: string; // Opcional: Tópico ao qual a questão pertence
+  topic?: string; 
 }
 
 interface QuizViewProps {
@@ -40,7 +40,6 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
     const weak: string[] = [];
     const strong: string[] = [];
 
-    // Mapeamento dos índices para o contrato do Django (question_index + selected_option)
     const formattedAnswers = Object.entries(selectedAnswers).map(([qIdxStr, option]) => {
       const idx = Number(qIdxStr);
       return {
@@ -69,12 +68,11 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
     const percentage = Math.round((correctCount / questions.length) * 100);
 
     if (!lessonId) {
-      console.warn("⚠️ [QuizView] O envio foi cancelado porque 'lessonId' está indefinido/null:", lessonId);
+      console.warn("[QuizView] O envio foi cancelado porque 'lessonId' está indefinido/null:", lessonId);
     } else {
       try {
         const token = localStorage.getItem("access") || localStorage.getItem("token");
         
-        // Garante a URL base limpa de barras e /api duplicados
         let baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
         if (baseUrl.endsWith("/api")) {
           baseUrl = baseUrl.replace(/\/api$/, "");
@@ -93,12 +91,12 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error("❌ [Backend Error]:", errorData);
+          console.error("[Backend Error]:", errorData);
         } else {
-          console.log("✅ [Quiz] Desempenho salvo com sucesso no banco!");
+          console.log("[Quiz] Desempenho salvo com sucesso no banco!");
         }
       } catch (err) {
-        console.error("❌ [Network Error] Erro ao registrar quiz no servidor:", err);
+        console.error("[Network Error] Erro ao registrar quiz no servidor:", err);
       }
     }
 
@@ -112,7 +110,6 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Diagnóstico Final de Desempenho */}
       {showResults && (
         <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm space-y-4">
           <div className="text-center space-y-1">
@@ -122,7 +119,6 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
             </p>
           </div>
 
-          {/* Feedback Pedagógico / Gatilho para Usar o Tutor */}
           {weakTopics.length > 0 ? (
             <div className="bg-amber-50 border border-amber-100 p-3.5 rounded-xl text-xs space-y-2">
               <div className="flex items-center gap-2 text-amber-800 font-semibold">
@@ -133,7 +129,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
                 Você teve dificuldades nas questões referentes a: <strong>{weakTopics.join(", ")}</strong>.
               </p>
               <p className="text-amber-700 text-[11px] italic">
-                👉 Clique em "Voltar para o Chat" e peça ao Assistente IA para te explicar melhor esses pontos!
+                Clique em "Voltar para o Chat" e peça ao Assistente IA para te explicar melhor esses pontos!
               </p>
             </div>
           ) : (
@@ -145,7 +141,6 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
         </div>
       )}
 
-      {/* Questões */}
       {questions.map((q, qIdx) => (
         <div key={qIdx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
           <div className="flex items-center justify-between gap-2">
@@ -191,7 +186,6 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
             })}
           </div>
 
-          {/* Explicação da Resposta Correta (Limpa, sem termos pedagógicos) */}
           {showResults && (
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[11px] text-gray-600 leading-relaxed">
               💡 <strong>Explicação:</strong> {q.explanation}

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "./_components/profile-header";
 import { ProfileSkeleton } from "./_components/ProfileSkeleton";
 import { ProfileDataForm } from "./_components/ProfileDataForm";
+import { InterestsForm } from "./_components/InterestsForm";
 import { SecurityForm } from "./_components/SecurityForm";
 import { FormStatusBadge } from "./_components/FormStatusBadge";
 import { formatName } from "@/utils/formatName";
@@ -22,8 +23,17 @@ export default function ConfiguracoesPerfil() {
   const [userRole, setUserRole] = useState(""); 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
 
-  const [initialData, setInitialData] = useState({ name: "", email: "", bio: "" });
+  const [initialData, setInitialData] = useState({ 
+    name: "", 
+    email: "", 
+    bio: "", 
+    birthDate: "", 
+    interests: [] as string[],
+  });
+
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,16 +51,27 @@ export default function ConfiguracoesPerfil() {
       try {
         setLoading(true);
         const data = await getMe(token);
+
         const formattedName = data.name ? formatName(data.name) : "";
         const userEmail = data.email || "";
         const userBio = data.bio || "";
+        const userBirthDate = data.birth_date || "";
+        const userInterests = data.interests || [];
 
         setName(formattedName);
         setEmail(userEmail);
         setBio(userBio);
         setUserRole(data.role || "");
+        setBirthDate(userBirthDate);
+        setInterests(userInterests);
 
-        setInitialData({ name: formattedName, email: userEmail, bio: userBio });
+        setInitialData({
+          name: formattedName, 
+          email: userEmail, 
+          bio: userBio, 
+          birthDate: userBirthDate, 
+          interests: userInterests, 
+        });
       } catch (error) {
         console.error("Erro ao buscar dados do usuário:", error);
         toast.error("Não foi possível carregar os dados do perfil.");
@@ -65,6 +86,8 @@ export default function ConfiguracoesPerfil() {
     name !== initialData.name ||
     email !== initialData.email ||
     bio !== initialData.bio ||
+    birthDate !== initialData.birthDate ||
+    JSON.stringify(interests) !== JSON.stringify(initialData.interests) ||
     password !== "";
 
   useEffect(() => {
@@ -72,7 +95,7 @@ export default function ConfiguracoesPerfil() {
       setSaveSuccess(false);
       setErrorMessage(null);
     }
-  }, [name, email, bio, password]);
+  }, [name, email, bio, birthDate, interests, password]);
 
   const handleSave = async () => {
     setErrorMessage(null);
@@ -97,7 +120,13 @@ export default function ConfiguracoesPerfil() {
 
     try {
       setIsSaving(true);
-      const payload: any = { name, email, bio };
+      const payload: any = { 
+        name, 
+        email, 
+        bio, 
+        birth_date: birthDate || null, 
+        interests,
+      };
 
       if (password) {
         payload.password = password;
@@ -106,10 +135,11 @@ export default function ConfiguracoesPerfil() {
       await updateMe(token, payload);
 
       setSaveSuccess(true);
-      setInitialData({ name, email, bio });
+      setInitialData({ name, email, bio, birthDate, interests });
+
       setPassword("");
       setConfirmPassword("");
-      toast.success("Perfil updated!");
+      toast.success("Perfil atualizado com sucesso!");
 
       setTimeout(() => {
         setSaveSuccess(false);
@@ -152,12 +182,24 @@ export default function ConfiguracoesPerfil() {
         </div>
 
         <div className="space-y-8">
-          <ProfileHeader name={name} email={email} initials={initials} role={userRole} />
+          <ProfileHeader 
+            name={name} 
+            email={email} 
+            initials={initials} 
+            role={userRole} 
+            birthDate={birthDate} 
+          />
 
           <ProfileDataForm
             name={name} setName={setName}
             email={email} setEmail={setEmail}
             bio={bio} setBio={setBio}
+            birthDate={birthDate} setBirthDate={setBirthDate}
+          />
+
+          <InterestsForm
+            interests={interests}
+            setInterests={setInterests}
           />
 
           <SecurityForm
@@ -174,6 +216,8 @@ export default function ConfiguracoesPerfil() {
                 setName(initialData.name);
                 setEmail(initialData.email);
                 setBio(initialData.bio);
+                setBirthDate(initialData.birthDate);
+                setInterests(initialData.interests);
                 setPassword("");
                 setConfirmPassword("");
                 setErrorMessage(null);

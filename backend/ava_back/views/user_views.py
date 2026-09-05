@@ -87,7 +87,9 @@ def me(request):
             "name": user.username,   
             "email": user.email,
             "role": user.role,
-            "bio": getattr(user, "bio", "") 
+            "bio": getattr(user, "bio", ""),
+            "birth_date": getattr(user, "birth_date", None), 
+            "interests": getattr(user, "interests", []),    
         })
 
     elif request.method == "PATCH":
@@ -100,19 +102,20 @@ def me(request):
         if "bio" in data and hasattr(user, "bio"):
             user.bio = data["bio"]
             
+        if "birth_date" in data and hasattr(user, "birth_date"):
+            user.birth_date = data["birth_date"] if data["birth_date"] else None
+
+        if "interests" in data and hasattr(user, "interests"):
+            user.interests = data["interests"]
+            
         if "password" in data and data["password"]:
             user.set_password(data["password"])
 
         user.save()
 
-        return Response({
-            "id": user.id,
-            "name": user.username,   
-            "email": user.email,
-            "role": user.role,
-            "bio": getattr(user, "bio", ""),
-            "message": "Perfil atualizado com sucesso!"
-        }, status=status.HTTP_200_OK)
+        return Response({ "id": user.id, "name": user.username, "email": user.email,
+            "role": user.role, "bio": getattr(user, "bio", ""), "birth_date": getattr(user, "birth_date", None), "interests": getattr(user, "interests", []),    
+            "message": "Perfil atualizado com sucesso!" }, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])

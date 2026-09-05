@@ -66,11 +66,6 @@ class LessonViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='meu-desempenho')
     def meu_desempenho(self, request):
-        """
-        Retorna o histórico de notas e tópicos fracos/fortes do aluno logado
-        para alimentar os gráficos do frontend.
-        URL: GET /api/lessons/meu-desempenho/
-        """
         performances = StudentPerformance.objects.filter(
             user=request.user
         ).select_related('lesson').order_by('created_at')

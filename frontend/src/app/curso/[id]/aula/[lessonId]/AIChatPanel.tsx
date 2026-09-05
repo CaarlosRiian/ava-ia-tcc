@@ -257,7 +257,6 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           </div>
         </div>
 
-        {/* Top Header */}
         <div className="p-4 flex justify-between items-center border-b bg-white">
           <div className="flex items-center gap-2">
             {quizQuestions.length > 0 ? (
@@ -278,7 +277,6 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           </button>
         </div>
 
-        {/* Ações Rápidas */}
         {quizQuestions.length === 0 && (
           <div className="flex gap-2 p-3 bg-white border-b border-gray-100 shadow-sm select-text">
             <button onClick={() => handleQuickAction("summary")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-blue-100 cursor-pointer">
@@ -290,7 +288,6 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           </div>
         )}
 
-        {/* Área de Conteúdo (Chat ou Quiz) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar select-text">
           {quizQuestions.length > 0 ? (
             <QuizView
@@ -304,7 +301,6 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de Mensagem */}
         {quizQuestions.length === 0 && (
           <div className="p-4 bg-white border-t">
             <form className="relative" onSubmit={handleSendMessage}>
