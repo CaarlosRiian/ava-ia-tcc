@@ -14,7 +14,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
         
         <Link 
           href="/descobrir" 
-          className="flex items-center gap-1 hover:text-[#2F52E0] transition-colors"
+          className="flex items-center gap-1 hover:text-[#FF7A00] transition-colors"
         >
           <Home size={14} className="mb-[1px]" />
           <span>Início</span>
@@ -29,7 +29,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
               {item.href && !isLast ? (
                 <Link 
                   href={item.href} 
-                  className="hover:text-[#2F52E0] transition-colors"
+                  className="hover:text-[#FF7A00] transition-colors"
                 >
                   {item.label}
                 </Link>
