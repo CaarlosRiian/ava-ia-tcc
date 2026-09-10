@@ -16,7 +16,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import AIAssistant, Lesson, StudentPerformance, Course, LessonProgress
+from ..models import AIAssistant, Lesson, StudentPerformance, Course, LessonProgress, Flashcard, UserFlashcardProgress
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -32,6 +32,12 @@ class LessonAISchema(BaseModel):
     resumo: str = Field(description="Texto detalhado do resumo formatado em Markdown com tópicos e negritos")
     questions: List[QuizQuestionSchema] = Field(description="Lista com exatamente 3 questões de múltipla escolha")
 
+class FlashcardItemSchema(BaseModel):
+    front: str = Field(description="Pergunta, conceito ou termo principal a ser testado na frente do card (curto e objetivo)")
+    back: str = Field(description="Resposta, explicação ou definição completa que responde ao verso do card")
+
+class FlashcardAISchema(BaseModel):
+    flashcards: List[FlashcardItemSchema] = Field(description="Lista contendo de 3 a 5 flashcards essenciais sobre a aula")
 
 class LessonService:
     
@@ -292,6 +298,121 @@ class LessonService:
             "id": performance.id,
             "score_percentage": performance.score_percentage
         }, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def gerar_flashcards_da_aula(lesson: Lesson, user=None):
+        flashcards_existentes = Flashcard.objects.filter(lesson=lesson)
+        if flashcards_existentes.exists():
+            from ..serializers import FlashcardSerializer
+            serializer = FlashcardSerializer(flashcards_existentes, many=True)
+            return serializer.data, status.HTTP_200_OK
+
+        texto_material = LessonService.obter_contexto_da_aula(lesson)
+
+        curso = lesson.module.course if lesson.module else None
+        categoria_nome = curso.category.name if (curso and curso.category) else "Geral"
+        titulo_curso = curso.title if curso else "Curso Geral"
+
+        if not texto_material or len(texto_material.strip()) < 10:
+            texto_material = (
+                f"Esta é uma aula intitulada '{lesson.title}' pertencente ao curso '{titulo_curso}' na área de {categoria_nome}. "
+                "O objetivo é guiar os estudantes nos conceitos essenciais e práticos sobre este assunto."
+            )
+
+        contexto_aluno = ""
+        if user and user.is_authenticated:
+            historico = StudentPerformance.objects.filter(user=user, lesson=lesson).order_by('-created_at').first()
+            topicos_fracos_str = ""
+            if historico and historico.weak_topics:
+                topicos_fracos_str = f" O aluno errou questões sobre: [{', '.join(historico.weak_topics)}]. Foque nesses pontos fracos."
+
+            idade_str = ""
+            if hasattr(user, 'birth_date') and user.birth_date:
+                from datetime import date
+                hoje = date.today()
+                idade = hoje.year - user.birth_date.year - ((hoje.month, hoje.day) < (user.birth_date.month, user.birth_date.day))
+                idade_str = f" O aluno tem {idade} anos. Apenas adeque a linguagem e analogias para esta faixa etária."
+
+            contexto_aluno = f"\nPERFIL DO ESTUDANTE:{idade_str}{topicos_fracos_str}"
+
+        prompt = f"""
+        Você é um tutor educacional especializado na área de "{categoria_nome}" e na técnica de Repetição Espaçada.
+        Com base no material didático da aula "{lesson.title}" (Curso: {titulo_curso}), crie de 3 a 5 flashcards pedagógicos de alta qualidade.
+        {contexto_aluno}
+
+        REGRAS RÍGIDAS DE CONTEÚDO:
+        1. NUNCA faça perguntas sobre metadados (ex: "Qual o título da aula?", "Quem é o professor?", "Qual o objetivo do curso?").
+        2. Foco total na COMPREENSÃO PRÁTICA e CONCEITOS CHAVE da matéria ({categoria_nome}):
+           - "Para que serve / como funciona o conceito X?"
+           - "Qual a diferença entre X e Y?"
+           - "Como resolver ou aplicar X na prática?"
+        3. A frente ('front') deve ser uma pergunta ou desafio objetivo para testar o conhecimento.
+        4. O verso ('back') deve trazer a resposta direta, clara e adequada à faixa etária do estudante.
+
+        Material Didático da Aula:
+        \"\"\"{texto_material}\"\"\"
+        """
+
+        client = LessonService._obter_cliente_gemini()
+        modelos = ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
+
+        for modelo in modelos:
+            for tentativa in range(3):
+                try:
+                    response = client.models.generate_content(
+                        model=modelo,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=FlashcardAISchema,
+                            temperature=0.3
+                        )
+                    )
+                    dados = json.loads(response.text)
+                    lista_flashcards = dados.get("flashcards", [])
+
+                    if not lista_flashcards:
+                        break
+
+                    flashcards_criados = []
+                    for item in lista_flashcards:
+                        card = Flashcard.objects.create(
+                            lesson=lesson,
+                            front=item.get("front", ""),
+                            back_main=item.get("back", ""),
+                            back_analogy=""
+                        )
+                        
+                        if user and user.is_authenticated:
+                            UserFlashcardProgress.objects.get_or_create(
+                                user=user,
+                                flashcard=card,
+                                defaults={'status': 'novo'}
+                            )
+
+                        flashcards_criados.append(card)
+
+                    from ..serializers import FlashcardSerializer
+                    serializer = FlashcardSerializer(flashcards_criados, many=True)
+                    return serializer.data, status.HTTP_201_CREATED
+
+                except ResourceExhausted as e:
+                    print(f"[Aviso IA - Flashcards]: Cota excedida no modelo {modelo}: {str(e)}. Alternando modelo...")
+                    break
+                except APIError as e:
+                    msg_erro = str(e)
+                    if "503" in msg_erro or "UNAVAILABLE" in msg_erro:
+                        tempo_espera = (tentativa + 1) * 2
+                        print(f"[Aviso IA - Flashcards]: {modelo} ocupado (503). Retentando em {tempo_espera}s... ({tentativa+1}/3)")
+                        time.sleep(tempo_espera)
+                        continue
+                    print(f"[Aviso IA - Flashcards]: Falha no modelo {modelo}: {msg_erro}. Tentando próximo...")
+                    break
+                except (json.JSONDecodeError, Exception) as e:
+                    print(f"[ERRO FLASHCARDS IA]: {str(e)}")
+                    break
+
+        raise ValidationError({"error": "Falha na comunicação com o serviço de IA para geração dos Flashcards."})
 
     @staticmethod
     def gerar_html_certificado(user, course) -> str:

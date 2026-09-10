@@ -1,4 +1,7 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.core.exceptions import PermissionDenied
+
 from rest_framework import filters, status
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -6,12 +9,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from ..models import Module, Lesson, LessonMaterial, StudentPerformance
-from ..serializers import (
-    ModuleSerializer, LessonSerializer, LessonMaterialSerializer, InstructorLessonSerializer
-)
+from ..models import ( Flashcard, Module, Lesson, LessonMaterial, StudentPerformance, UserFlashcardProgress )
+from ..serializers import ( ModuleSerializer, LessonSerializer, LessonMaterialSerializer, 
+    InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer )
 from ..services.service import LessonService
-
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer
@@ -21,7 +22,6 @@ class ModuleViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Module.objects.select_related('course').all()
-
 
 class LessonViewSet(ModelViewSet):
     queryset = Lesson.objects.all()
@@ -46,8 +46,11 @@ class LessonViewSet(ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def generate_ai(self, request, pk=None):
         lesson = self.get_object()
-        data, status_code = LessonService.processar_ia_da_aula(lesson)
-        return Response(data, status=status_code)
+        ai_content = LessonService.processar_ia_da_aula(lesson)
+        return Response({
+            "summary": ai_content.summary,
+            "quiz_json": ai_content.quiz_json
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def chat(self, request, pk=None):
@@ -84,6 +87,76 @@ class LessonViewSet(ModelViewSet):
 
         return Response(data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='generate_flashcards')
+    def generate_flashcards(self, request, pk=None):
+        lesson = self.get_object()
+        data, status_code = LessonService.gerar_flashcards_da_aula(lesson)
+        return Response(data, status=status_code)
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='flashcards')
+    def list_flashcards(self, request, pk=None):
+        lesson = self.get_object()
+        flashcards = Flashcard.objects.filter(lesson=lesson)
+        serializer = FlashcardSerializer(flashcards, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FlashcardViewSet(ModelViewSet):
+    serializer_class = UserFlashcardProgressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return UserFlashcardProgress.objects.filter(
+            user=self.request.user
+        ).select_related('flashcard', 'flashcard__lesson')
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='hoje')
+    def revisoes_de_hoje(self, request):
+        agora = timezone.now()
+        
+        progressos = UserFlashcardProgress.objects.filter(
+            user=request.user,
+            next_review__lte=agora
+        ).select_related('flashcard')
+
+        serializer = self.get_serializer(progressos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='responder')
+    def responder(self, request, pk=None):
+        serializer = FlashcardAnswerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        feedback = serializer.validated_data['feedback']
+        agora = timezone.now()
+
+        progress, _ = UserFlashcardProgress.objects.get_or_create(
+            user=request.user,
+            flashcard_id=pk,
+            defaults={'interval_days': 1, 'status': 'aprendendo'}
+        )
+
+        if feedback == 'errei':
+            progress.interval_days = 1
+            progress.status = 'aprendendo'
+            progress.next_review = agora + timedelta(days=1)
+        elif feedback == 'medio':
+            progress.interval_days = max(2, progress.interval_days * 2)
+            progress.status = 'aprendendo'
+            progress.next_review = agora + timedelta(days=progress.interval_days)
+        elif feedback == 'facil':
+            progress.interval_days = max(4, progress.interval_days * 3)
+            progress.status = 'revisado'
+            progress.next_review = agora + timedelta(days=progress.interval_days)
+
+        progress.last_reviewed_at = agora
+        progress.save()
+
+        return Response({
+            "message": "Resposta registrada com sucesso!",
+            "proxima_revisao": progress.next_review,
+            "status": progress.status
+        }, status=status.HTTP_200_OK)
 
 class LessonMaterialViewSet(ModelViewSet):
     serializer_class = LessonMaterialSerializer
