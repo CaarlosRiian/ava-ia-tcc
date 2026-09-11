@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite, StudentPerformance
+from .models import ( User, Category, Course, Module, Lesson, LessonMaterial, 
+    Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite, StudentPerformance, Flashcard, UserFlashcardProgress )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -10,8 +11,10 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = [ 'id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 
-            'birth_date', 'interests', 'status', 'created_at' ]
+        fields = [
+            'id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 
+            'birth_date', 'interests', 'status', 'created_at'
+        ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
             'created_at': {'read_only': True},
@@ -77,9 +80,9 @@ class LessonMaterialSerializer(serializers.ModelSerializer):
             validated_data['raw_content'] = file_obj.name
             
         return super().create(validated_data)
+
 class InstructorLessonSerializer(serializers.ModelSerializer):
     thumbnail = serializers.ImageField(required=False, allow_null=True)
-    
     materials = LessonMaterialSerializer(many=True, read_only=True)
 
     class Meta:
@@ -107,12 +110,15 @@ class LessonSerializer(serializers.ModelSerializer):
     ai_content = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     completed = serializers.SerializerMethodField()
-    
     materials = LessonMaterialSerializer(many=True, read_only=True)
 
     class Meta:
         model = Lesson
-        fields = ['id', 'module', 'module_title', 'title', 'slug', 'video', 'thumbnail', 'status', 'visibility', 'duration_seconds', 'order', 'ai_content', 'materials', 'completed']
+        fields = [
+            'id', 'module', 'module_title', 'title', 'slug', 'video', 
+            'thumbnail', 'status', 'visibility', 'duration_seconds', 
+            'order', 'ai_content', 'materials', 'completed'
+        ]
 
     def get_ai_content(self, obj):
         ai = AIAssistant.objects.filter(lesson=obj).first()
@@ -171,7 +177,10 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules']
+        fields = [
+            'id', 'title', 'description', 'category', 'professor_name', 
+            'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules'
+        ]
 
     def get_hours(self, obj):
         total_seconds = Lesson.objects.filter(module__course=obj).aggregate(total=Sum('duration_seconds'))['total'] or 0
@@ -304,3 +313,31 @@ class QuizSubmissionSerializer(serializers.Serializer):
         required=False,
         default=list
     )
+
+class FlashcardSerializer(serializers.ModelSerializer):
+    back = serializers.CharField(source='back_main', read_only=True)
+    pergunta = serializers.CharField(source='front', read_only=True)
+    resposta = serializers.CharField(source='back_main', read_only=True)
+
+    class Meta:
+        model = Flashcard
+        fields = [ 'id', 'lesson', 'front', 'back_main', 'back_analogy', 'back', 
+            'pergunta', 'resposta', 'created_at' ]
+        read_only_fields = ['id', 'created_at']
+
+class UserFlashcardProgressSerializer(serializers.ModelSerializer):
+    flashcard = FlashcardSerializer(read_only=True)
+
+    class Meta:
+        model = UserFlashcardProgress
+        fields = ['id', 'flashcard', 'status', 'interval_days', 'next_review', 'last_reviewed_at']
+        read_only_fields = ['id', 'next_review', 'last_reviewed_at']
+
+class FlashcardAnswerSerializer(serializers.Serializer):
+    FEEDBACK_CHOICES = (
+        ('errei', 'Errei / Difícil'),
+        ('medio', 'Médio / Bom'),
+        ('facil', 'Fácil'),
+    )
+
+    feedback = serializers.ChoiceField(choices=FEEDBACK_CHOICES)

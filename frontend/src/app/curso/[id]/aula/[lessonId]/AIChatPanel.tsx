@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, X, FileText, CheckSquare, ArrowLeft, GripVertical } from "lucide-react";
+import { Sparkles, Send, X, FileText, CheckSquare, ArrowLeft, GripVertical, Layers } from "lucide-react";
 import QuizView from "../../../../../components/QuizAI/QuizView";
 import ChatHistory from "../../../../../components/QuizAI/ChatHistory";
+import FlashcardView from "../../../../../components/QuizAI/FlashcardView";
+import { learningService } from "@/services/learningService";
 
 interface Message {
   id: string;
@@ -20,6 +22,12 @@ interface Question {
   explanation: string;
 }
 
+interface Flashcard {
+  id: number;
+  pergunta: string;
+  resposta: string;
+}
+
 interface AIChatPanelProps {
   lessonTitle: string;
   lessonId: number;
@@ -32,6 +40,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
+  const [generatedFlashcards, setGeneratedFlashcards] = useState<Flashcard[]>([]);
   const [isResizingState, setIsResizingState] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -123,7 +132,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading, quizQuestions]);
+  }, [messages, isLoading, quizQuestions, generatedFlashcards]);
 
   const formatTime = (timestamp: Date | string) => {
     try {
@@ -170,10 +179,37 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
     return data.questions || data.quiz || [];
   };
 
-  const handleQuickAction = async (type: "summary" | "quiz") => {
+  const handleAnswerCard = async (cardId: number, feedback: 'errei' | 'medio' | 'facil') => {
+    try {
+      const token = localStorage.getItem("access");
+      if (!token) throw new Error("Usuário não autenticado.");
+
+      const response = await fetch(`http://localhost:8000/api/flashcards/${cardId}/responder/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ feedback }),
+      });
+
+      if (!response.ok) {
+        console.error("Erro ao registrar resposta do flashcard:", await response.text());
+      } else {
+        console.log(`[AIChatPanel] Resposta salva com sucesso para o card ${cardId}`);
+      }
+    } catch (error) {
+      console.error("Erro de rede ao enviar feedback do flashcard:", error);
+    }
+  };
+
+  const handleQuickAction = async (type: "summary" | "quiz" | "flashcards") => {
     if (isLoading) return;
 
-    const actionText = type === "summary" ? "📝 Gerar Resumo da Aula" : "🎯 Gerar Exercícios de Fixação";
+    let actionText = "";
+    if (type === "summary") actionText = "📝 Gerar Resumo da Aula";
+    if (type === "quiz") actionText = "🎯 Gerar Exercícios de Fixação";
+    if (type === "flashcards") actionText = "🎴 Gerar Cartões de Estudo";
 
     setMessages((prev) => [
       ...prev,
@@ -194,6 +230,11 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
       } else if (type === "quiz") {
         const questionsData = await fetchStructuredQuiz();
         setQuizQuestions(questionsData);
+      } else if (type === "flashcards") {
+        const data = await learningService.generateFlashcards(lessonId);
+        
+        const cards = Array.isArray(data) ? data : data.flashcards;
+        setGeneratedFlashcards(cards);
       }
     } catch (error: any) {
       console.error("Erro na ação rápida:", error);
@@ -231,6 +272,8 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
     }
   };
 
+  const isCustomView = quizQuestions.length > 0 || generatedFlashcards.length > 0;
+
   return (
     <>
       {isResizingState && <div className="fixed inset-0 z-[9999] cursor-ew-resize select-none" />}
@@ -259,8 +302,14 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
 
         <div className="p-4 flex justify-between items-center border-b bg-white">
           <div className="flex items-center gap-2">
-            {quizQuestions.length > 0 ? (
-              <button onClick={() => setQuizQuestions([])} className="p-1.5 hover:bg-gray-100 rounded-lg mr-1 transition-colors cursor-pointer">
+            {isCustomView ? (
+              <button
+                onClick={() => {
+                  setQuizQuestions([]);
+                  setGeneratedFlashcards([]);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-lg mr-1 transition-colors cursor-pointer"
+              >
                 <ArrowLeft className="h-4 w-4 text-gray-500" />
               </button>
             ) : (
@@ -269,7 +318,11 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
               </div>
             )}
             <h3 className="font-bold text-sm text-[#161B1D]">
-              {quizQuestions.length > 0 ? "Exercícios de Fixação" : "Tutor de IA"}
+              {quizQuestions.length > 0
+                ? "Exercícios de Fixação"
+                : generatedFlashcards.length > 0
+                ? "Flashcards de Estudo"
+                : "Tutor de IA"}
             </h3>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors">
@@ -277,13 +330,28 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           </button>
         </div>
 
-        {quizQuestions.length === 0 && (
-          <div className="flex gap-2 p-3 bg-white border-b border-gray-100 shadow-sm select-text">
-            <button onClick={() => handleQuickAction("summary")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-blue-100 cursor-pointer">
-              <FileText className="h-3.5 w-3.5" /> Gerar Resumo
+        {!isCustomView && (
+          <div className="flex gap-1.5 p-3 bg-white border-b border-gray-100 shadow-sm select-text">
+            <button
+              onClick={() => handleQuickAction("summary")}
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-1 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-blue-100 cursor-pointer"
+            >
+              <FileText className="h-3.5 w-3.5" /> Resumo
             </button>
-            <button onClick={() => handleQuickAction("quiz")} disabled={isLoading} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-600 text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-emerald-100 cursor-pointer">
-              <CheckSquare className="h-3.5 w-3.5" /> Gerar Exercícios
+            <button
+              onClick={() => handleQuickAction("quiz")}
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-1 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-600 text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-emerald-100 cursor-pointer"
+            >
+              <CheckSquare className="h-3.5 w-3.5" /> Exercícios
+            </button>
+            <button
+              onClick={() => handleQuickAction("flashcards")}
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-1 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-purple-100 cursor-pointer"
+            >
+              <Layers className="h-3.5 w-3.5" /> Flashcards
             </button>
           </div>
         )}
@@ -295,13 +363,19 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
               questions={quizQuestions}
               onBackToChat={() => setQuizQuestions([])}
             />
+          ) : generatedFlashcards.length > 0 ? (
+            <FlashcardView
+              flashcards={generatedFlashcards}
+              onBackToChat={() => setGeneratedFlashcards([])}
+              onAnswerCard={handleAnswerCard}
+            />
           ) : (
             <ChatHistory messages={messages} isLoading={isLoading} formatTime={formatTime} />
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {quizQuestions.length === 0 && (
+        {!isCustomView && (
           <div className="p-4 bg-white border-t">
             <form className="relative" onSubmit={handleSendMessage}>
               <input
@@ -312,7 +386,11 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
                 placeholder={isLoading ? "O tutor está pensando..." : "Faça uma pergunta sobre o conteúdo..."}
                 className="w-full pl-4 pr-12 py-3 text-gray-800 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#2F52E0] transition-all disabled:opacity-50"
               />
-              <button type="submit" disabled={isLoading || !input.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#2F52E0] text-white cursor-pointer rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#2F52E0] text-white cursor-pointer rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
                 <Send className="h-4 w-4" />
               </button>
             </form>
