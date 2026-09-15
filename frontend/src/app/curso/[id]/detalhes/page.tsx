@@ -52,11 +52,6 @@ export default function CursoDetalhePage() {
             return Number(c.id) === courseIdNum;
           });
 
-          if (isEnrolled) {
-            router.replace(`/curso/${courseIdNum}`);
-            return;
-          }
-
           setCourse(courseData);
         } else {
           const data = await getCourseDetail(courseIdNum);

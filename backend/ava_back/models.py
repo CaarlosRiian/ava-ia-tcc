@@ -277,3 +277,49 @@ class UserFlashcardProgress(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Flashcard {self.flashcard.id} (Próxima: {self.next_review.date()})"
+
+class Challenge(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='challenges')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    evaluation_criteria = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class LessonChallenge(models.Model):
+    TAXONOMY_LEVELS = (
+        ('analisar', 'Analisar'),
+        ('avaliar', 'Avaliar'),
+        ('criar', 'Criar'),
+    )
+
+    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE, related_name='challenge')
+    title = models.CharField(max_length=200, verbose_name="Título do Desafio Prático")
+    description = models.TextField(verbose_name="Enunciado / Descrição do Problema")
+    taxonomy_level = models.CharField(max_length=20, choices=TAXONOMY_LEVELS, default='analisar')
+    evaluation_criteria = models.TextField(verbose_name="Critérios de Avaliação para a IA")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Desafio ({self.get_taxonomy_level_display()}) - {self.lesson.title}"
+
+
+class StudentChallengeSubmission(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='challenge_submissions')
+    challenge = models.ForeignKey(LessonChallenge, on_delete=models.CASCADE, related_name='submissions')
+    answer_text = models.TextField(verbose_name="Resposta do Aluno")
+    
+    strengths = models.TextField(blank=True, null=True, verbose_name="Pontos Fortes")
+    improvements = models.TextField(blank=True, null=True, verbose_name="O que melhorar")
+    review_timestamp = models.CharField(max_length=20, blank=True, null=True, verbose_name="Minuto sugerido para revisão (ex: 04:20)")
+    score_percentage = models.FloatField(default=0.0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'challenge')
+
+    def __str__(self):
+        return f"{self.student.username} - Desafio: {self.challenge.title} ({self.score_percentage}%)"

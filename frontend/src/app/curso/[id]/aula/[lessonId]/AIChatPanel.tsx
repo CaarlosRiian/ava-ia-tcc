@@ -41,6 +41,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
   const [isLoading, setIsLoading] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [generatedFlashcards, setGeneratedFlashcards] = useState<Flashcard[]>([]);
+  const [summaryText, setSummaryText] = useState<string | null>(null);
   const [isResizingState, setIsResizingState] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -132,7 +133,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading, quizQuestions, generatedFlashcards]);
+  }, [messages, isLoading, quizQuestions, generatedFlashcards, summaryText]);
 
   const formatTime = (timestamp: Date | string) => {
     try {
@@ -143,11 +144,21 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
     }
   };
 
+  const renderFormattedText = (text: string) => {
+    const parts = text.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className="font-semibold text-gray-900">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
   const executeAPICall = async (payload: { message: string }) => {
     const token = localStorage.getItem("access");
     if (!token) throw new Error("Usuário não autenticado.");
 
-    const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/submit_quiz/`, {
+    const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -156,12 +167,24 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
       body: JSON.stringify(payload),
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = {};
+      }
       throw new Error(errorData.error || errorData.detail || "Erro na resposta do servidor");
     }
 
-    return await response.json();
+    try {
+      return responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error("[DEBUG] Erro ao fazer parse do JSON:", e);
+      return { response: responseText };
+    }
   };
 
   const fetchStructuredQuiz = async () => {
@@ -179,12 +202,30 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
     return data.questions || data.quiz || [];
   };
 
+  const fetchSummary = async () => {
+    const token = localStorage.getItem("access");
+    const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/get_summary/`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => null);
+
+    if (response && response.ok) {
+      const data = await response.json();
+      return data.summary || data.response || data.text;
+    }
+
+    const fallbackData = await executeAPICall({
+      message: "Por favor, gere um resumo estruturado e detalhado dos pontos principais desta aula.",
+    });
+    return fallbackData.response || fallbackData.message || fallbackData.text || JSON.stringify(fallbackData);
+  };
+
   const handleAnswerCard = async (cardId: number, feedback: 'errei' | 'medio' | 'facil') => {
     try {
       const token = localStorage.getItem("access");
       if (!token) throw new Error("Usuário não autenticado.");
 
-      const response = await fetch(`http://localhost:8000/api/flashcards/${cardId}/responder/`, {
+      await fetch(`http://localhost:8000/api/flashcards/${cardId}/responder/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -192,12 +233,6 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
         },
         body: JSON.stringify({ feedback }),
       });
-
-      if (!response.ok) {
-        console.error("Erro ao registrar resposta do flashcard:", await response.text());
-      } else {
-        console.log(`[AIChatPanel] Resposta salva com sucesso para o card ${cardId}`);
-      }
     } catch (error) {
       console.error("Erro de rede ao enviar feedback do flashcard:", error);
     }
@@ -205,34 +240,17 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
 
   const handleQuickAction = async (type: "summary" | "quiz" | "flashcards") => {
     if (isLoading) return;
-
-    let actionText = "";
-    if (type === "summary") actionText = "📝 Gerar Resumo da Aula";
-    if (type === "quiz") actionText = "🎯 Gerar Exercícios de Fixação";
-    if (type === "flashcards") actionText = "🎴 Gerar Cartões de Estudo";
-
-    setMessages((prev) => [
-      ...prev,
-      { id: Math.random().toString(36).substring(7), sender: "user", text: actionText, timestamp: new Date() },
-    ]);
     setIsLoading(true);
 
     try {
       if (type === "summary") {
-        const data = await executeAPICall({
-          message: "Por favor, gere um resumo detalhado dos pontos principais desta aula.",
-        });
-
-        setMessages((prev) => [
-          ...prev,
-          { id: Math.random().toString(36).substring(7), sender: "bot", text: data.response, timestamp: new Date() },
-        ]);
+        const text = await fetchSummary();
+        setSummaryText(text);
       } else if (type === "quiz") {
         const questionsData = await fetchStructuredQuiz();
         setQuizQuestions(questionsData);
       } else if (type === "flashcards") {
         const data = await learningService.generateFlashcards(lessonId);
-        
         const cards = Array.isArray(data) ? data : data.flashcards;
         setGeneratedFlashcards(cards);
       }
@@ -263,16 +281,18 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
 
     try {
       const data = await executeAPICall({ message: userMessageText });
-      setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "bot", text: data.response, timestamp: new Date() }]);
+      const botReply = data.response || data.message || data.text || (typeof data === 'string' ? data : JSON.stringify(data));
+
+      setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "bot", text: botReply, timestamp: new Date() }]);
     } catch (error) {
-      console.error(error);
+      console.error("[DEBUG] Erro capturado no catch do chat:", error);
       setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "bot", text: "Ops, tive um problema para processar sua resposta.", timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isCustomView = quizQuestions.length > 0 || generatedFlashcards.length > 0;
+  const isCustomView = quizQuestions.length > 0 || generatedFlashcards.length > 0 || summaryText !== null;
 
   return (
     <>
@@ -307,6 +327,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
                 onClick={() => {
                   setQuizQuestions([]);
                   setGeneratedFlashcards([]);
+                  setSummaryText(null);
                 }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg mr-1 transition-colors cursor-pointer"
               >
@@ -321,8 +342,10 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
               {quizQuestions.length > 0
                 ? "Exercícios de Fixação"
                 : generatedFlashcards.length > 0
-                ? "Flashcards de Estudo"
-                : "Tutor de IA"}
+                  ? "Flashcards de Estudo"
+                  : summaryText !== null
+                    ? "Resumo da Aula"
+                    : "Tutor de IA"}
             </h3>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors">
@@ -369,6 +392,18 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
               onBackToChat={() => setGeneratedFlashcards([])}
               onAnswerCard={handleAnswerCard}
             />
+          ) : summaryText !== null ? (
+            <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
+                {renderFormattedText(summaryText)}
+              </div>
+              <button
+                onClick={() => setSummaryText(null)}
+                className="w-full mt-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Voltar para o Chat
+              </button>
+            </div>
           ) : (
             <ChatHistory messages={messages} isLoading={isLoading} formatTime={formatTime} />
           )}

@@ -100,6 +100,16 @@ class LessonViewSet(ModelViewSet):
         serializer = FlashcardSerializer(flashcards, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='challenge')
+    def get_challenge(self, request, pk=None):
+        lesson = self.get_object()
+        return LessonService.handle_get_challenge(lesson)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='submit_challenge')
+    def submit_challenge(self, request, pk=None):
+        lesson = self.get_object()
+        return LessonService.handle_submit_challenge_action(request, lesson)
+
 
 class FlashcardViewSet(ModelViewSet):
     serializer_class = UserFlashcardProgressSerializer

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import ( User, Category, Course, Module, Lesson, LessonMaterial, 
-    Enrollment, LessonProgress, AIAssistant, InstructorRequest, Favorite, StudentPerformance, Flashcard, UserFlashcardProgress )
+    Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
+    Favorite, StudentPerformance, Flashcard, UserFlashcardProgress, 
+    Challenge )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -75,23 +77,69 @@ class LessonMaterialSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         file_obj = validated_data.get('file')
-        
         if file_obj and not validated_data.get('raw_content'):
             validated_data['raw_content'] = file_obj.name
-            
         return super().create(validated_data)
+
+class ChallengeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Challenge
+        fields = ['id', 'title', 'description', 'evaluation_criteria']
 
 class InstructorLessonSerializer(serializers.ModelSerializer):
     thumbnail = serializers.ImageField(required=False, allow_null=True)
     materials = LessonMaterialSerializer(many=True, read_only=True)
+    challenge = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
             "id", "module", "title", "slug", "video", "thumbnail", 
-            "duration_seconds", "order", "status", "visibility", "materials"
+            "duration_seconds", "order", "status", "visibility", "materials", "challenge"
         ]
 
+    def get_challenge(self, obj):
+        challenge_obj = obj.challenges.first() 
+        if not challenge_obj:
+            return None
+        return ChallengeSerializer(challenge_obj).data
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        lesson = super().create(validated_data)
+        
+        if request:
+            has_challenge = request.data.get('has_challenge') == 'true'
+            if has_challenge:
+                Challenge.objects.create(
+                    lesson=lesson,
+                    title=request.data.get('challenge_title', ''),
+                    description=request.data.get('challenge_description', ''),
+                    evaluation_criteria=request.data.get('challenge_criteria', '')
+                )
+        return lesson
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        lesson = super().update(instance, validated_data)
+        
+        if request:
+            has_challenge = request.data.get('has_challenge') == 'true'
+            if has_challenge:
+                Challenge.objects.update_or_create(
+                    lesson=lesson,
+                    defaults={
+                        'title': request.data.get('challenge_title', ''),
+                        'description': request.data.get('challenge_description', ''),
+                        'evaluation_criteria': request.data.get('challenge_criteria', ''),
+                    }
+                )
+            else:
+                Challenge.objects.filter(lesson=lesson).delete()
+        
+        lesson.refresh_from_db()
+        return lesson
+    
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         request = self.context.get("request")
@@ -106,45 +154,35 @@ class InstructorLessonSerializer(serializers.ModelSerializer):
         return ret
 
 class LessonSerializer(serializers.ModelSerializer):
-    module_title = serializers.CharField(source='module.title', read_only=True)
-    ai_content = serializers.SerializerMethodField()
-    thumbnail = serializers.SerializerMethodField()
-    completed = serializers.SerializerMethodField()
+    thumbnail = serializers.ImageField(required=False, allow_null=True)
     materials = LessonMaterialSerializer(many=True, read_only=True)
+    challenge = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
-            'id', 'module', 'module_title', 'title', 'slug', 'video', 
-            'thumbnail', 'status', 'visibility', 'duration_seconds', 
-            'order', 'ai_content', 'materials', 'completed'
+            "id", "module", "title", "slug", "video", "thumbnail", 
+            "duration_seconds", "order", "status", "visibility", "materials", "challenge"
         ]
 
-    def get_ai_content(self, obj):
-        ai = AIAssistant.objects.filter(lesson=obj).first()
-        if not ai:
+    def get_challenge(self, obj):
+        challenge_obj = obj.challenges.first()
+        if not challenge_obj:
             return None
-        return {
-            "summary": ai.summary,
-            "quiz_json": ai.quiz_json,
-            "generated_at": ai.generated_at
-        }
-    
-    def get_thumbnail(self, obj):
-        request = self.context.get('request')
-        if obj.thumbnail:
-            return request.build_absolute_uri(obj.thumbnail.url)
-        return None
-    
-    def get_completed(self, obj):
-        request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
-            return LessonProgress.objects.filter(
-                user=request.user,
-                lesson=obj,
-                completed=True
-            ).exists()
-        return False
+        return ChallengeSerializer(challenge_obj).data
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get("request")
+        
+        if instance.thumbnail and request:
+            ret['thumbnail'] = request.build_absolute_uri(instance.thumbnail.url)
+        elif instance.thumbnail:
+            ret['thumbnail'] = instance.thumbnail.url
+        else:
+            ret['thumbnail'] = None
+            
+        return ret
 
 class ModuleSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)

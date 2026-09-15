@@ -23,6 +23,7 @@ type Props = {
     onUpdate: (lessonId: string, data: FormData) => Promise<void>;
     onCreate: (formData: FormData) => Promise<void>; 
     onDeleteMaterial: (lessonId: string, materialId: string) => void;
+    onOpenAnalytics?: (lesson: any) => void;
 };
 
 export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, onUpdate, onCreate, onDeleteMaterial }: Props) {

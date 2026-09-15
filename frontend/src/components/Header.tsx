@@ -297,7 +297,7 @@ export default function Header({ value, onChange }: HeaderProps) {
 
               <Link
                 href="/cadastro"
-                className="px-5 py-2.5 text-sm font-bold bg-[#2F52E0] text-white rounded-xl"
+                className="px-5 py-2.5 text-sm font-bold bg-[#FF7A00] text-white rounded-xl"
               >
                 Cadastrar
               </Link>

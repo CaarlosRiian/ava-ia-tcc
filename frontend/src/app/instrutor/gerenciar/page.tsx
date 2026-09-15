@@ -25,6 +25,7 @@ export default function GerenciamentoAulas() {
   const [openAddOptionsModal, setOpenAddOptionsModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseUI | null>(null);
+  const [analyticsLesson, setAnalyticsLesson] = useState<any | null>(null);
 
   const cursoAtivo = cursos.find((c) => c.id === cursoSelecionado);
 
@@ -58,16 +59,16 @@ export default function GerenciamentoAulas() {
       prev.map((c) =>
         c.id === cId
           ? {
-            ...c,
-            aulas: c.aulas.map((a) =>
-              a.id === aId
-                ? {
-                  ...a,
-                  status: a.status === "publicada" ? "rascunho" : "publicada",
-                }
-                : a
-            ),
-          }
+              ...c,
+              aulas: c.aulas.map((a) =>
+                a.id === aId
+                  ? {
+                      ...a,
+                      status: a.status === "publicada" ? "rascunho" : "publicada",
+                    }
+                  : a
+              ),
+            }
           : c
       )
     );
@@ -80,9 +81,9 @@ export default function GerenciamentoAulas() {
       prev.map((c) =>
         c.id === cId
           ? {
-            ...c,
-            aulas: c.aulas.filter((a) => a.id !== aId),
-          }
+              ...c,
+              aulas: c.aulas.filter((a) => a.id !== aId),
+            }
           : c
       )
     );
@@ -117,10 +118,10 @@ export default function GerenciamentoAulas() {
         prev.map((curso) =>
           curso.id === courseId
             ? {
-              ...curso,
-              ...updated,
-              aulas: updated.modules?.flatMap((m: any) => m.lessons) || [],
-            }
+                ...curso,
+                ...updated,
+                aulas: updated.modules?.flatMap((m: any) => m.lessons) || [],
+              }
             : curso
         )
       );
@@ -332,6 +333,7 @@ export default function GerenciamentoAulas() {
               onToggle={handleToggle}
               onDelete={handleDelete}
               onOpenAddOptions={() => setOpenAddOptionsModal(true)}
+              onOpenAnalytics={(lesson) => setAnalyticsLesson(lesson)}
             />
           </div>
         </div>
