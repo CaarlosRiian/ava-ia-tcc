@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
@@ -323,3 +325,25 @@ class StudentChallengeSubmission(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - Desafio: {self.challenge.title} ({self.score_percentage}%)"
+
+class LessonSubmission(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_submissions')
+    
+    student_answer = models.TextField()
+    
+    ai_feedback = models.TextField()
+    
+    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Submissão de Aula"
+        verbose_name_plural = "Submissões de Aulas"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student} - {self.lesson.title}"

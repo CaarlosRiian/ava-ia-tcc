@@ -17,7 +17,7 @@ type Props = {
   onToggle: (cId: string, aId: string) => void;
   onDelete: (cId: string, aId: string) => void;
   onOpenAddOptions: () => void;
-  onOpenAnalytics?: (lesson: any) => void; // <--- Adicionado aqui
+  onOpenAnalytics?: (lesson: any) => void; 
 };
 
 export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onOpenAnalytics }: Props) => {
@@ -241,7 +241,7 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
                 onUpdate={handleUpdateLesson}
                 onCreate={handleCreateLesson}
                 onDeleteMaterial={handleDeleteMaterial}
-                onOpenAnalytics={onOpenAnalytics} // <--- Repassado aqui para o componente de listagem de aulas interno
+                onOpenAnalytics={onOpenAnalytics} 
               />
             </div>
           </div>

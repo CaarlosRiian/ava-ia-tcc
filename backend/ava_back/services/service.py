@@ -21,7 +21,6 @@ from ..models import AIAssistant, Lesson, StudentPerformance, Course, LessonProg
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-
 class QuizQuestionSchema(BaseModel):
     question: str = Field(description="Texto da pergunta de múltipla escolha")
     options: List[str] = Field(description="Array com exatamente 4 opções de resposta")
@@ -32,6 +31,9 @@ class LessonAISchema(BaseModel):
     resumo: str = Field(description="Texto detalhado do resumo formatado em Markdown com tópicos e negritos")
     questions: List[QuizQuestionSchema] = Field(description="Lista com exatamente 3 questões de múltipla escolha")
 
+class ChallengeFeedbackSchema(BaseModel):
+    feedback_curto: str = Field(description="Feedback direto e extremamente conciso em no máximo 2 frases sobre a resposta.")
+    prompt_pesquisa: str = Field(description="Um prompt de comando curto, de uma única linha, focado para o aluno copiar e colar no chat da IA para aprofundar no que errou.")
 
 class LessonService:
     
@@ -164,7 +166,7 @@ class LessonService:
         """
 
     @staticmethod
-    def handle_get_quiz(viewset, lesson: Lesson):
+    def handle_get_quiz(lesson: Lesson):
         try:
             ai_content = lesson.ai_assistant
         except AIAssistant.DoesNotExist:
@@ -361,53 +363,58 @@ class LessonService:
     @staticmethod
     def handle_get_challenge(lesson: Lesson):
         from ..models import Challenge
-        try:
-            challenge = lesson.challenge
-            return Response({
-                "id": challenge.id,
-                "title": challenge.title,
-                "description": challenge.description,
-                "taxonomy_level": challenge.taxonomy_level,
-                "taxonomy_level_display": challenge.get_taxonomy_level_display()
-            }, status=status.HTTP_200_OK)
-        except Challenge.DoesNotExist:
+        challenge = lesson.challenges.first() if hasattr(lesson, 'challenges') else Challenge.objects.filter(lesson=lesson).first()
+        
+        if not challenge:
             return Response({"detail": "Nenhum desafio prático cadastrado para esta aula."}, status=status.HTTP_404_NOT_FOUND)
+            
+        return Response({
+            "id": challenge.id,
+            "title": getattr(challenge, 'title', 'Desafio Prático'),
+            "description": challenge.description,
+            "taxonomy_level": getattr(challenge, 'taxonomy_level', 'analisar'),
+            "taxonomy_level_display": challenge.get_taxonomy_level_display() if hasattr(challenge, 'get_taxonomy_level_display') else "Prático"
+        }, status=status.HTTP_200_OK)
 
     @staticmethod
-    def handle_submit_challenge_action(request, lesson: Lesson):
-        from ..models import Challenge, StudentChallengeSubmission
+    def handle_submit_challenge_action(user, lesson: Lesson, answer_text: str):
+        from django.apps import apps
+        from ..models import StudentChallengeSubmission
         
-        try:
-            challenge = lesson.challenge
-        except Challenge.DoesNotExist:
-            return Response({"error": "Desafio não encontrado para esta aula."}, status=status.HTTP_404_NOT_FOUND)
-
-        answer_text = request.data.get('answer_text', '')
         if not answer_text:
-            return Response({"error": "A resposta não pode estar vazia."}, status=status.HTTP_400_BAD_REQUEST)
+            return {"error": "A resposta não pode estar vazia."}, status.HTTP_400_BAD_REQUEST
+
+        try:
+            LessonChallengeModel = apps.get_model('ava_back', 'LessonChallenge')
+            challenge, created = LessonChallengeModel.objects.get_or_create(
+                lesson=lesson,
+                defaults={
+                    'title': f"Desafio: {lesson.title}",
+                    'description': getattr(lesson, 'description', 'Resolva o desafio prático proposto para esta aula.'),
+                    'evaluation_criteria': 'Avalie a lógica e a sintaxe de forma objetiva.'
+                }
+            )
+        except Exception as e:
+            return {"error": f"Erro interno ao gerenciar o desafio: {str(e)}"}, status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        challenge_desc = getattr(challenge, 'description', None) or getattr(challenge, 'title', 'Desafio prático da aula')
 
         prompt = f"""
-        Você é um assistente pedagógico de IA em uma plataforma educacional de tecnologia.
-        O professor responsável é Fernando Alonso (Tech Lead Sênior).
-        
-        Contexto da Aula: {lesson.title}
-        Enunciado do Desafio ({challenge.get_taxonomy_level_display()}): {challenge.description}
-        Critérios de Avaliação Esperados: {challenge.evaluation_criteria}
+        Você é um assistente técnico sênior e direto ao ponto. 
+        Analise a resposta do aluno para o desafio da aula "{lesson.title}".
 
-        Resposta enviada pelo aluno:
-        "{answer_text}"
+        Enunciado: {challenge_desc}
+        Resposta do Aluno: "{answer_text}"
 
-        Por favor, analise a resposta do aluno criticamente com base nos critérios do professor.
-        Retorne a resposta estruturada contendo:
-        - Pontos Fortes: ...
-        - O que melhorar: ...
-        - Nota (0 a 100): ...
-        - Sugestão de Revisão (indique se ele precisa revisar algum ponto da aula ou deixe em branco): ...
+        REGRAS:
+        - Seja extremamente conciso. Sem redações, sem blocos longos de pontos fortes/fracos.
+        - Dê um feedback curto de 1 ou 2 frases.
+        - Crie um prompt de aprofundamento curto para o chat.
         """
 
         client = LessonService._obter_cliente_gemini()
         modelos = ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
-        feedback_text = ""
+        dados_feedback = None
 
         for modelo in modelos:
             for tentativa in range(3):
@@ -415,44 +422,67 @@ class LessonService:
                     response = client.models.generate_content(
                         model=modelo,
                         contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=ChallengeFeedbackSchema,
+                            temperature=0.2
+                        )
                     )
                     if response.text:
-                        feedback_text = response.text
+                        dados_feedback = json.loads(response.text)
                         break
-                except ResourceExhausted as e:
-                    print(f"[Aviso IA - Desafio]: Cota excedida no modelo {modelo}: {str(e)}. Alternando modelo...")
+                except ResourceExhausted:
                     break
                 except APIError as e:
-                    msg_erro = str(e)
-                    if "503" in msg_erro or "UNAVAILABLE" in msg_erro:
-                        tempo_espera = (tentativa + 1) * 2
-                        time.sleep(tempo_espera)
+                    if "503" in str(e) or "UNAVAILABLE" in str(e):
+                        time.sleep(2)
                         continue
                     break
-                except Exception as e:
+                except Exception:
                     break
-            if feedback_text:
+            if dados_feedback:
                 break
 
-        if not feedback_text:
-            feedback_text = "Avaliação realizada com sucesso, mas houve instabilidade na IA ao gerar os detalhes do feedback."
+        if not dados_feedback:
+            dados_feedback = {
+                "feedback_curto": "Boa tentativa! Revise os pontos principais da aula para otimizar seu código.",
+                "prompt_pesquisa": f"Explique detalhadamente os conceitos práticos abordados em {lesson.title}"
+            }
+
+        feedback_formatado = f"💡 **Feedback:** {dados_feedback.get('feedback_curto')}\n\n💬 **Para aprofundar na IA:** `{dados_feedback.get('prompt_pesquisa')}`"
 
         submission, _ = StudentChallengeSubmission.objects.update_or_create(
-            student=request.user,
+            student=user,
             challenge=challenge,
             defaults={
                 'answer_text': answer_text,
-                'improvements': feedback_text,
+                'improvements': feedback_formatado,
+                'strengths': "", 
                 'score_percentage': 85.0 
             }
         )
 
-        return Response({
+        return {
             "message": "Desafio avaliado com sucesso!",
-            "feedback": feedback_text,
+            "feedback": feedback_formatado,
             "score": submission.score_percentage
-        }, status=status.HTTP_200_OK)
-
+        }, status.HTTP_200_OK
+    
+    @staticmethod
+    def marcar_aula_como_concluida(user, lesson):
+        progress, created = LessonProgress.objects.get_or_create(
+            user=user,
+            lesson=lesson,
+            defaults={'completed': True}
+        )
+        if not progress.completed:
+            progress.completed = True
+            progress.save()
+            
+        return (
+            {"message": "Aula marcada como concluída com sucesso!", "completed": True},
+            200
+        )
 
 class CourseService:
     @staticmethod

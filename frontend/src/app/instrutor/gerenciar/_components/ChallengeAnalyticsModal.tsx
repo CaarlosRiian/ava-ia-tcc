@@ -31,7 +31,7 @@ export const ChallengeAnalyticsModal = ({
 }: Props) => {
   const [selectedSubmission, setSelectedSubmission] = useState<StudentSubmission | null>(null);
 
-  const totalStudents = 35; // Total de alunos na turma/curso (exemplo)
+  const totalStudents = 35; 
   const totalSubmitted = submissions.length;
   const pendingStudents = Math.max(0, totalStudents - totalSubmitted);
   

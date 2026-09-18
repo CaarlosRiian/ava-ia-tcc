@@ -66,6 +66,32 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
   });
 
   useEffect(() => {
+    const pendingPrompt = localStorage.getItem("pending_chat_prompt");
+    if (pendingPrompt) {
+      setQuizQuestions([]);
+      setGeneratedFlashcards([]);
+      setSummaryText(null);
+      setInput(pendingPrompt);
+      localStorage.removeItem("pending_chat_prompt");
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePrefillAndOpen = (event: any) => {
+      const promptToFill = event.detail?.prompt;
+      if (promptToFill) {
+        setQuizQuestions([]);
+        setGeneratedFlashcards([]);
+        setSummaryText(null);
+        setInput(promptToFill);
+      }
+    };
+
+    window.addEventListener("prefill-and-open-chat", handlePrefillAndOpen);
+    return () => window.removeEventListener("prefill-and-open-chat", handlePrefillAndOpen);
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== "undefined" && lessonId) {
       const saved = localStorage.getItem(`chat_history_lesson_${lessonId}`);
       if (saved) {

@@ -1,7 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import ( CourseViewSet, UserViewSet, CategoryViewSet, ModuleViewSet, 
-    LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, EmailTokenView, me, professor_by_slug, FavoriteViewSet, LessonMaterialViewSet, FlashcardViewSet  )
+    LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, 
+    EmailTokenView, me, professor_by_slug, FavoriteViewSet, 
+    LessonMaterialViewSet, FlashcardViewSet )
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet)

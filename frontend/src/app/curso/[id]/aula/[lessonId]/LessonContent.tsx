@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award, FileText, Link2, Download } from "lucide-react";
 import { completeLesson } from "@/services/courses"; 
+import LessonChallenge from "../_components/LessonChallenge"; 
 
 interface LessonContentProps {
   course: any;
@@ -19,11 +20,12 @@ interface LessonContentProps {
   isGeneratingCertificate: boolean;
 }
 
-export default function LessonContent({course, lesson, lessonIndex, aiOpen, setAiOpen, lessonsOpen, setLessonsOpen, prevLesson, nextLesson, onEmitirCertificado, 
-  isGeneratingCertificate 
-}: LessonContentProps) {
-  const [isCompleted, setIsCompleted] = useState(lesson?.completed || false);
+export default function LessonContent({ course, lesson, lessonIndex, aiOpen, setAiOpen, 
+  lessonsOpen, setLessonsOpen, prevLesson, nextLesson, onEmitirCertificado, isGeneratingCertificate }: LessonContentProps) {
+  const [isCompleted, setIsCompleted] = useState(lesson?.is_completed || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const todasAulas = course.modules?.flatMap((m: any) => m.lessons) || [];
   const cursoConcluido = todasAulas.length > 0 && todasAulas.every((l: any) => {
@@ -69,6 +71,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
 
         <div className="flex items-center gap-3 shrink-0">
           <button
+            type="button"
             onClick={handleComplete}
             disabled={isSubmitting || isCompleted}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md cursor-pointer active:scale-95 disabled:pointer-events-none ${
@@ -82,6 +85,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
           </button>
 
           <button 
+            type="button"
             onClick={() => setAiOpen(!aiOpen)} 
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-md cursor-pointer active:scale-95 ${
               aiOpen
@@ -115,9 +119,9 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
               } else if (material.file) {
                 urlFinal = material.file.startsWith("http") 
                   ? material.file 
-                  : `http://localhost:8000${material.file}`;
+                  : `${apiBaseUrl}${material.file}`;
               } else if (material.raw_content) {
-                urlFinal = `http://localhost:8000/media/lesson_materials/${material.raw_content}`;
+                urlFinal = `${apiBaseUrl}/media/lesson_materials/${material.raw_content}`;
               }
 
               const obterExtensao = (nomeArquivo: string) => {
@@ -168,10 +172,16 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
         )}
       </div>
 
+      <LessonChallenge 
+        lesson={lesson} 
+        isCompleted={isCompleted} 
+        apiBaseUrl={apiBaseUrl} 
+      />
+
       <div className="flex flex-col sm:flex-row items-center gap-3 mb-10 pb-10 border-b border-gray-100">
         {prevLesson && (
           <Link href={`/curso/${course.id}/aula/${prevLesson.id}`} className="w-full sm:flex-1">
-            <button className="w-full py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer">
+            <button type="button" className="w-full py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer">
               ← Anterior
             </button>
           </Link>
@@ -179,6 +189,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
 
         {cursoConcluido && (
           <button
+            type="button"
             onClick={onEmitirCertificado}
             disabled={isGeneratingCertificate}
             className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 shadow-md transition-all active:scale-95 disabled:bg-gray-300 flex items-center justify-center gap-2 cursor-pointer"
@@ -190,7 +201,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
 
         {nextLesson && (
           <Link href={`/curso/${course.id}/aula/${nextLesson.id}`} className="w-full sm:flex-1">
-            <button className="w-full py-3 px-4 rounded-xl bg-[#161B1D] text-white text-sm font-semibold hover:bg-black shadow-md cursor-pointer">
+            <button type="button" className="w-full py-3 px-4 rounded-xl bg-[#161B1D] text-white text-sm font-semibold hover:bg-black shadow-md cursor-pointer">
               Próxima →
             </button>
           </Link>
@@ -199,6 +210,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
 
       <div className="rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
         <button 
+          type="button"
           onClick={() => setLessonsOpen(!lessonsOpen)} 
           className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
         >
@@ -240,7 +252,7 @@ export default function LessonContent({course, lesson, lessonIndex, aiOpen, setA
                           <CheckCircle className="h-4 w-4 text-green-500 fill-green-500/20" />
                         ) : (
                           <span className={`text-xs font-bold ${
-                            l.id === lesson.id ? "text-[#2F52E0]" : "text-gray-300"
+                            l.id === lesson.id ? "text-[#2F52E0]" : "text-gray-350 text-gray-400"
                           }`}>
                             {String(i + 1).padStart(2, "0")}
                           </span>

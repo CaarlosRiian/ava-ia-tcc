@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from .models import ( User, Category, Course, Module, Lesson, LessonMaterial, 
-    Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
-    Favorite, StudentPerformance, Flashcard, UserFlashcardProgress, 
-    Challenge )
+from .models import ( StudentChallengeSubmission, User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
+    Favorite, StudentPerformance, Flashcard, UserFlashcardProgress,  Challenge )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -157,12 +155,13 @@ class LessonSerializer(serializers.ModelSerializer):
     thumbnail = serializers.ImageField(required=False, allow_null=True)
     materials = LessonMaterialSerializer(many=True, read_only=True)
     challenge = serializers.SerializerMethodField()
+    is_completed = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
             "id", "module", "title", "slug", "video", "thumbnail", 
-            "duration_seconds", "order", "status", "visibility", "materials", "challenge"
+            "duration_seconds", "order", "status", "visibility", "materials", "challenge", "is_completed" 
         ]
 
     def get_challenge(self, obj):
@@ -170,6 +169,12 @@ class LessonSerializer(serializers.ModelSerializer):
         if not challenge_obj:
             return None
         return ChallengeSerializer(challenge_obj).data
+
+    def get_is_completed(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return LessonProgress.objects.filter(user=request.user, lesson=obj, completed=True).exists()
+        return False
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
@@ -379,3 +384,13 @@ class FlashcardAnswerSerializer(serializers.Serializer):
     )
 
     feedback = serializers.ChoiceField(choices=FEEDBACK_CHOICES)
+
+class StudentChallengeSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.username', read_only=True)
+    challenge_title = serializers.CharField(source='challenge.title', read_only=True)
+
+    class Meta:
+        model = StudentChallengeSubmission
+        fields = [ 'id', 'student', 'student_name', 'challenge', 'challenge_title', 'answer_text', 'strengths', 'improvements', 'review_timestamp', 'score_percentage',
+            'created_at', ]
+        read_only_fields = ['id', 'created_at']

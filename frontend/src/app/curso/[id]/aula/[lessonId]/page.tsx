@@ -28,6 +28,20 @@ export default function Aula() {
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false); 
 
   useEffect(() => {
+    const handleOpenAndPrefill = (event: any) => {
+      const promptToFill = event.detail?.prompt;
+      if (promptToFill) {
+        setAiOpen(true);
+
+        localStorage.setItem("pending_chat_prompt", promptToFill);
+      }
+    };
+
+    window.addEventListener("prefill-and-open-chat", handleOpenAndPrefill);
+    return () => window.removeEventListener("prefill-and-open-chat", handleOpenAndPrefill);
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function load() {

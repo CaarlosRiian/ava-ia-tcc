@@ -1,18 +1,25 @@
 from datetime import timedelta
+from operator import sub
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
+import traceback
+import logging
 
-from rest_framework import filters, status
+from rest_framework import filters, status, generics, viewsets
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.views import APIView
 
-from ..models import ( Flashcard, Module, Lesson, LessonMaterial, StudentPerformance, UserFlashcardProgress )
+from ..models import ( Flashcard, Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, UserFlashcardProgress, LessonSubmission 
+)
 from ..serializers import ( ModuleSerializer, LessonSerializer, LessonMaterialSerializer, 
-    InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer )
+    InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer, StudentChallengeSubmissionSerializer )
 from ..services.service import LessonService
+
+logger = logging.getLogger(__name__)
 
 class ModuleViewSet(ModelViewSet):
     serializer_class = ModuleSerializer
@@ -22,6 +29,7 @@ class ModuleViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Module.objects.select_related('course').all()
+
 
 class LessonViewSet(ModelViewSet):
     queryset = Lesson.objects.all()
@@ -60,7 +68,7 @@ class LessonViewSet(ModelViewSet):
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def get_quiz(self, request, pk=None):
         lesson = self.get_object()
-        return LessonService.handle_get_quiz(self, lesson)
+        return LessonService.handle_get_quiz(lesson)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='submit_quiz')
     def submit_quiz(self, request, pk=None):
@@ -78,7 +86,7 @@ class LessonViewSet(ModelViewSet):
                 "id": p.id,
                 "score_percentage": p.score_percentage,
                 "lesson_title": p.lesson.title if p.lesson else "Aula sem título",
-                "created_at": p.created_at.strftime("%d/%m"),
+                "created_at": p.created_at.isoformat() if p.created_at else None,
                 "weak_topics": p.weak_topics,
                 "strong_topics": p.strong_topics
             }
@@ -105,11 +113,88 @@ class LessonViewSet(ModelViewSet):
         lesson = self.get_object()
         return LessonService.handle_get_challenge(lesson)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='submit_challenge')
-    def submit_challenge(self, request, pk=None):
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='submissions')
+    def submissions(self, request, pk=None):
         lesson = self.get_object()
-        return LessonService.handle_submit_challenge_action(request, lesson)
 
+        if request.user.role != "professor" and not request.user.is_staff:
+            raise PermissionDenied("Você não tem permissão para ver estas submissões.")
+
+        submissions = LessonSubmission.objects.filter(
+            lesson=lesson
+        ).select_related('student', 'lesson')
+        
+        data = [
+            {
+                "id": str(sub.id),
+                "student_name": getattr(sub.student, 'get_full_name', lambda: '')() or getattr(sub.student, 'name', None) or sub.student.username,
+                "student_email": getattr(sub.student, 'email', ""),
+                "student_answer": getattr(sub, 'student_answer', ''),
+                "ai_feedback": getattr(sub, 'ai_feedback', ''),
+                "grade": str(sub.grade) if sub.grade is not None else "10.00",
+                "created_at": sub.created_at.strftime("%d/%m/%Y %H:%M") if sub.created_at else None,
+            }
+            for sub in submissions
+        ]
+        
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    def submit(self, request, pk=None):
+        lesson = self.get_object()
+        user = request.user
+
+        if request.method == 'GET':
+            try:
+                challenge = lesson.challenge
+                if not challenge:
+                    return Response({"detail": "Nenhum desafio encontrado para esta aula."}, status=status.HTTP_404_NOT_FOUND)
+                
+                submission = StudentChallengeSubmission.objects.filter(student=user, challenge=challenge).first()
+                if not submission:
+                    return Response({}, status=status.HTTP_200_OK)
+                
+                return Response({
+                    "answer_text": submission.answer_text,
+                    "feedback": submission.improvements, 
+                    "score": submission.score_percentage
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"detail": "Erro ao buscar submissão anterior."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        answer_text = request.data.get('answer_text') or request.data.get('student_answer')
+        
+        if not answer_text:
+            return Response({"detail": "O texto da resposta é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            data, status_code = LessonService.handle_submit_challenge_action(
+                user=user, 
+                lesson=lesson, 
+                answer_text=answer_text
+            )
+            return Response(data, status=status_code)
+        except Exception as e:
+            print("--- [ERRO CRÍTICO NO SUBMIT] ---")
+            traceback.print_exc()
+            logger.error(f"Erro ao submeter desafio: {str(e)}")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class LessonSubmitView(APIView):
+    def post(self, request, pk=None):
+        try:
+            lesson = Lesson.objects.get(pk=pk)
+        except Lesson.DoesNotExist:
+            return Response({"error": "Aula não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+            
+        answer_text = request.data.get('answer_text', '')
+        
+        data, status_code = LessonService.handle_submit_challenge_action(
+            user=request.user,
+            lesson=lesson,
+            answer_text=answer_text
+        )
+        return Response(data, status=status_code)
 
 class FlashcardViewSet(ModelViewSet):
     serializer_class = UserFlashcardProgressSerializer
@@ -168,6 +253,7 @@ class FlashcardViewSet(ModelViewSet):
             "status": progress.status
         }, status=status.HTTP_200_OK)
 
+
 class LessonMaterialViewSet(ModelViewSet):
     serializer_class = LessonMaterialSerializer
     queryset = LessonMaterial.objects.all()
@@ -191,3 +277,14 @@ class LessonMaterialViewSet(ModelViewSet):
             serializer.save(raw_content=file_obj.name)
         else:
             serializer.save()
+
+
+class ProfessorChallengeSubmissionsView(generics.ListAPIView):
+    serializer_class = StudentChallengeSubmissionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return StudentChallengeSubmission.objects.filter(
+            challenge__lesson__module__course__professor=user
+        )
