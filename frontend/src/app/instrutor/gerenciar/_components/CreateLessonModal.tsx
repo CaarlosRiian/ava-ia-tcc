@@ -47,7 +47,7 @@ export const CreateLessonModal = ({ modules, mode = "create", lesson, trigger, o
         )}
       </DialogTrigger>
 
-      <DialogContent className="bg-white sm:max-w-lg">
+      <DialogContent className="bg-white sm:max-w-[800px] w-full">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Nova aula" : "Editar aula"}

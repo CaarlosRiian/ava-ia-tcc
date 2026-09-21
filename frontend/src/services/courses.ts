@@ -1,4 +1,5 @@
 const API_URL = "http://localhost:8000/api";
+import { CourseRecommendation } from "../types/course";
 
 export async function getCourses() {
   const token = localStorage.getItem("access");
@@ -147,6 +148,29 @@ export async function completeLesson(lessonId: number): Promise<any> {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || "Erro ao concluir a aula");
+  }
+
+  return response.json();
+}
+
+export async function getRecommendedCourses(): Promise<CourseRecommendation[]> {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(`${API_URL}/courses/recommendations/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/entrar";
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error("Erro ao buscar recomendações de cursos");
   }
 
   return response.json();

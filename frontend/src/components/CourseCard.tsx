@@ -74,7 +74,7 @@ export default function CourseCard({
         </div>
         
         <div className="p-4 flex flex-col flex-1">
-          <h3 className="font-bold text-[#161B1D] mb-1 group-hover:text-[#2F52E0] transition-colors line-clamp-1">
+          <h3 className="font-bold text-[#161B1D] mb-1 group-hover:text-[#161B1D] transition-colors line-clamp-1">
             {title}
           </h3>
           <p className="text-sm text-gray-400 mb-4">por {author}</p>
@@ -93,7 +93,7 @@ export default function CourseCard({
               <div className="flex items-center text-xs text-gray-400 gap-1 font-medium">
                 {lessonsCount !== undefined && lessonsCount > 0 ? (
                   <>
-                    <BookOpen size={14} className="text-[#2F52E0]" />
+                    <BookOpen size={14} className="text-[#FF7A00]" />
                     <span>{lessonsCount} {lessonsCount === 1 ? 'aula' : 'aulas'}</span>
                   </>
                 ) : (

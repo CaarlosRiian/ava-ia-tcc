@@ -1,6 +1,9 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
+from django.conf import settings
 
 class User(AbstractUser):
     STATUS_CHOICES = (
@@ -19,6 +22,8 @@ class User(AbstractUser):
     bio = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
     created_at = models.DateTimeField(auto_now_add=True)
+    birth_date = models.DateField(null=True, blank=True)
+    interests = models.JSONField(default=list, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -33,6 +38,19 @@ class User(AbstractUser):
             self.slug = slug
 
         super().save(*args, **kwargs)
+
+    @property
+    def age(self):
+        if not self.birth_date:
+            return None
+        from datetime import date
+        today = date.today()
+        return today.year - self.birth_date.year - (
+                (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
+            )
+    
+    def __str__(self):
+        return self.username
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -57,6 +75,10 @@ class Course(models.Model):
     published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    min_age = models.PositiveIntegerField(default=0)     
+    max_age = models.PositiveIntegerField(default=100)   
+    target_area = models.CharField(max_length=100, blank=True, null=True)
+
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)
@@ -71,8 +93,6 @@ class Course(models.Model):
 
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.title
 
 class Module(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')
@@ -178,6 +198,17 @@ class LessonProgress(models.Model):
     def __str__(self):
         return f'{self.user.username} - {self.lesson.title} - {self.completed}'
 
+class StudentPerformance(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE)
+    score_percentage = models.FloatField(default=0.0) 
+    weak_topics = models.JSONField(default=list, blank=True) 
+    strong_topics = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Aula {self.lesson.id} ({self.score_percentage}%)"
+
 class AIAssistant(models.Model):
     lesson = models.OneToOneField('Lesson', on_delete=models.CASCADE, related_name='ai_assistant')
     summary = models.TextField(blank=True, null=True)
@@ -214,3 +245,105 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.course.title}'
+
+class Flashcard(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='flashcards')
+    front = models.TextField(verbose_name="Frente / Pergunta")
+    back_main = models.TextField(verbose_name="Verso / Resposta Principal")
+    back_analogy = models.TextField(blank=True, null=True, verbose_name="Verso Alternativo / Analogia")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Flashcard ({self.lesson.title}) - {self.front[:30]}..."
+
+
+class UserFlashcardProgress(models.Model):
+    STATUS_CHOICES = (
+        ('novo', 'Novo'),
+        ('aprendendo', 'Aprendendo'),
+        ('revisado', 'Revisado / Dominado'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='flashcard_progress')
+    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='user_progress')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='novo')
+    interval_days = models.PositiveIntegerField(default=1, verbose_name="Intervalo em Dias")
+    next_review = models.DateTimeField(auto_now_add=True, verbose_name="Próxima Revisão")
+    last_reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'flashcard')
+        indexes = [
+            models.Index(fields=['user', 'next_review']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - Flashcard {self.flashcard.id} (Próxima: {self.next_review.date()})"
+
+class Challenge(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='challenges')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    evaluation_criteria = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class LessonChallenge(models.Model):
+    TAXONOMY_LEVELS = (
+        ('analisar', 'Analisar'),
+        ('avaliar', 'Avaliar'),
+        ('criar', 'Criar'),
+    )
+
+    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE, related_name='challenge')
+    title = models.CharField(max_length=200, verbose_name="Título do Desafio Prático")
+    description = models.TextField(verbose_name="Enunciado / Descrição do Problema")
+    taxonomy_level = models.CharField(max_length=20, choices=TAXONOMY_LEVELS, default='analisar')
+    evaluation_criteria = models.TextField(verbose_name="Critérios de Avaliação para a IA")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Desafio ({self.get_taxonomy_level_display()}) - {self.lesson.title}"
+
+
+class StudentChallengeSubmission(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='challenge_submissions')
+    challenge = models.ForeignKey(LessonChallenge, on_delete=models.CASCADE, related_name='submissions')
+    answer_text = models.TextField(verbose_name="Resposta do Aluno")
+    
+    strengths = models.TextField(blank=True, null=True, verbose_name="Pontos Fortes")
+    improvements = models.TextField(blank=True, null=True, verbose_name="O que melhorar")
+    review_timestamp = models.CharField(max_length=20, blank=True, null=True, verbose_name="Minuto sugerido para revisão (ex: 04:20)")
+    score_percentage = models.FloatField(default=0.0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'challenge')
+
+    def __str__(self):
+        return f"{self.student.username} - Desafio: {self.challenge.title} ({self.score_percentage}%)"
+
+class LessonSubmission(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lesson_submissions')
+    
+    student_answer = models.TextField()
+    
+    ai_feedback = models.TextField()
+    
+    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Submissão de Aula"
+        verbose_name_plural = "Submissões de Aulas"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student} - {self.lesson.title}"
