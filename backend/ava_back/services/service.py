@@ -16,7 +16,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import AIAssistant, Lesson, StudentPerformance, Course, LessonProgress
+from ..models import AIAssistant, Lesson, LessonChallenge, StudentPerformance, Course, LessonProgress, StudentChallengeSubmission
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -32,8 +32,9 @@ class LessonAISchema(BaseModel):
     questions: List[QuizQuestionSchema] = Field(description="Lista com exatamente 3 questões de múltipla escolha")
 
 class ChallengeFeedbackSchema(BaseModel):
-    feedback_curto: str = Field(description="Feedback direto e extremamente conciso em no máximo 2 frases sobre a resposta.")
-    prompt_pesquisa: str = Field(description="Um prompt de comando curto, de uma única linha, focado para o aluno copiar e colar no chat da IA para aprofundar no que errou.")
+    feedback_curto: str = Field(description="Feedback construtivo de 1 ou 2 frases sobre a resposta do aluno.")
+    prompt_pesquisa: str = Field(description="Um comando curto de aprofundamento para o chat de IA.")
+    score_percentage: float = Field(description="Nota de 0.0 a 100.0 avaliando a qualidade técnica da resposta.")
 
 class LessonService:
     
@@ -397,6 +398,10 @@ class LessonService:
         except Exception as e:
             return {"error": f"Erro interno ao gerenciar o desafio: {str(e)}"}, status.HTTP_500_INTERNAL_SERVER_ERROR
 
+        existing_submission = StudentChallengeSubmission.objects.filter(student=user, challenge=challenge).first()
+        if existing_submission and existing_submission.score_percentage >= 70.0:
+            pass
+
         challenge_desc = getattr(challenge, 'description', None) or getattr(challenge, 'title', 'Desafio prático da aula')
 
         prompt = f"""
@@ -410,6 +415,7 @@ class LessonService:
         - Seja extremamente conciso. Sem redações, sem blocos longos de pontos fortes/fracos.
         - Dê um feedback curto de 1 ou 2 frases.
         - Crie um prompt de aprofundamento curto para o chat.
+        - Atribua uma porcentagem de nota de 0.0 a 100.0 baseada na qualidade técnica e correção da resposta.
         """
 
         client = LessonService._obter_cliente_gemini()
@@ -446,10 +452,13 @@ class LessonService:
         if not dados_feedback:
             dados_feedback = {
                 "feedback_curto": "Boa tentativa! Revise os pontos principais da aula para otimizar seu código.",
-                "prompt_pesquisa": f"Explique detalhadamente os conceitos práticos abordados em {lesson.title}"
+                "prompt_pesquisa": f"Explique detalhadamente os conceitos práticos abordados em {lesson.title}",
+                "score_percentage": 50.0 
             }
 
         feedback_formatado = f"💡 **Feedback:** {dados_feedback.get('feedback_curto')}\n\n💬 **Para aprofundar na IA:** `{dados_feedback.get('prompt_pesquisa')}`"
+        
+        nota_real = float(dados_feedback.get('score_percentage', 60.0))
 
         submission, _ = StudentChallengeSubmission.objects.update_or_create(
             student=user,
@@ -458,18 +467,26 @@ class LessonService:
                 'answer_text': answer_text,
                 'improvements': feedback_formatado,
                 'strengths': "", 
-                'score_percentage': 85.0 
+                'score_percentage': nota_real 
             }
         )
+
+        aula_concluida = False
+        if nota_real >= 70.0:
+            LessonService.marcar_aula_como_concluida(user, lesson)
+            aula_concluida = True
 
         return {
             "message": "Desafio avaliado com sucesso!",
             "feedback": feedback_formatado,
-            "score": submission.score_percentage
+            "score": submission.score_percentage,
+            "lesson_completed": aula_concluida
         }, status.HTTP_200_OK
+
     
     @staticmethod
     def marcar_aula_como_concluida(user, lesson):
+        
         progress, created = LessonProgress.objects.get_or_create(
             user=user,
             lesson=lesson,

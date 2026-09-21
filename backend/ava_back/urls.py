@@ -13,7 +13,7 @@ router.register(r'modules', ModuleViewSet)
 router.register(r'lessons', LessonViewSet)
 router.register(r'materials', LessonMaterialViewSet, basename='lesson-material')
 router.register(r'enrollments', EnrollmentViewSet)
-router.register(r'instructor-requests', InstructorRequestViewSet)
+router.register(r'instructor-requests', InstructorRequestViewSet, basename='instructor-requests')
 router.register(r'favorites', FavoriteViewSet, basename='favorites')
 router.register(r'flashcards', FlashcardViewSet, basename='flashcard') 
 

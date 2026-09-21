@@ -18,20 +18,20 @@ interface LessonContentProps {
   nextLesson?: any;
   onEmitirCertificado: () => Promise<void>;
   isGeneratingCertificate: boolean;
+  courseProgress: number;
+  onLessonCreateOrComplete?: () => void;
 }
 
-export default function LessonContent({ course, lesson, lessonIndex, aiOpen, setAiOpen, 
-  lessonsOpen, setLessonsOpen, prevLesson, nextLesson, onEmitirCertificado, isGeneratingCertificate }: LessonContentProps) {
-  const [isCompleted, setIsCompleted] = useState(lesson?.is_completed || false);
+export default function LessonContent({ 
+  course, lesson, lessonIndex, aiOpen, setAiOpen, 
+  lessonsOpen, setLessonsOpen, prevLesson, nextLesson, 
+  onEmitirCertificado, isGeneratingCertificate, courseProgress,
+  onLessonCreateOrComplete 
+}: LessonContentProps) {
+  const [isCompleted, setIsCompleted] = useState(lesson?.is_completed || lesson?.completed || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  const todasAulas = course.modules?.flatMap((m: any) => m.lessons) || [];
-  const cursoConcluido = todasAulas.length > 0 && todasAulas.every((l: any) => {
-    if (l.id === lesson.id) return isCompleted;
-    return l.completed;
-  });
 
   const handleComplete = async () => {
     if (isCompleted || isSubmitting) return;
@@ -41,6 +41,10 @@ export default function LessonContent({ course, lesson, lessonIndex, aiOpen, set
       await completeLesson(lesson.id);
       setIsCompleted(true);
       lesson.completed = true;
+
+      if (onLessonCreateOrComplete) {
+        onLessonCreateOrComplete();
+      }
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Erro ao salvar o progresso da aula.");
@@ -176,6 +180,13 @@ export default function LessonContent({ course, lesson, lessonIndex, aiOpen, set
         lesson={lesson} 
         isCompleted={isCompleted} 
         apiBaseUrl={apiBaseUrl} 
+        onChallengeCompleted={() => {
+          setIsCompleted(true);
+          lesson.completed = true;
+          if (onLessonCreateOrComplete) {
+            onLessonCreateOrComplete();
+          }
+        }}
       />
 
       <div className="flex flex-col sm:flex-row items-center gap-3 mb-10 pb-10 border-b border-gray-100">
@@ -187,7 +198,7 @@ export default function LessonContent({ course, lesson, lessonIndex, aiOpen, set
           </Link>
         )}
 
-        {cursoConcluido && (
+        {courseProgress === 100 && (
           <button
             type="button"
             onClick={onEmitirCertificado}
@@ -252,7 +263,7 @@ export default function LessonContent({ course, lesson, lessonIndex, aiOpen, set
                           <CheckCircle className="h-4 w-4 text-green-500 fill-green-500/20" />
                         ) : (
                           <span className={`text-xs font-bold ${
-                            l.id === lesson.id ? "text-[#2F52E0]" : "text-gray-350 text-gray-400"
+                            l.id === lesson.id ? "text-[#2F52E0]" : "text-gray-400"
                           }`}>
                             {String(i + 1).padStart(2, "0")}
                           </span>

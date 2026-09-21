@@ -120,62 +120,63 @@ class LessonViewSet(ModelViewSet):
         if request.user.role != "professor" and not request.user.is_staff:
             raise PermissionDenied("Você não tem permissão para ver estas submissões.")
 
-        submissions = LessonSubmission.objects.filter(
-            lesson=lesson
-        ).select_related('student', 'lesson')
+        from ..models import LessonChallenge, StudentChallengeSubmission
+        from ..serializers import StudentChallengeSubmissionSerializer
+
+        challenge = LessonChallenge.objects.filter(lesson=lesson).first()
+        if not challenge:
+            return Response([], status=status.HTTP_200_OK)
+
+        submissions = StudentChallengeSubmission.objects.filter(
+            challenge=challenge
+        ).select_related('student', 'challenge')
         
-        data = [
-            {
-                "id": str(sub.id),
-                "student_name": getattr(sub.student, 'get_full_name', lambda: '')() or getattr(sub.student, 'name', None) or sub.student.username,
-                "student_email": getattr(sub.student, 'email', ""),
-                "student_answer": getattr(sub, 'student_answer', ''),
-                "ai_feedback": getattr(sub, 'ai_feedback', ''),
-                "grade": str(sub.grade) if sub.grade is not None else "10.00",
-                "created_at": sub.created_at.strftime("%d/%m/%Y %H:%M") if sub.created_at else None,
-            }
-            for sub in submissions
-        ]
-        
-        return Response(data, status=status.HTTP_200_OK)
+        serializer = StudentChallengeSubmissionSerializer(submissions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated])
     def submit(self, request, pk=None):
         lesson = self.get_object()
         user = request.user
 
+        from ..models import LessonChallenge, StudentChallengeSubmission
+
         if request.method == 'GET':
-            try:
-                challenge = lesson.challenge
-                if not challenge:
-                    return Response({"detail": "Nenhum desafio encontrado para esta aula."}, status=status.HTTP_404_NOT_FOUND)
-                
-                submission = StudentChallengeSubmission.objects.filter(student=user, challenge=challenge).first()
-                if not submission:
-                    return Response({}, status=status.HTTP_200_OK)
-                
-                return Response({
-                    "answer_text": submission.answer_text,
-                    "feedback": submission.improvements, 
-                    "score": submission.score_percentage
-                }, status=status.HTTP_200_OK)
-            except Exception as e:
-                return Response({"detail": "Erro ao buscar submissão anterior."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            challenge = LessonChallenge.objects.filter(lesson=lesson).first()
+            if not challenge:
+                return Response({"submitted": False, "message": "Nenhum desafio para esta aula."}, status=status.HTTP_200_OK)
             
+            submission = StudentChallengeSubmission.objects.filter(student=user, challenge=challenge).first()
+            if not submission:
+                return Response({"submitted": False, "score": 0.0}, status=status.HTTP_200_OK)
+                
+            return Response({
+                "submitted": True,
+                "score": submission.score_percentage,
+                "feedback": submission.improvements,
+                "answer_text": submission.answer_text,
+                "passed": submission.score_percentage >= 70.0
+            }, status=status.HTTP_200_OK)
+
         answer_text = request.data.get('answer_text') or request.data.get('student_answer')
         
         if not answer_text:
             return Response({"detail": "O texto da resposta é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            data, status_code = LessonService.handle_submit_challenge_action(
+            resultado = LessonService.handle_submit_challenge_action(
                 user=user, 
                 lesson=lesson, 
                 answer_text=answer_text
             )
-            return Response(data, status=status_code)
+            
+            if isinstance(resultado, tuple):
+                data, status_code = resultado
+                return Response(data, status=status_code)
+            
+            return Response(resultado, status=status.HTTP_200_OK)
+            
         except Exception as e:
-            print("--- [ERRO CRÍTICO NO SUBMIT] ---")
             traceback.print_exc()
             logger.error(f"Erro ao submeter desafio: {str(e)}")
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

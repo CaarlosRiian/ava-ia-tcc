@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import VideoPlayer from "./VideoPlayer";
@@ -27,12 +27,41 @@ export default function Aula() {
   const [chatWidth, setChatWidth] = useState(400);
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false); 
 
+  const refreshProgress = useCallback(async () => {
+    try {
+      const [myCourses, data] = await Promise.all([
+        getMyCourses().catch(() => null),
+        getCourseDetail(courseId).catch(() => null)
+      ]);
+
+      const matchedCourse = myCourses?.find((c: any) => {
+        const id = c.course_id !== undefined ? c.course_id : c.id;
+        return Number(id) === courseId;
+      });
+      
+      const apiProgress = matchedCourse ? matchedCourse.progress : 0;
+      const allLessons = data?.modules?.flatMap((m: any) => m.lessons || []) || [];
+      
+      const totalLessonsCount = allLessons.length;
+      const completedLessonsCount = allLessons.filter((l: any) => l.completed || l.is_completed || l.id === lessonId).length;
+      
+      const isActuallyFinished = apiProgress >= 100 || (totalLessonsCount > 0 && completedLessonsCount >= totalLessonsCount);
+
+      setCourse((prev: any) => ({
+        ...(prev || data),
+        lessons: allLessons,
+        progress: isActuallyFinished ? 100 : apiProgress 
+      }));
+    } catch (err) {
+      setCourse((prev: any) => ({ ...prev, progress: 100 }));
+    }
+  }, [courseId, lessonId]);
+
   useEffect(() => {
     const handleOpenAndPrefill = (event: any) => {
       const promptToFill = event.detail?.prompt;
       if (promptToFill) {
         setAiOpen(true);
-
         localStorage.setItem("pending_chat_prompt", promptToFill);
       }
     };
@@ -92,6 +121,12 @@ export default function Aula() {
           return;
         }
 
+        const matchedCourse = myCourses.find((c: any) => {
+          const id = c.course_id !== undefined ? c.course_id : c.id;
+          return Number(id) === courseId;
+        });
+        const currentProgress = matchedCourse ? matchedCourse.progress : 0;
+
         const allLessons = data.modules?.flatMap((m: any) => m.lessons || []) || [];
         
         const currentLesson = allLessons.find((l: any) => {
@@ -105,7 +140,11 @@ export default function Aula() {
         });
 
         if (currentLesson) {
-          setCourse({ ...data, lessons: allLessons });
+          setCourse({ 
+            ...data, 
+            lessons: allLessons,
+            progress: currentProgress 
+          });
           setLesson({ ...currentLesson, index });
           setIsAuthorized(true);
           setErrorMessage(null);
@@ -132,20 +171,18 @@ export default function Aula() {
     try {
       const token = localStorage.getItem("access");
 
-      const response = await fetch(`http://localhost:8000/api/courses/${courseId}/certificado/`, {
+      const res = await fetch(`http://localhost:8000/api/courses/${courseId}/certificado/`, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Authorization": `Bearer ${token}` }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!res.ok) {
+        const errorData = await res.json();
         alert(errorData.error || "Você precisa concluir todas as aulas antes de emitir seu certificado.");
         return;
       }
 
-      const htmlContent = await response.text();
+      const htmlContent = await res.text();
       const blob = new Blob([htmlContent], { type: "text/html" });
       const blobUrl = URL.createObjectURL(blob);
 
@@ -211,6 +248,8 @@ export default function Aula() {
               nextLesson={course.lessons[lessonIndex + 1]}
               onEmitirCertificado={handleEmitirCertificado}
               isGeneratingCertificate={isGeneratingCertificate}
+              courseProgress={course.progress}
+              onLessonCreateOrComplete={refreshProgress} 
             />
           </div>
         </main>

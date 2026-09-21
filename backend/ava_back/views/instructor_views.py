@@ -9,10 +9,15 @@ from ..serializers import InstructorRequestSerializer
 
 
 class InstructorRequestViewSet(ModelViewSet):
-    queryset = InstructorRequest.objects.select_related("user").all()
     serializer_class = InstructorRequestSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return InstructorRequest.objects.select_related("user").all()
+        return InstructorRequest.objects.select_related("user").filter(user=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

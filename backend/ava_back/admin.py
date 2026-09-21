@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import ( User, Category, Course, Module, Lesson, LessonMaterial, 
-    Enrollment, AIAssistant, InstructorRequest, Favorite, LessonChallenge, LessonSubmission, StudentChallengeSubmission )
+    Enrollment, AIAssistant, InstructorRequest, Favorite, LessonChallenge, LessonSubmission, StudentChallengeSubmission, LessonProgress )
 
 class LessonMaterialInline(admin.StackedInline):
     model = LessonMaterial
@@ -128,3 +128,9 @@ class StudentChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ('id', 'student', 'challenge', 'score_percentage', 'created_at')
     list_filter = ('created_at', 'score_percentage')
     search_fields = ('student__username', 'student__email', 'challenge__title', 'answer_text')
+
+@admin.register(LessonProgress)
+class LessonProgressAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'lesson', 'completed')
+    list_filter = ('completed',)
+    search_fields = ('user__username', 'lesson__title')

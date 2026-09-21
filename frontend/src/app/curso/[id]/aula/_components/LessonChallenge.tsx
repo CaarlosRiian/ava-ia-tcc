@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Send, Check } from "lucide-react";
+import { Sparkles, Send, Check, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface LessonChallengeProps {
   lesson: any;
   isCompleted: boolean;
   apiBaseUrl: string;
+  onChallengeCompleted?: () => void; 
 }
 
-export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl }: LessonChallengeProps) {
+export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl, onChallengeCompleted }: LessonChallengeProps) {
   const [studentAnswer, setStudentAnswer] = useState("");
   const [submittingChallenge, setSubmittingChallenge] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     const fetchExistingSubmission = async () => {
@@ -66,6 +68,11 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl }: Les
 
       const data = await response.json();
       setSubmissionResult(data);
+      setIsRetrying(false);
+
+      if (onChallengeCompleted) {
+        onChallengeCompleted();
+      }
     } catch (err: any) {
       console.error("Erro no envio:", err);
       alert(err.message || "Não foi possível enviar o desafio.");
@@ -97,6 +104,9 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl }: Les
   const mainFeedback = parts[0] || rawFeedback;
   const deepenText = parts[1] ? `💬 ${parts[1]}` : null;
 
+  const currentScore = submissionResult ? Number(submissionResult.score ?? 100) : 0;
+  const isScoreLow = currentScore < 70;
+
   return (
     <div className="mb-8 pt-6 border-t border-gray-100">
       <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-4">
@@ -113,16 +123,17 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl }: Les
           {getChallengeDescription()}
         </p>
 
-        {submissionResult ? (
+        {submissionResult && !isRetrying ? (
           <div className="space-y-3 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
               <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                 <Check size={14} /> Resposta Enviada e Avaliada!
               </span>
-              <span className="text-xs font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md">
-                Nota: {submissionResult.score || "10.0"}%
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isScoreLow ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                Nota: {currentScore}%
               </span>
             </div>
+            
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1">
                 Feedback da IA:
@@ -145,9 +156,35 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl }: Les
                 </div>
               )}
             </div>
+
+            {isScoreLow && (
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsRetrying(true)}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <RotateCcw size={14} />
+                  Estudar Feedback e Tentar Novamente
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
+            {isRetrying && (
+              <div className="flex items-center justify-between bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-amber-800 text-xs font-medium">
+                <span>Modo de correção: Ajuste sua resposta com base no feedback da IA e envie novamente.</span>
+                <button 
+                  type="button"
+                  onClick={() => setIsRetrying(false)}
+                  className="text-amber-900 underline font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+
             <textarea
               value={studentAnswer}
               onChange={(e) => setStudentAnswer(e.target.value)}

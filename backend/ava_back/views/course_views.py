@@ -10,11 +10,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Favorite
-from ..serializers import (
-    CourseSerializer, CategorySerializer, CourseDetailSerializer, 
-    InstructorCourseSerializer, FavoriteSerializer
-)
+from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Favorite, StudentChallengeSubmission
+from ..serializers import ( CourseSerializer, CategorySerializer, CourseDetailSerializer, 
+    InstructorCourseSerializer, FavoriteSerializer )
 from ..services.service import LessonService, CourseService 
 
 class CategoryViewSet(ModelViewSet):
@@ -67,17 +65,45 @@ class CourseViewSet(ModelViewSet):
         serializer.save(professor=self.request.user)
 
     def calculate_progress(self, user, course):
-        total = Lesson.objects.filter(module__course=course).count()
-        if not total:
+        lessons = Lesson.objects.filter(module__course=course)
+        total_lessons = lessons.count()
+        if not total_lessons:
             return 0.0
 
-        completed = LessonProgress.objects.filter(
-            user=user,
-            lesson__module__course=course,
-            completed=True
-        ).count()
+        total_accumulated_progress = 0.0
+
+        for lesson in lessons:
+            lesson_progress_score = 0.0
+            
+            video_completed = LessonProgress.objects.filter(
+                user=user,
+                lesson=lesson,
+                completed=True
+            ).exists()
+            
+            if video_completed:
+                lesson_progress_score += 70.0  
+            
+            from ..models import LessonChallenge, StudentChallengeSubmission
+            challenge = LessonChallenge.objects.filter(lesson=lesson).first()
+            
+            if challenge:
+                passed_challenge = StudentChallengeSubmission.objects.filter(
+                    student=user,
+                    challenge=challenge,
+                    score_percentage__gte=70.0
+                ).exists()
+                
+                if passed_challenge:
+                    lesson_progress_score += 30.0 
+            else:
+                lesson_progress_score += 30.0
+
+            total_accumulated_progress += lesson_progress_score
+
+        course_progress = total_accumulated_progress / total_lessons
+        return round(course_progress, 2)
         
-        return round((completed / total * 100), 2)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_courses(self, request):
@@ -116,16 +142,10 @@ class CourseViewSet(ModelViewSet):
         user = request.user
 
         total_lessons = Lesson.objects.filter(module__course=course).count()
-        completed_lessons = LessonProgress.objects.filter(
-            user=user,
-            lesson__module__course=course,
-            completed=True
-        ).count()
-
-        progress_percentage = (
-            round((completed_lessons / total_lessons * 100), 2)
-            if total_lessons else 0.0
-        )
+        
+        progress_percentage = self.calculate_progress(user, course)
+        
+        completed_lessons = int((progress_percentage / 100) * total_lessons) if total_lessons else 0
 
         return Response({
             "course": course.title,
