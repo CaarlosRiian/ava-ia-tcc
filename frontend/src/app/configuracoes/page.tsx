@@ -230,7 +230,7 @@ export default function ConfiguracoesPerfil() {
             <Button
               onClick={handleSave}
               disabled={isSaving || !hasUnsavedChanges}
-              className="bg-[#2F52E0] hover:bg-[#2442b8] text-white font-black px-8 py-6 rounded-xl cursor-pointer flex gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="bg-[#FF7A00] hover:bg-[#ea7306] text-white font-black px-8 py-6 rounded-xl cursor-pointer flex gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <Save className="h-5 w-5" />
               Salvar Alterações

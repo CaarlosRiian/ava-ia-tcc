@@ -54,7 +54,7 @@ export function ProfileHeader({
       <CardContent className="flex items-center gap-6 pt-8 pb-8 bg-white">
         
         <Avatar className="h-24 w-24 border-4 border-gray-50 shadow-md">
-          <AvatarFallback className="text-2xl font-black bg-[#2F52E0] text-white">
+          <AvatarFallback className="text-2xl font-black bg-[#FF7A00] text-white">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -67,7 +67,7 @@ export function ProfileHeader({
           <p className="text-[#64748B] text-sm font-medium">{email}</p>
 
           <div className="flex items-center gap-2 pt-1">
-            <span className="px-3 py-1 rounded-full bg-blue-50 text-[#2F52E0] text-xs font-bold border border-blue-100">
+            <span className="px-3 py-1 rounded-full bg-orange-50 text-[#FF7A00] text-xs font-bold border border-gray-100">
               {formatRole(role)}
             </span>
 

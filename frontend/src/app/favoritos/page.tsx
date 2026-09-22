@@ -59,7 +59,7 @@ export default function Favoritos() {
             </p>
 
             <Link href="/descobrir">
-              <button className="px-8 py-3 bg-[#2F52E0] text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md cursor-pointer">
+              <button className="px-8 py-3 bg-[#FF7A00] text-white rounded-xl font-bold hover:bg-[#ea7306] transition-all shadow-md cursor-pointer">
                 Explorar Cursos
               </button>
             </Link>

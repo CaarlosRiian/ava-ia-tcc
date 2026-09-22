@@ -19,7 +19,7 @@ export function ProfessorHero({ name, bio, initials, stats }: ProfessorHeroProps
   return (
     <div className="flex flex-col md:flex-row gap-8 items-start mb-16 bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
       <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
-        <AvatarFallback className="text-3xl font-black bg-[#2F52E0] text-white">
+        <AvatarFallback className="text-3xl font-black bg-[#FF7A00] text-white">
           {initials}
         </AvatarFallback>
       </Avatar>
@@ -62,7 +62,7 @@ export function ProfessorHero({ name, bio, initials, stats }: ProfessorHeroProps
 function StatItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="bg-blue-50 p-2 rounded-lg text-[#2F52E0]">{icon}</div>
+      <div className="bg-gray-50 p-2 rounded-lg text-[#FF7A00]">{icon}</div>
       <div>
         <p className="text-[10px] text-gray-400 uppercase font-black tracking-[0.1em]">{label}</p>
         <p className="text-lg font-black text-[#161B1D] leading-none mt-1">{value}</p>

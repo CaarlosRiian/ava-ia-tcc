@@ -23,7 +23,7 @@ export function SecurityForm({
     <Card className="border-none shadow-sm rounded-[16px] bg-white">
       <CardHeader>
         <CardTitle className="text-lg font-bold flex items-center gap-2">
-          <Shield className="h-5 w-5 text-[#2F52E0]" /> Segurança
+          <Shield className="h-5 w-5" /> Segurança
         </CardTitle>
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-4">

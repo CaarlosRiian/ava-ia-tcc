@@ -128,8 +128,8 @@ export function AddOptionsModal({isOpen, onClose, cursoAtivo, onAddMaterial, onC
                   <BookOpen size={18} />
                 </div>
                 <div>
-                  <p className="font-semibold text-xs text-gray-800">Material de Apoio (IA)</p>
-                  <p className="text-[11px] text-gray-400">Forneça apostilas ou resumos para alimentar o Tutor IA.</p>
+                  <p className="font-semibold text-xs text-gray-800">Material de Apoio</p>
+                  <p className="text-[11px] text-gray-400">Forneça apostilas ou resumos para ajudar os alunos no aprendizado.</p>
                 </div>
               </button>
             </div>
@@ -263,7 +263,7 @@ export function AddOptionsModal({isOpen, onClose, cursoAtivo, onAddMaterial, onC
               <button type="button" onClick={handleClose} className="px-3 h-8 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 cursor-pointer" >
                 Cancelar
               </button>
-              <button type="submit" disabled={loading} className="bg-[#2F52E0] hover:bg-[#1e3bb3] px-4 h-8 rounded-lg text-xs font-semibold text-white disabled:bg-gray-400 cursor-pointer shadow-sm transition" >
+              <button type="submit" disabled={loading} className="bg-[#FF7A00] hover:bg-[#ea7306] px-4 h-8 rounded-lg text-xs font-semibold text-white disabled:bg-gray-400 cursor-pointer shadow-sm transition" >
                 {loading ? "Salvando..." : "Gravar Material"}
               </button>
             </div>

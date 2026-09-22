@@ -288,7 +288,7 @@ export default function GerenciamentoAulas() {
             setEditingCourse(null);
             setOpenModal(true);
           }}
-            className="bg-[#2F52E0] hover:bg-[#1e3bb3] h-9 px-4 rounded-lg text-sm font-semibold cursor-pointer shadow-sm text-white transition" >
+            className="bg-[#FF7A00] hover:bg-[#ea7306] h-9 px-4 rounded-lg text-sm font-semibold cursor-pointer shadow-sm text-white transition" >
             + Novo Curso
           </button>
           <CourseFormModal

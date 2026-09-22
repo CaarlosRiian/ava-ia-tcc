@@ -109,14 +109,12 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl, onCha
 
   return (
     <div className="mb-8 pt-6 border-t border-gray-100">
-      <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-4">
+      <div className="p-5 rounded-2xl bg-white-50 border border-zinc-200/80 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-sm text-zinc-800 uppercase tracking-wider flex items-center gap-2">
-            <Sparkles size={16} className="text-[#2F52E0]" /> Desafio Prático da Aula
+            <Sparkles size={16} className="text-[#FF7A00]" /> Desafio Prático da Aula
           </h3>
-          <span className="text-[11px] font-medium px-2.5 py-1 bg-blue-50 text-[#2F52E0] rounded-full border border-blue-100">
-            Correção Automática por IA
-          </span>
+          
         </div>
 
         <p className="text-xs text-zinc-600 leading-relaxed">
@@ -130,16 +128,16 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl, onCha
                 <Check size={14} /> Resposta Enviada e Avaliada!
               </span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isScoreLow ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                Nota: {currentScore}%
+                Nota: {currentScore}/100
               </span>
             </div>
             
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1">
-                Feedback da IA:
+              <p className="text-[10px] font-bold text-600 uppercase tracking-wider mb-1">
+                Feedback da Automático:
               </p>
               
-              <div className="text-xs text-blue-900 bg-blue-50/60 p-3 rounded-lg leading-relaxed prose prose-sm max-w-none">
+              <div className="text-xs text-orange-900 bg-orange-50/60 p-3 rounded-lg leading-relaxed prose prose-sm max-w-none">
                 <ReactMarkdown>{mainFeedback}</ReactMarkdown>
               </div>
 

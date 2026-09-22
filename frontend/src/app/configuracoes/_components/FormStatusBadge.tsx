@@ -16,7 +16,7 @@ export function FormStatusBadge({
 
     if (isSaving) {
         return (
-            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-sm font-semibold px-4 py-3 rounded-xl shadow-lg animate-fade-in">
+            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-orange-50 border border-blue-200 text-blue-800 text-sm font-semibold px-4 py-3 rounded-xl shadow-lg animate-fade-in">
                 <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
                 <span>Salvando alterações...</span>
             </div>

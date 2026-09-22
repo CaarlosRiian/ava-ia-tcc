@@ -77,7 +77,7 @@ export function InterestsForm({
                     onClick={() => toggleInterest(cat.name)}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       isSelected
-                        ? "bg-[#2F52E0] text-white border-transparent shadow-xs"
+                        ? "bg-[#FF7A00] text-white border-transparent shadow-xs"
                         : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                     }`}
                   >

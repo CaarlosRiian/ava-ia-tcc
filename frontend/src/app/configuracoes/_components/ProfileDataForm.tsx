@@ -29,7 +29,7 @@ export function ProfileDataForm({
         <Card className="border-none bg-white shadow-sm rounded-[16px]">
             <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <User className="h-5 w-5 text-[#2F52E0]" /> Dados do Perfil
+                    <User className="h-5 w-5" /> Dados do Perfil
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
