@@ -130,7 +130,7 @@ export const CreateModuleModal = ({
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-[#2F52E0] hover:bg-[#1e3bb3] p-4 cursor-pointer"
+            className="bg-[#FF7A00] hover:bg-[#ea7306] p-4 cursor-pointer"
           >
             {loading
               ? mode === "edit"

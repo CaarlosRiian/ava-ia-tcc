@@ -263,7 +263,7 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
 
             <Button
               onClick={handleSubmit}
-              className="bg-[#2F52E0] hover:bg-[#1e3bb3] p-4 cursor-pointer"
+              className="bg-[#FF7A00] hover:bg-[#ea7306] p-4 cursor-pointer"
             >
               {isEditing
                 ? "Salvar alterações"

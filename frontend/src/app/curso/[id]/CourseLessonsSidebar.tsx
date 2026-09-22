@@ -60,7 +60,7 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
                       {isConcluida ? (
                         <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
                       ) : (
-                        <span className="text-xs font-bold text-gray-300 group-hover:text-[#2F52E0] transition-colors">
+                        <span className="text-xs font-bold text-gray-300 group-hover:text-[#FF7A00] transition-colors">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                       )}
@@ -82,7 +82,7 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
                           Concluída
                         </span>
                       ) : (
-                        <span className="text-gray-400 group-hover:text-[#2F52E0] group-hover:bg-[#2F52E0]/5 transition-all px-2 py-0.5 rounded-full flex items-center gap-1 text-[11px]">
+                        <span className="text-gray-400 group-hover:text-[#000000] group-hover:bg-[#FF7A00]/5 transition-all px-2 py-0.5 rounded-full flex items-center gap-1 text-[11px]">
                           <PlayCircle size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                           Assistir
                         </span>
@@ -98,7 +98,7 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
 
         <button 
           onClick={handleStartOrCreateProgress}
-          className="w-full mt-6 py-4 bg-[#2F52E0] hover:bg-[#2342c2] text-white rounded-xl font-bold shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-[0.98] text-center text-sm"
+          className="w-full mt-6 py-4 bg-[#FF7A00] hover:bg-[#eb7305] text-white rounded-xl font-bold shadow-md hover:shadow-lg cursor-pointer transition-all active:scale-[0.98] text-center text-sm"
         >
           {course?.progress > 0 ? "Continuar de onde parei" : "Começar a assistir"}
         </button>

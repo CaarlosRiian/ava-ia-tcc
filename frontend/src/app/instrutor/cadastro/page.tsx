@@ -94,7 +94,7 @@ export default function CadastroInstrutor() {
       <main className="flex-1 pt-6 pb-12 px-4 max-w-6xl w-full mx-auto space-y-10">
         
         <div className="flex items-center gap-6 text-left max-w-4xl">
-          <div className="flex items-center justify-center w-20 h-20 bg-[#2F52E0] text-white rounded-[28px] shadow-md shrink-0">
+          <div className="flex items-center justify-center w-20 h-20 bg-[#FF7A00] text-white rounded-[28px] shadow-md shrink-0">
             <GraduationCap className="w-10 h-10 stroke-[1.8]" />
           </div>
           <div className="space-y-1.5">
@@ -102,7 +102,7 @@ export default function CadastroInstrutor() {
               Torne-se um Instrutor
             </h1>
             <p className="text-lg text-gray-500 font-medium leading-relaxed">
-              Sua jornada para impactar alunos através da IA começa aqui.
+              Sua jornada para impactar alunos através dos seus ensinos começa aqui.
             </p>
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function CadastroInstrutor() {
                     )}
                   </div>
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full bg-[#2F52E0] hover:bg-[#1e3bb3] h-12 rounded-xl cursor-pointer text-lg font-medium shadow-lg transition-colors flex items-center justify-center"
+                  <Button type="submit" disabled={isSubmitting} className="w-full bg-[#FF7A00] hover:bg-[#ea7306] h-12 rounded-xl cursor-pointer text-lg font-medium shadow-lg transition-colors flex items-center justify-center"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     {isSubmitting ? "Enviando..." : "Enviar Solicitação"}

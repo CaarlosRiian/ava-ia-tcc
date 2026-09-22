@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LayoutGrid, Palette, BrainCircuit, FlaskConical, UserRound, PenTool, ChefHat,
-  Code2, Megaphone, Briefcase, Cloud, Wallet, BookOpen, } from "lucide-react";
+  Code2, Megaphone, Briefcase, Cloud, Wallet, BookOpen, Layers } from "lucide-react";
 
 interface Category {
   id: number;
@@ -18,9 +18,9 @@ interface Props {
 
 const ICON_MAP: { keywords: string[]; icon: React.ElementType }[] = [
   { keywords: ["design", "audiovisual"], icon: Palette },
-  { keywords: ["dados", "ia", "inteligência"], icon: BrainCircuit },
+  { keywords: ["dados", "ia", "inteligência", "inteligencia"], icon: BrainCircuit },
   { keywords: ["ciências", "ciencia"], icon: FlaskConical },
-  { keywords: ["pessoal"], icon: UserRound },
+  { keywords: ["pessoal", "desenvolvimento"], icon: UserRound },
   { keywords: ["ux", "ui"], icon: PenTool },
   { keywords: ["gastronomia"], icon: ChefHat },
   { keywords: ["programação", "programacao", "dev"], icon: Code2 },
@@ -33,7 +33,7 @@ const ICON_MAP: { keywords: string[]; icon: React.ElementType }[] = [
 function getCategoryIcon(name: string) {
   const normalized = name.toLowerCase();
   const match = ICON_MAP.find((entry) => entry.keywords.some((k) => normalized.includes(k)));
-  return match?.icon ?? BookOpen;
+  return match?.icon ?? Layers;
 }
 
 export default function CategoryFilters({ categories, activeCategory, onSelect }: Props) {
@@ -100,7 +100,7 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
           onClick={() => onSelect(null)}
           className={`shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all duration-200 flex items-center gap-2 ${
             activeCategory === null
-              ? "bg-[#FF7A00] text-white shadow-lg shadow-blue-200/70"
+              ? "bg-[#FF7A00] text-white shadow-lg shadow-orange-200/70"
               : "bg-white text-gray-500 border border-gray-200/80 hover:border-gray-300 hover:text-gray-700 shadow-sm"
           }`}
         >
@@ -117,7 +117,7 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
               onClick={() => onSelect(cat.id)}
               className={`shrink-0 px-5 py-2.5 rounded-xl text-sm cursor-pointer font-bold transition-all duration-200 flex items-center gap-2 border ${
                 isActive
-                  ? "bg-[#FF7A00] border-[#FF7A00] text-white shadow-lg shadow-blue-200/70"
+                  ? "bg-[#FF7A00] border-[#FF7A00] text-white shadow-lg shadow-orange-200/70"
                   : "bg-white text-gray-500 border-gray-200/80 hover:border-gray-300 hover:text-gray-700 shadow-sm"
               }`}
             >

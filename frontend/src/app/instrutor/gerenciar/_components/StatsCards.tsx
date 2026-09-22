@@ -16,7 +16,7 @@ export const StatsCards = ({ cursosCount, aulasCount, alunosCount }: Props) => (
       <Card key={i} className="shadow-sm border-none bg-white">
         <CardContent className="p-4">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{item.label}</p>
-          <p className="text-xl font-bold text-[#2F52E0] mt-1">{item.val}</p>
+          <p className="text-xl font-bold text-[#FF7A00] mt-1">{item.val}</p>
         </CardContent>
       </Card>
     ))}

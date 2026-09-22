@@ -201,7 +201,7 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           <button
             type="button"
             onClick={onOpenAddOptions}
-            className="bg-[#2F52E0] hover:bg-[#1e3bb3] h-9 px-4 rounded-lg text-sm font-semibold cursor-pointer shadow-sm text-white transition flex items-center justify-center gap-1.5"
+            className="bg-[#FF7A00] hover:bg-[#ea7306] h-9 px-4 rounded-lg text-sm font-semibold cursor-pointer shadow-sm text-white transition flex items-center justify-center gap-1.5"
           >
             <Plus size={16} /> Adicionar Conteúdo
           </button>

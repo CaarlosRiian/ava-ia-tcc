@@ -79,12 +79,12 @@ export default function CourseHero({course, isFavorited, onFavoriteToggle, onPla
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 group/instructor cursor-pointer block"
         >
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-blue-50 text-[#2F52E0] flex items-center justify-center border border-blue-100/50 group-hover/instructor:bg-blue-100/70 transition-all">
+            <div className="h-10 w-10 rounded-xl bg-gray-50 text-[#FF7A00] flex items-center justify-center border border-blue-100/50 group-hover/instructo transition-all">
               <User size={20} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Instrutor da Disciplina</p>
-              <h3 className="text-sm font-semibold text-gray-800 group-hover/instructor:text-[#2F52E0] transition-colors">
+              <h3 className="text-sm font-semibold text-gray-800 group-hover/instructor:font-bold transition-colors">
                 {course.professor_name ? formatName(course.professor_name) : "Professor Da Silva"}
               </h3>
             </div>
@@ -98,7 +98,7 @@ export default function CourseHero({course, isFavorited, onFavoriteToggle, onPla
 
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3.5 flex items-center gap-2">
-            <BookOpen size={15} className="text-[#2F52E0]" />
+            <BookOpen size={15} className="text-[#00000]" />
             Objetivos de Aprendizado
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">

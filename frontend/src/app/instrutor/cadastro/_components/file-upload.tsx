@@ -11,10 +11,10 @@ export function FileUpload({ arquivo, setArquivo }: FileUploadProps) {
     <div className="space-y-2">
       <Label>Documento / Certificado (Opcional)</Label>
       <div
-        className="border-2 border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-[#2F52E0]/50 hover:bg-[#2F52E0]/5 transition-all group"
+        className="border-2 border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-[#ea7306]/50 /5 transition-all group"
         onClick={() => document.getElementById("file-upload")?.click()}
       >
-        <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3 group-hover:text-[#2F52E0] transition-colors" />
+        <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3 group-hover:text-[#ea7306] transition-colors" />
         {arquivo ? (
           <div className="space-y-1">
             <p className="text-sm font-bold text-[#161B1D]">{arquivo.name}</p>

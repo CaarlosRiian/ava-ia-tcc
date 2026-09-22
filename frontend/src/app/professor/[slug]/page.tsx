@@ -19,27 +19,32 @@ export default function PerfilProfessor() {
 
   useEffect(() => {
     if (!slug) {
-      console.log("FRONT - Slug não foi encontrado.");
+      setLoading(false);
       return;
     }
 
     const url = `http://localhost:8000/api/professor/${slug}/`;
+    const token = localStorage.getItem("access_token");
 
-    fetch(url)
-      .then((res) => res.json())
+    fetch(url, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Professor não encontrado");
+        return res.json();
+      })
       .then((data) => {
         setProfessor(data);
       })
-      .catch((err) => console.error("FRONT Erro na requisição fetch:", err))
+      .catch((err) => console.error("Erro ao buscar perfil:", err))
       .finally(() => setLoading(false));
   }, [slug]);
 
   if (loading) {
     return <LoadingScreen text="Carregando dados do professor..." />;
   }
-
-  const rawName = professor?.username || professor?.name || "";
-  const displayFormattedName = formatName(rawName);
 
   if (!professor) {
     return (
@@ -49,7 +54,7 @@ export default function PerfilProfessor() {
         <div className="container mx-auto py-20 text-center">
           <p className="text-gray-400 mb-6">Professor não encontrado.</p>
           <Link href="/descobrir">
-            <button className="px-6 py-2 bg-[#2F52E0] text-white rounded-xl font-bold cursor-pointer">
+            <button className="px-6 py-2 bg-[#FF7A00] text-white rounded-xl font-bold cursor-pointer transition-all hover:opacity-90">
               Voltar para Explorar
             </button>
           </Link>
@@ -58,26 +63,22 @@ export default function PerfilProfessor() {
     );
   }
 
+  const rawName = professor?.username || "";
+  const displayFormattedName = formatName(rawName);
+
   const initials = rawName
     ? rawName
-      .replaceAll("_", " ")
-      .trim()
-      .split(/\s+/)
-      .map((n: string) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase()
+        .replaceAll("_", " ")
+        .trim()
+        .split(/\s+/)
+        .map((n: string) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : "PR";
 
   const courses = professor.courses || [];
-
-  const totalLessons = courses.reduce((acc: number, course: any) => {
-    return acc + (course.modules?.length || 0);
-  }, 0);
-
-  const totalStudents = courses.reduce((acc: number, course: any) => {
-    return acc + (course.students_count || course.students || 3);
-  }, 0);
+  const apiStats = professor.stats || {};
 
   let formattedJoinedAt = "Jun/2026";
   const rawDate = professor.created_at || professor.date_joined;
@@ -90,14 +91,14 @@ export default function PerfilProfessor() {
       const formattedMonth = month.charAt(0).toUpperCase() + month.slice(1).replace(".", "");
       formattedJoinedAt = `${formattedMonth}/${year}`;
     } catch (e) {
-      console.error("Erro ao formatar data do professor:", e);
+      console.error("Erro ao formatar data:", e);
     }
   }
 
   const stats = {
-    coursesCount: courses.length,
-    students: Number(totalStudents),
-    lessons: Number(totalLessons),
+    coursesCount: apiStats.coursesCount ?? courses.length,
+    students: professor.students_count || 0,
+    lessons: apiStats.lessons || 0,
     joinedAt: formattedJoinedAt,
   };
 
@@ -105,7 +106,7 @@ export default function PerfilProfessor() {
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
 
-      <Breadcrumb items={[{ label: `${displayFormattedName}` }]} />
+      <Breadcrumb items={[{ label: displayFormattedName }]} />
 
       <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         

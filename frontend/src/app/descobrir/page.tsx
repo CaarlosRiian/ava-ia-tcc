@@ -244,8 +244,8 @@ export default function Explorar() {
               <CourseGrid courses={sortedCourses} />
             ) : (
               <div className="py-20 bg-white rounded-2xl text-center border border-gray-200/70 shadow-sm flex flex-col items-center gap-3">
-                <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                  <SearchX className="h-7 w-7 text-[#6366F1]" />
+                <div className="h-14 w-14 rounded-2xl bg-orange-50 flex items-center justify-center">
+                  <SearchX className="h-7 w-7 text-[#FF7A00]" />
                 </div>
                 <p className="text-gray-500 font-semibold">Nenhum curso corresponde aos critérios definidos.</p>
                 <p className="text-gray-400 text-sm max-w-sm">
@@ -253,7 +253,7 @@ export default function Explorar() {
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-[#6366F1] bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
+                  className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-[#FFFFFF] bg-[#FF7A00] hover:bg-[#FF6B00] transition-colors cursor-pointer"
                 >
                   <RotateCcw className="h-4 w-4" /> Limpar filtros
                 </button>
@@ -265,7 +265,6 @@ export default function Explorar() {
             {recommendedCourses.length > 0 && (expandedTopic === null || expandedTopic === "recommended") && (
               <TopicSection
                 title="Recomendados para Você"
-                icon={<Sparkles className="h-5 w-5 text-[#6366F1]" />}
                 courses={recommendedCoursesData}
                 total={recommendedCourses.length}
                 expanded={expandedTopic === "recommended"}
@@ -311,11 +310,11 @@ export default function Explorar() {
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 rounded-full bg-indigo-50 text-[#4338CA] text-sm font-semibold">
+    <span className="flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 rounded-full bg-orange-50 text-[#FF7A00] text-sm font-semibold">
       {label}
       <button
         onClick={onRemove}
-        className="h-5 w-5 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors cursor-pointer"
+        className="h-5 w-5 flex items-center justify-center rounded-full hover:bg-orange-200 transition-colors cursor-pointer"
         aria-label={`Remover filtro ${label}`}
       >
         <X className="h-3.5 w-3.5" />

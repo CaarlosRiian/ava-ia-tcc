@@ -25,7 +25,7 @@ export const CourseCard = ({
       className={`relative cursor-pointer transition-all border-none shadow-sm
         ${
           isSelected
-            ? "ring-3 ring-[#2F52E0] bg-blue-50/50 shadow-md shadow-blue-500/5"
+            ? "ring-3 ring-[#FF7A00] bg-orange-50/50 shadow-md shadow-orange-500/5"
             : "bg-white"
         }
       `}

@@ -228,7 +228,7 @@ export const LessonForm = ({ modules, mode, lesson, onCreate, onUpdate, onSucces
       {error && <p className="text-xs text-red-500 text-center">{error}</p>}
 
       <div className="pt-2">
-        <Button onClick={handleSubmit} className="w-full py-2.5 rounded-xl cursor-pointer">
+        <Button onClick={handleSubmit} className="w-full py-2.5 bg-[#FF7A00] hover:bg-[#ea7306] rounded-xl cursor-pointer">
           {mode === "create" ? "Criar aula" : "Salvar alterações"}
         </Button>
       </div>

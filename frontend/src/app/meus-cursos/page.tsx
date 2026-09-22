@@ -125,8 +125,8 @@ export default function MeusCursos() {
           </>
         ) : (
           <div className="text-center py-24 bg-white rounded-3xl border border-gray-200 shadow-sm">
-            <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="text-[#2F52E0] w-10 h-10" />
+            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="text-[#FF7A00] w-10 h-10" />
             </div>
             <h2 className="text-xl font-bold text-[#161B1D] mb-2">
               Nenhum curso por aqui...
@@ -135,7 +135,7 @@ export default function MeusCursos() {
               Parece que você ainda não começou nenhum curso.
             </p>
             <Link href="/explorar">
-              <button className="px-8 py-3 bg-[#2F52E0] text-white rounded-xl font-bold transition-all hover:bg-blue-700 shadow-md cursor-pointer">
+              <button className="px-8 py-3 bg-[#FF7A00] text-white rounded-xl font-bold transition-all hover:bg-[#ea7306] shadow-md cursor-pointer">
                 Explorar Cursos
               </button>
             </Link>

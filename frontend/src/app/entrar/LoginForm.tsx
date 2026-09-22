@@ -95,7 +95,7 @@ export default function LoginForm() {
       )}
 
       <div className="max-w-[410px] mx-auto">
-        <button type="submit" disabled={loading} className="w-full py-3 bg-[#2F52E0] text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer" >
+        <button type="submit" disabled={loading} className="w-full py-3 bg-[#FF7A00] text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer" >
           {loading ? "Entrando..." : "Entrar"}
           {!loading && <ChevronRight size={18} />}
         </button>

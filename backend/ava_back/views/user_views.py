@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -121,28 +121,37 @@ def me(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def professor_by_slug(request, slug):
-    try:
-        professor = User.objects.get(username=slug, role="professor")
-    except User.DoesNotExist:
+    formatted_slug = slug.replace("-", " ").replace("_", " ").strip()
+    
+    professor = User.objects.filter(role="professor").filter(
+        Q(username__iexact=formatted_slug) | 
+        Q(username__iexact=slug) |
+        Q(username__icontains=formatted_slug)
+    ).first()
+
+    if not professor:
         return Response({"error": "Professor não encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
-    courses = Course.objects.filter(professor=professor)
-    published_courses = courses.filter(published=True)
+    if request.user.is_authenticated and request.user.id == professor.id:
+        courses = Course.objects.filter(professor=professor)
+    else:
+        courses = Course.objects.filter(professor=professor, published=True)
 
-    total_lessons = Lesson.objects.filter(module__course__in=published_courses).count()
-    total_duration = Lesson.objects.filter(module__course__in=published_courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
+    total_lessons = Lesson.objects.filter(module__course__in=courses).count()
+    total_duration = Lesson.objects.filter(module__course__in=courses).aggregate(total=Sum("duration_seconds"))["total"] or 0
     total_hours = round(total_duration / 3600, 1)
 
-    serialized_courses = CourseSerializer(published_courses, many=True, context={'request': request}).data
+    serialized_courses = CourseSerializer(courses, many=True, context={'request': request}).data
 
     return Response({
         "id": professor.id,
         "username": professor.username,
         "email": professor.email,
         "bio": professor.bio or "Este professor ainda não adicionou uma bio profissional.",
+        "created_at": professor.date_joined if hasattr(professor, 'date_joined') else None,
         "especialidade": "Instrutor de Tecnologia",  
         "stats": {
-            "coursesCount": published_courses.count(),
+            "coursesCount": courses.count(),
             "lessons": total_lessons,
             "hours": total_hours
         },

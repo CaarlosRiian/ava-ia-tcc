@@ -339,7 +339,7 @@ export default function AIChatPanel({ lessonTitle, lessonId, onClose, chatWidth,
           title="Clique e arraste para redimensionar"
           className="hidden lg:flex absolute -left-4 top-0 w-8 h-full cursor-ew-resize items-center justify-center z-[100] group"
         >
-          <div className="w-1 h-full bg-gray-200 group-hover:bg-[#2F52E0] group-active:bg-[#2F52E0] transition-colors" />
+          <div className="w-1 h-full bg-gray-200 group-hover:bg-[#FF7A00] group-active:bg-[#FF7A00] transition-colors" />
 
           <div className="absolute top-1/2 -translate-y-1/2 bg-white border border-gray-300 shadow-md rounded-md p-1 group-hover:border-[#2F52E0] group-hover:scale-110 transition-all cursor-ew-resize">
             <GripVertical className="h-4 w-4 text-gray-600 group-hover:text-[#2F52E0]" />
