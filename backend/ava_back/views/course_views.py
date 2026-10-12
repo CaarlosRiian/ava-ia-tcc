@@ -1,10 +1,10 @@
 from django.db.models import Prefetch
-from django.http import HttpResponse
+from django.http import HttpResponse, request
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -26,6 +26,8 @@ class CategoryViewSet(ModelViewSet):
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
+    
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
@@ -38,7 +40,10 @@ class CourseViewSet(ModelViewSet):
         return CourseSerializer
 
     def get_queryset(self):
-        qs = Course.objects.select_related('professor', 'category')
+        if self.request.user.is_authenticated:
+            qs = Course.objects.select_related('professor', 'category')
+        else:
+            qs = Course.objects.filter(published=True).select_related('professor', 'category')
 
         if self.action in ['retrieve', 'instructor_dashboard']:
             qs = qs.prefetch_related(
@@ -186,8 +191,11 @@ class CourseViewSet(ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='recommendations')
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny],   url_path='recommendations')
     def recommendations(self, request):
+        if not request.user or not request.user.is_authenticated:
+                return Response([], status=status.HTTP_200_OK)
+                
         courses = CourseService.get_recommended_courses(request.user)
         serializer = self.get_serializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -3,17 +3,17 @@ const API_URL = "http://localhost:8000/api";
 export async function getCategories() {
   const token = localStorage.getItem("access");
 
+  const headers: Record<string, string> = {};
+  if (token && token !== "null" && token !== "undefined") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_URL}/categories/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers,
   });
 
   if (response.status === 401) {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    window.location.href = "/entrar";
-    return;
+    return [];
   }
 
   if (!response.ok) {

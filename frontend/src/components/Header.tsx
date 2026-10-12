@@ -71,7 +71,7 @@ export default function Header({ value, onChange }: HeaderProps) {
       const term = value !== undefined ? value : localSearch;
 
       if (term.trim()) {
-        router.push(`/?search=${encodeURIComponent(term.trim())}`);
+        router.push(`/descobrir?search=${encodeURIComponent(term.trim())}`);
       }
     }
   };

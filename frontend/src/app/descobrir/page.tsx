@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SlidersHorizontal, RotateCcw, ArrowRight, X, ArrowUpDown, Clock, SearchX,
-  Sparkles, } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { SlidersHorizontal, RotateCcw, ArrowRight, X, ArrowUpDown, Clock, SearchX, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -10,6 +9,7 @@ import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
 import { getCourses, getRecommendedCourses } from "@/services/courses";
 import { getCategories } from "@/services/categories";
+import { useSearchParams } from "next/navigation";
 
 const SORT_OPTIONS = [
   { value: "default", label: "Relevância" },
@@ -23,19 +23,29 @@ const DURATION_OPTIONS = [
   { value: "long", label: "Formação completa" },
 ];
 
-export default function Explorar() {
+function ExplorarContent() {
+  const searchParams = useSearchParams();
+  const searchUrlParam = searchParams.get("search") || "";
+
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [searchQuery, setSearchQuery] = useState(searchUrlParam);
 
   const [sortBy, setSortBy] = useState<string>("default");
   const [durationFilter, setDurationFilter] = useState<string>("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchUrlParam !== searchQuery) {
+      setSearchQuery(searchUrlParam);
+    }
+  }, [searchUrlParam]);
 
   useEffect(() => {
     async function load() {
@@ -67,7 +77,20 @@ export default function Explorar() {
     const courseCatId = typeof course.category === "object" ? course.category?.id : course.category;
     const matchesCategory = activeCategory ? courseCatId === activeCategory : true;
 
-    const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (() => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      
+      const titleMatch = course.title?.toLowerCase().includes(query);
+      
+      const categoryName = typeof course.category === "object" 
+        ? course.category?.name 
+        : categories.find((c) => c.id === course.category)?.name;
+      
+      const categoryMatch = categoryName?.toLowerCase().includes(query);
+
+      return titleMatch || categoryMatch;
+    })();
 
     const totalLessons = course.modules?.length || 0;
     let matchesDuration = true;
@@ -308,6 +331,14 @@ export default function Explorar() {
   );
 }
 
+export default function Explorar() {
+  return (
+    <Suspense fallback={<LoadingScreen text="Carregando..." />}>
+      <ExplorarContent />
+    </Suspense>
+  );
+}
+
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 rounded-full bg-orange-50 text-[#FF7A00] text-sm font-semibold">
@@ -323,8 +354,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   );
 }
 
-function TopicSection({ title, icon, courses, total, expanded, onExpand,
-}: {
+function TopicSection({ title, icon, courses, total, expanded, onExpand }: {
   title: string;
   icon?: React.ReactNode;
   courses: any[];

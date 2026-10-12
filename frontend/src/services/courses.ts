@@ -4,11 +4,19 @@ import { CourseRecommendation } from "../types/course";
 export async function getCourses() {
   const token = localStorage.getItem("access");
 
+  const headers: Record<string, string> = {};
+  
+  if (token && token !== "null" && token !== "undefined") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_URL}/courses/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers,
   });
+
+  if (response.status === 401) {
+    return [];
+  }
 
   if (!response.ok) {
     throw new Error("Erro ao buscar cursos");
@@ -156,21 +164,21 @@ export async function completeLesson(lessonId: number): Promise<any> {
 export async function getRecommendedCourses(): Promise<CourseRecommendation[]> {
   const token = localStorage.getItem("access");
 
+  const headers: Record<string, string> = {};
+  if (token && token !== "null" && token !== "undefined") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_URL}/courses/recommendations/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers,
   });
 
   if (response.status === 401) {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    window.location.href = "/entrar";
     return [];
   }
 
   if (!response.ok) {
-    throw new Error("Erro ao buscar recomendações de cursos");
+    return [];
   }
 
   return response.json();
