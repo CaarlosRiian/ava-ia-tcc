@@ -67,7 +67,13 @@ class CourseViewSet(ModelViewSet):
     def perform_create(self, serializer):
         if self.request.user.role != "professor":
             raise PermissionDenied("Apenas professores podem criar cursos")
-        serializer.save(professor=self.request.user)
+        
+        course = serializer.save(professor=self.request.user)
+        
+        Enrollment.objects.get_or_create(
+            user=self.request.user,
+            course=course
+        )
 
     def calculate_progress(self, user, course):
         lessons = Lesson.objects.filter(module__course=course)
@@ -181,6 +187,12 @@ class CourseViewSet(ModelViewSet):
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def certificado(self, request, pk=None):
         course = self.get_object()
+        
+        if course.professor == request.user:
+            return Response(
+                {"error": "Professores não podem emitir certificados para os seus próprios cursos."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
             html_content = LessonService.gerar_html_certificado(request.user, course)

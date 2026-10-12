@@ -26,6 +26,7 @@ export default function Aula() {
   const [lessonsOpen, setLessonsOpen] = useState(true);
   const [chatWidth, setChatWidth] = useState(400);
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false); 
+  const [certificateError, setCertificateError] = useState<string | null>(null); 
 
   const refreshProgress = useCallback(async () => {
     try {
@@ -168,6 +169,7 @@ export default function Aula() {
 
   const handleEmitirCertificado = async () => {
     setIsGeneratingCertificate(true);
+    setCertificateError(null); 
     try {
       const token = localStorage.getItem("access");
 
@@ -178,7 +180,7 @@ export default function Aula() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        alert(errorData.error || "Você precisa concluir todas as aulas antes de emitir seu certificado.");
+        setCertificateError(errorData.error || "Não foi possível emitir o certificado.");
         return;
       }
 
@@ -189,7 +191,7 @@ export default function Aula() {
       window.open(blobUrl, "_blank");
     } catch (error) {
       console.error("Erro ao emitir certificado:", error);
-      alert("Não foi possível conectar ao servidor backend.");
+      setCertificateError("Não foi possível conectar ao servidor backend.");
     } finally {
       setIsGeneratingCertificate(false);
     }
@@ -249,7 +251,8 @@ export default function Aula() {
               onEmitirCertificado={handleEmitirCertificado}
               isGeneratingCertificate={isGeneratingCertificate}
               courseProgress={course.progress}
-              onLessonCreateOrComplete={refreshProgress} 
+              onLessonCreateOrComplete={refreshProgress}
+              certificateError={certificateError} 
             />
           </div>
         </main>

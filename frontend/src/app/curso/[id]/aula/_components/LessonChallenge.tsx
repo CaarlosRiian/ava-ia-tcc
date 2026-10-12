@@ -17,6 +17,8 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl, onCha
   const [submissionResult, setSubmissionResult] = useState<any>(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  if (!isCompleted || !lesson?.challenge) return null;
+
   useEffect(() => {
     const fetchExistingSubmission = async () => {
       try {
@@ -87,8 +89,6 @@ export default function LessonChallenge({ lesson, isCompleted, apiBaseUrl, onCha
     }
     return lesson.challenge_description || lesson.challenge || lesson.description || "Resolva o desafio proposto nesta aula escrevendo seu código ou resposta no campo abaixo para validar seu aprendizado com a IA.";
   };
-
-  if (!isCompleted) return null;
 
   const handleTriggerDeepen = (fullText: string) => {
     const match = fullText.match(/`([^`]+)`/);

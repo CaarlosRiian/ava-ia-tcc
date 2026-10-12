@@ -252,7 +252,7 @@ class InstructorCourseSerializer(serializers.ModelSerializer):
         return InstructorModuleSerializer(modules, many=True, context=self.context).data
 
     def get_alunos(self, obj):
-        return Enrollment.objects.filter(course=obj, is_active=True).count()
+        return Enrollment.objects.filter(course=obj, is_active=True).exclude(user=obj.professor).count()
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:

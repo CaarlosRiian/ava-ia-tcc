@@ -5,7 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
 import Breadcrumb from "@/components/BreadCrumb";
-import { BookOpen, Award, CheckCircle, GraduationCap } from "lucide-react";
+import { BookOpen, Award, CheckCircle, GraduationCap, ShieldCheck } from "lucide-react";
 import { getMyCourses } from "@/services/courses";
 import LoadingScreen from "@/components/LoadingScreen";
 import { formatName } from "@/utils/formatName"; 
@@ -21,8 +21,12 @@ type Course = {
 export default function MeusCursos() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem("username");
+    setCurrentUser(storedUser);
+
     async function fetchCourses() {
       try {
         const data = await getMyCourses();
@@ -37,8 +41,16 @@ export default function MeusCursos() {
     fetchCourses();
   }, []);
 
-  const totalInAndamento = courses.filter(c => c.progress < 100).length;
-  const totalConcluidos = courses.filter(c => c.progress === 100).length;
+  const isMyOwnCourse = (c: Course) => {
+    if (!currentUser || !c.professor) return false;
+    return c.professor.toLowerCase() === currentUser.toLowerCase();
+  };
+
+  const studentCourses = courses.filter(c => !isMyOwnCourse(c));
+  const authoredCourses = courses.filter(c => isMyOwnCourse(c));
+
+  const totalInAndamento = studentCourses.filter(c => c.progress < 100).length;
+  const totalConcluidos = studentCourses.filter(c => c.progress === 100).length;
   const totalCertificados = totalConcluidos; 
 
   return (
@@ -95,33 +107,62 @@ export default function MeusCursos() {
                 <div>
                   <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Certificados</span>
                   <span className="text-2xl font-black text-gray-800">
-                    {totalCertificados > 0 ? `${totalCertificados} emitidos` : 'Nenhum emitido'}
+                    {totalCertificados > 0 ? `${totalCertificados} ${totalCertificados === 1 ? 'emitido' : 'emitidos'}` : '0 emitidos'}
                   </span>
                 </div>
               </div>
 
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <GraduationCap className="text-gray-400 h-5 w-5" />
-                <h2 className="text-lg font-bold text-gray-700">Sua Grade de Estudos</h2>
+            {studentCourses.length > 0 && (
+              <div className="space-y-4 mb-12">
+                <div className="flex items-center gap-2 mb-2">
+                  <GraduationCap className="text-gray-400 h-5 w-5" />
+                  <h2 className="text-lg font-bold text-gray-700">Sua Grade de Estudos</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  {studentCourses.map((course) => (
+                    <CourseCard
+                      key={course.course_id}
+                      id={course.course_id}
+                      title={course.title}
+                      author={formatName(course.professor)} 
+                      lessonsCount={undefined} 
+                      progress={course.progress}
+                      thumbnail={course.thumbnail} 
+                    />
+                  ))}
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {courses.map((course) => (
-                  <CourseCard
-                    key={course.course_id}
-                    id={course.course_id}
-                    title={course.title}
-                    author={formatName(course.professor)} 
-                    lessonsCount={undefined} 
-                    progress={course.progress}
-                    thumbnail={course.thumbnail} 
-                  />
-                ))}
+            )}
+
+            {authoredCourses.length > 0 && (
+              <div className="space-y-4 pt-4 border-t border-gray-200/60">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="text-[#FF7A00] h-5 w-5" />
+                  <h2 className="text-lg font-bold text-gray-700">Cursos Criados por Você (Instrutor)</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  {authoredCourses.map((course) => (
+                    <div key={course.course_id} className="relative group">
+                      <span className="absolute top-3 right-3 z-10 bg-[#FF7A00] text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md shadow-sm">
+                        Modo Criador
+                      </span>
+                      <CourseCard
+                        id={course.course_id}
+                        title={course.title}
+                        author={formatName(course.professor)} 
+                        lessonsCount={undefined} 
+                        progress={course.progress}
+                        thumbnail={course.thumbnail} 
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <div className="text-center py-24 bg-white rounded-3xl border border-gray-200 shadow-sm">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award, FileText, Link2, Download } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award, FileText, Link2, Download, AlertCircle } from "lucide-react";
 import { completeLesson } from "@/services/courses"; 
 import LessonChallenge from "../_components/LessonChallenge"; 
 
@@ -20,18 +20,30 @@ interface LessonContentProps {
   isGeneratingCertificate: boolean;
   courseProgress: number;
   onLessonCreateOrComplete?: () => void;
+  certificateError?: string | null; 
 }
 
 export default function LessonContent({ 
   course, lesson, lessonIndex, aiOpen, setAiOpen, 
   lessonsOpen, setLessonsOpen, prevLesson, nextLesson, 
   onEmitirCertificado, isGeneratingCertificate, courseProgress,
-  onLessonCreateOrComplete 
+  onLessonCreateOrComplete, certificateError 
 }: LessonContentProps) {
   const [isCompleted, setIsCompleted] = useState(lesson?.is_completed || lesson?.completed || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInstructor, setIsInstructor] = useState(false);
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    try {
+      const username = localStorage.getItem("username");
+      if (course?.professor && (course.professor === username || course.professor.username === username)) {
+        setIsInstructor(true);
+      }
+    } catch (e) {
+    }
+  }, [course]);
 
   const handleComplete = async () => {
     if (isCompleted || isSubmitting) return;
@@ -199,15 +211,30 @@ export default function LessonContent({
         )}
 
         {courseProgress === 100 && (
-          <button
-            type="button"
-            onClick={onEmitirCertificado}
-            disabled={isGeneratingCertificate}
-            className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 shadow-md transition-all active:scale-95 disabled:bg-gray-300 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Award className="h-4 w-4" />
-            {isGeneratingCertificate ? "Emitindo Certificado..." : "Emitir Certificado"}
-          </button>
+          <div className="w-full sm:flex-1 space-y-2">
+            <button
+              type="button"
+              onClick={onEmitirCertificado}
+              disabled={isGeneratingCertificate || isInstructor}
+              className={`w-full py-3 px-4 rounded-xl text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 ${
+                isInstructor 
+                  ? "bg-zinc-200 text-zinc-500 cursor-not-allowed shadow-none" 
+                  : "bg-amber-500 text-white hover:bg-amber-600 active:scale-95 cursor-pointer"
+              }`}
+            >
+              <Award className="h-4 w-4" />
+              {isGeneratingCertificate ? "Emitindo Certificado..." : isInstructor ? "Certificado Indisponível (Instrutor)" : "Emitir Certificado"}
+            </button>
+
+            {(isInstructor || certificateError) && (
+              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs animate-fadeIn">
+                <AlertCircle size={15} className="shrink-0 text-amber-600 mt-0.5" />
+                <span>
+                  {certificateError || "Professores criadores não podem emitir certificados para os seus próprios cursos."}
+                </span>
+              </div>
+            )}
+          </div>
         )}
 
         {nextLesson && (
