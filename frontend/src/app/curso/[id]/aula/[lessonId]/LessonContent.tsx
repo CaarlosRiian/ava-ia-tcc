@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle, Award, FileText, Link2, Download, AlertCircle } from "lucide-react";
 import { completeLesson } from "@/services/courses"; 
 import LessonChallenge from "../_components/LessonChallenge"; 
+import LessonComments from "../_components/LessonComments";
 
 interface LessonContentProps {
   course: any;
@@ -316,6 +317,8 @@ export default function LessonContent({
           </div>
         )}
       </div>
+
+      <LessonComments lessonId={lesson.id} apiBaseUrl={apiBaseUrl} />
     </div>
   );
 }

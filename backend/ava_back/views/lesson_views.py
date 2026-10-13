@@ -12,11 +12,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
+from django.core.paginator import Paginator
+
 
 from ..models import ( Flashcard, Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, UserFlashcardProgress, LessonSubmission 
-)
-from ..serializers import ( ModuleSerializer, LessonSerializer, LessonMaterialSerializer, 
-    InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer, StudentChallengeSubmissionSerializer )
+, LessonComment)
+from ..serializers import ( LessonCommentSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer, StudentChallengeSubmissionSerializer, LessonCommentSerializer )
 from ..services.service import LessonService
 
 logger = logging.getLogger(__name__)
@@ -180,6 +181,64 @@ class LessonViewSet(ModelViewSet):
             traceback.print_exc()
             logger.error(f"Erro ao submeter desafio: {str(e)}")
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get', 'post'], url_path='comments')
+    def comments(self, request, pk=None):
+        lesson = self.get_object()
+        
+        if request.method == 'GET':
+            total_count = lesson.comments.count()
+            root_comments = lesson.comments.filter(parent__isnull=True).order_by('-created_at')
+
+            page_number = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 5))
+
+            paginator = Paginator(root_comments, page_size)
+            page_obj = paginator.get_page(page_number)
+
+            serializer = LessonCommentSerializer(page_obj.object_list, many=True)
+
+            return Response({
+                'total_count': total_count,
+                'has_next': page_obj.has_next(),
+                'next_page': page_number + 1 if page_obj.has_next() else None,
+                'results': serializer.data
+            })
+            
+        elif request.method == 'POST':
+            serializer = LessonCommentSerializer(data=request.data)
+            if serializer.is_valid():
+                parent_id = request.data.get('parent')
+                parent_comment = None
+                if parent_id:
+                    parent_comment = LessonComment.objects.filter(id=parent_id, lesson=lesson).first()
+                
+                serializer.save(user=request.user, lesson=lesson, parent=parent_comment)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['put', 'delete'], url_path=r'comments/(?P<comment_id>\d+)')
+    def comment_detail(self, request, pk=None, comment_id=None):
+        try:
+            comment = LessonComment.objects.get(id=comment_id, lesson_id=pk)
+        except LessonComment.DoesNotExist:
+            return Response({"error": "Comentário não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if comment.user != request.user:
+            return Response({"error": "Você não tem permissão para alterar este comentário."}, status=status.HTTP_403_FORBIDDEN)
+
+        if request.method == 'PUT':
+            content = request.data.get('content')
+            if not content:
+                return Response({"error": "O conteúdo não pode ser vazio."}, status=status.HTTP_400_BAD_REQUEST)
+            comment.content = content
+            comment.save()
+            serializer = LessonCommentSerializer(comment)
+            return Response(serializer.data)
+
+        elif request.method == 'DELETE':
+            comment.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 class LessonSubmitView(APIView):
     def post(self, request, pk=None):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ( StudentChallengeSubmission, User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
+from .models import ( LessonComment, StudentChallengeSubmission, User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
     Favorite, StudentPerformance, Flashcard, UserFlashcardProgress,  Challenge )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
@@ -394,3 +394,18 @@ class StudentChallengeSubmissionSerializer(serializers.ModelSerializer):
         fields = [ 'id', 'student', 'student_name', 'challenge', 'challenge_title', 'answer_text', 'strengths', 'improvements', 'review_timestamp', 'score_percentage',
             'created_at', ]
         read_only_fields = ['id', 'created_at']
+
+class LessonCommentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    user_name = serializers.ReadOnlyField(source='user.first_name')
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LessonComment
+        fields = ['id', 'lesson', 'user', 'user_name', 'parent', 'content', 'created_at', 'replies']
+        read_only_fields = ['lesson', 'user', 'created_at', 'replies']
+
+    def get_replies(self, obj):
+        if obj.replies.exists():
+            return LessonCommentSerializer(obj.replies.all().order_by('created_at'), many=True).data
+        return []
