@@ -38,6 +38,8 @@ export default function Favoritos() {
                 title={course.title}
                 author={formatName(course.author)}
                 hours={course.hours}
+                thumbnail={course.thumbnail || undefined}
+                lessonsCount={course.lessons_count}
                 showFavoriteButton
                 isFavorite
                 onToggleFavorite={() => removeFavorite(course.course)}

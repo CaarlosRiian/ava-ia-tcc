@@ -10,6 +10,8 @@ export interface FavoriteCourse {
   title: string;
   author: string;
   hours: number;
+  thumbnail?: string | null;  
+  lessons_count: number;
 }
 
 export function useFavorites() {

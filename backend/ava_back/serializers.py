@@ -309,14 +309,27 @@ class FavoriteSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='course.title', read_only=True)
     author = serializers.CharField(source='course.professor.username', read_only=True)
     hours = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+    lessons_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Favorite
-        fields = ['id', 'course', 'title', 'author', 'hours']
+        fields = ['id', 'course', 'title', 'author', 'hours', 'thumbnail', 'lessons_count']
 
     def get_hours(self, obj):
         total_seconds = Lesson.objects.filter(module__course=obj.course).aggregate(total=Sum('duration_seconds'))['total'] or 0
         return round(total_seconds / 3600, 1)
+
+    def get_thumbnail(self, obj): 
+        if obj.course.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.course.thumbnail.url)
+            return obj.course.thumbnail.url
+        return None
+
+    def get_lessons_count(self, obj): 
+        return Lesson.objects.filter(module__course=obj.course).count()
     
 class ProfessorProfileSerializer(serializers.ModelSerializer):
     especialidade = serializers.SerializerMethodField()
