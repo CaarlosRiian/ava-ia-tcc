@@ -21,6 +21,7 @@
     "react-hook-form": "^7.75.0",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
+    "react-textarea-autosize": "^8.5.9",
     "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
     "shadcn": "^4.2.0",

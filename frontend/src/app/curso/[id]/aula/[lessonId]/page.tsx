@@ -1,19 +1,22 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Sparkles } from "lucide-react";
 import Header from "@/components/Header";
-import Breadcrumb from "@/components/BreadCrumb"; 
+import Breadcrumb from "@/components/BreadCrumb";
 import VideoPlayer from "./VideoPlayer";
 import LessonContent from "./LessonContent";
 import AIChatPanel from "./AIChatPanel";
 import LoadingScreen from "@/components/LoadingScreen";
+import CoursePlaylist from "../_components/CoursePlaylist";
+import Tabs from "../_components/tabs/Tabs";
 import { getCourseDetail, getMyCourses } from "@/services/courses";
 
 export default function Aula() {
   const params = useParams();
   const router = useRouter();
-  
+
   const courseId = Number(params?.id);
   const lessonId = Number(params?.lessonId);
 
@@ -23,10 +26,10 @@ export default function Aula() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [aiOpen, setAiOpen] = useState(false);
-  const [lessonsOpen, setLessonsOpen] = useState(true);
-  const [chatWidth, setChatWidth] = useState(400);
-  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false); 
-  const [certificateError, setCertificateError] = useState<string | null>(null); 
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false);
+  const [certificateError, setCertificateError] = useState<string | null>(null);
+
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const refreshProgress = useCallback(async () => {
     try {
@@ -39,19 +42,20 @@ export default function Aula() {
         const id = c.course_id !== undefined ? c.course_id : c.id;
         return Number(id) === courseId;
       });
-      
+
       const apiProgress = matchedCourse ? matchedCourse.progress : 0;
       const allLessons = data?.modules?.flatMap((m: any) => m.lessons || []) || [];
-      
+
       const totalLessonsCount = allLessons.length;
       const completedLessonsCount = allLessons.filter((l: any) => l.completed || l.is_completed || l.id === lessonId).length;
-      
+
       const isActuallyFinished = apiProgress >= 100 || (totalLessonsCount > 0 && completedLessonsCount >= totalLessonsCount);
 
       setCourse((prev: any) => ({
         ...(prev || data),
+        modules: data?.modules ?? prev?.modules,
         lessons: allLessons,
-        progress: isActuallyFinished ? 100 : apiProgress 
+        progress: isActuallyFinished ? 100 : apiProgress
       }));
     } catch (err) {
       setCourse((prev: any) => ({ ...prev, progress: 100 }));
@@ -59,17 +63,16 @@ export default function Aula() {
   }, [courseId, lessonId]);
 
   useEffect(() => {
-    const handleOpenAndPrefill = (event: any) => {
-      const promptToFill = event.detail?.prompt;
-      if (promptToFill) {
-        setAiOpen(true);
-        localStorage.setItem("pending_chat_prompt", promptToFill);
-      }
-    };
-
-    window.addEventListener("prefill-and-open-chat", handleOpenAndPrefill);
-    return () => window.removeEventListener("prefill-and-open-chat", handleOpenAndPrefill);
+    const handleOpenChat = () => setAiOpen(true);
+    window.addEventListener("prefill-and-open-chat", handleOpenChat);
+    return () => window.removeEventListener("prefill-and-open-chat", handleOpenChat);
   }, []);
+
+  useEffect(() => {
+    if (aiOpen && window.matchMedia("(max-width: 1023px)").matches) {
+      sidebarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [aiOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -129,7 +132,7 @@ export default function Aula() {
         const currentProgress = matchedCourse ? matchedCourse.progress : 0;
 
         const allLessons = data.modules?.flatMap((m: any) => m.lessons || []) || [];
-        
+
         const currentLesson = allLessons.find((l: any) => {
           const id = l.id ?? l.lesson_id;
           return Number(id) === lessonId;
@@ -141,10 +144,10 @@ export default function Aula() {
         });
 
         if (currentLesson) {
-          setCourse({ 
-            ...data, 
+          setCourse({
+            ...data,
             lessons: allLessons,
-            progress: currentProgress 
+            progress: currentProgress
           });
           setLesson({ ...currentLesson, index });
           setIsAuthorized(true);
@@ -163,13 +166,13 @@ export default function Aula() {
     load();
 
     return () => {
-      isMounted = false; 
+      isMounted = false;
     };
   }, [courseId, lessonId, router]);
 
   const handleEmitirCertificado = async () => {
     setIsGeneratingCertificate(true);
-    setCertificateError(null); 
+    setCertificateError(null);
     try {
       const token = localStorage.getItem("access");
 
@@ -222,50 +225,71 @@ export default function Aula() {
     <div className="flex flex-col h-screen bg-[#F8F9FA] overflow-hidden">
       <Header />
 
-      <Breadcrumb 
+      <Breadcrumb
         items={[
           { label: "Meus Cursos", href: "/meus-cursos" },
           { label: course.title || "Detalhes do Curso", href: `/curso/${courseId}` },
           { label: lesson.title || "Aula" }
-        ]} 
+        ]}
       />
 
-      <div className="flex flex-row flex-1 overflow-hidden w-full relative">
-        <main className="flex-1 flex flex-col overflow-y-auto h-full items-center bg-gray-50 pt-4 pb-12 px-4 lg:px-6 custom-scrollbar">
-          <div className="w-full max-w-5xl flex flex-col justify-start gap-6">
-            <VideoPlayer
-              lesson={lesson}
-              onToggleAI={() => setAiOpen(!aiOpen)}
-            />
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 w-full overflow-y-auto lg:overflow-hidden">
+        <main className="min-w-0 lg:flex-1 lg:h-full lg:overflow-y-auto bg-white custom-scrollbar">
+          <VideoPlayer lesson={lesson} onToggleAI={() => setAiOpen(!aiOpen)} />
 
-            <LessonContent
-              course={course}
-              lesson={lesson}
-              lessonIndex={lessonIndex}
-              aiOpen={aiOpen}
-              setAiOpen={setAiOpen}
-              lessonsOpen={lessonsOpen}
-              setLessonsOpen={setLessonsOpen}
-              prevLesson={course.lessons[lessonIndex - 1]}
-              nextLesson={course.lessons[lessonIndex + 1]}
-              onEmitirCertificado={handleEmitirCertificado}
-              isGeneratingCertificate={isGeneratingCertificate}
-              courseProgress={course.progress}
-              onLessonCreateOrComplete={refreshProgress}
-              certificateError={certificateError} 
-            />
-          </div>
+          <LessonContent
+            key={lesson.id}
+            course={course}
+            lesson={lesson}
+            lessonIndex={lessonIndex}
+            aiOpen={aiOpen}
+            setAiOpen={setAiOpen}
+            prevLesson={course.lessons[lessonIndex - 1]}
+            nextLesson={course.lessons[lessonIndex + 1]}
+            onEmitirCertificado={handleEmitirCertificado}
+            isGeneratingCertificate={isGeneratingCertificate}
+            courseProgress={course.progress}
+            onLessonCreateOrComplete={refreshProgress}
+            certificateError={certificateError}
+          />
         </main>
 
-        {aiOpen && (
-          <AIChatPanel
-            lessonTitle={lesson.title}
-            lessonId={lessonId} 
-            onClose={() => setAiOpen(false)}
-            chatWidth={chatWidth}
-            setChatWidth={setChatWidth}
+        <aside
+          ref={sidebarRef}
+          aria-label="Painel lateral do curso"
+          className="w-full lg:w-[380px] xl:w-[420px] shrink-0 h-[640px] lg:h-full border-t lg:border-t-0 lg:border-l border-gray-200 bg-white"
+        >
+          <Tabs
+            ariaLabel="Conteúdo do curso e Tutor de IA"
+            activeId={aiOpen ? "ai" : "course"}
+            onActiveChange={(id) => setAiOpen(id === "ai")}
+            className="flex flex-col h-full"
+            panelClassName="flex-1 min-h-0 overflow-hidden"
+            tabs={[
+              {
+                id: "course",
+                label: "Conteúdo do curso",
+                content: (
+                  <CoursePlaylist
+                    course={course}
+                    currentLessonId={lessonId}
+                    currentLessonCompleted={!!(lesson.completed || lesson.is_completed) || undefined}
+                  />
+                ),
+              },
+              {
+                id: "ai",
+                eager: true,
+                label: (
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> Tutor de IA
+                  </span>
+                ),
+                content: <AIChatPanel key={lessonId} lessonTitle={lesson.title} lessonId={lessonId} />,
+              },
+            ]}
           />
-        )}
+        </aside>
       </div>
     </div>
   );

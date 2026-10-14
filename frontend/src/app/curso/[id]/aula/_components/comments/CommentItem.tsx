@@ -83,14 +83,14 @@ export default function CommentItem({
 
   return (
     <div
-      className={`p-4 bg-[#F8F9FA] border border-gray-100 rounded-xl space-y-2 group ${
-        isReply ? "ml-6 sm:ml-10 mt-3 border-l-2 border-l-[#2F52E0]/40" : ""
+      className={`p-4 bg-[#FFFFFF] shadow-md border border-gray-100 rounded-xl space-y-2 group ${
+        isReply ? "ml-6 sm:ml-10 mt-3 border-l-2 border-l-[black]/40" : ""
       }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div
-            className={`rounded-full bg-blue-100 text-[#2F52E0] flex items-center justify-center font-bold text-xs ${
+            className={`rounded-full bg-white border border-gray-300 text-[#000000] flex items-center justify-center font-bold text-xs ${
               isReply ? "w-6 h-6" : "w-8 h-8"
             }`}
           >
@@ -110,7 +110,7 @@ export default function CommentItem({
                   setIsEditing(true);
                   setEditContent(comment.content);
                 }}
-                className="p-1 text-gray-400 hover:text-[#2F52E0] rounded transition cursor-pointer"
+                className="p-2 text-black hover:text-black hover:bg-[#f2f2f2] rounded-full transition-colors duration-200 cursor-pointer"
                 title="Editar"
               >
                 <Edit2 size={13} />
@@ -118,7 +118,7 @@ export default function CommentItem({
               <button
                 type="button"
                 onClick={() => onDeleteClick(comment.id)}
-                className="p-1 text-gray-400 hover:text-red-500 rounded transition cursor-pointer"
+                className="p-2 text-red-500 hover:text-red-600 hover:bg-[#f2f2f2] rounded-full transition-colors duration-200 cursor-pointer"
                 title="Excluir"
               >
                 <Trash2 size={13} />
@@ -134,7 +134,7 @@ export default function CommentItem({
             rows={2}
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="w-full p-3 bg-white border border-[#2F52E0] rounded-xl text-sm text-gray-800 focus:outline-none resize-none"
+            className="w-full p-3 bg-white border border-[black] rounded-xl text-sm text-gray-800 focus:outline-none resize-none"
           />
           <div className="flex items-center gap-2 justify-end">
             <button
@@ -148,7 +148,7 @@ export default function CommentItem({
               type="button"
               onClick={handleSaveEdit}
               disabled={updating || !editContent.trim()}
-              className="flex items-center gap-1 px-3 py-1.5 bg-[#2F52E0] text-white rounded-lg text-xs font-semibold hover:opacity-95 transition cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#FF7A00] text-white rounded-lg text-xs font-semibold hover:opacity-95 transition cursor-pointer disabled:opacity-50"
             >
               <Check size={13} /> {updating ? "Salvando..." : "Salvar"}
             </button>
@@ -165,7 +165,7 @@ export default function CommentItem({
                 setIsReplying(!isReplying);
                 setReplyContent("");
               }}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#2F52E0] hover:underline pt-1 cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-bold text-black hover:bg-[#f2f2f2] rounded-full px-3 py-2 transition-colors duration-200 cursor-pointer"
             >
               <Reply size={13} /> Responder
             </button>
@@ -194,7 +194,7 @@ export default function CommentItem({
               type="button"
               onClick={handleReplySubmit}
               disabled={submittingReply || !replyContent.trim()}
-              className="px-4 py-1.5 bg-[#2F52E0] text-white rounded-lg text-xs font-bold hover:opacity-90 transition cursor-pointer disabled:opacity-50"
+              className="px-4 py-1.5 bg-[#FF7A00] text-white rounded-lg text-xs font-bold hover:opacity-90 transition cursor-pointer disabled:opacity-50"
             >
               {submittingReply ? "Enviando..." : "Enviar Resposta"}
             </button>

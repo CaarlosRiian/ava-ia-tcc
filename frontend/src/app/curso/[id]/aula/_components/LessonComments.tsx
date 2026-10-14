@@ -192,7 +192,7 @@ export default function LessonComments({ lessonId, apiBaseUrl }: LessonCommentsP
   return (
     <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-6 lg:p-8 mt-6 relative">
       <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="h-5 w-5 text-[#2F52E0]" />
+        <MessageSquare className="h-5 w-5 text-[000000]" />
         <h3 className="font-bold text-lg text-[#161B1D]">Dúvidas e Comentários ({totalCount})</h3>
       </div>
 
@@ -203,13 +203,13 @@ export default function LessonComments({ lessonId, apiBaseUrl }: LessonCommentsP
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Escreva sua dúvida ou comentário sobre esta aula..."
-            className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:border-[#2F52E0] text-sm text-gray-800 placeholder-gray-400 resize-none transition"
+            className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:border-[black] text-sm text-gray-800 placeholder-gray-400 resize-none transition"
           />
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#2F52E0] text-white rounded-xl font-bold text-sm hover:opacity-90 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-[#FF7A00] text-white rounded-xl font-bold text-sm hover:opacity-90 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Send size={15} />
               {submitting ? "Enviando..." : "Comentar"}
