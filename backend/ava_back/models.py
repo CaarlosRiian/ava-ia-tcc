@@ -246,40 +246,17 @@ class Favorite(models.Model):
     def __str__(self):
         return f'{self.user.username} - {self.course.title}'
 
-class Flashcard(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='flashcards')
-    front = models.TextField(verbose_name="Frente / Pergunta")
-    back_main = models.TextField(verbose_name="Verso / Resposta Principal")
-    back_analogy = models.TextField(blank=True, null=True, verbose_name="Verso Alternativo / Analogia")
+class CourseReview(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='course_reviews')
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='reviews', null=True, blank=True)
+    rating = models.PositiveIntegerField(verbose_name="Nota (1 a 5)")
+    comment = models.TextField(verbose_name="Comentário / Feedback", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    instructor_reply = models.TextField(verbose_name="Resposta do Instrutor", blank=True, null=True)
+    reply_created_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"Flashcard ({self.lesson.title}) - {self.front[:30]}..."
-
-
-class UserFlashcardProgress(models.Model):
-    STATUS_CHOICES = (
-        ('novo', 'Novo'),
-        ('aprendendo', 'Aprendendo'),
-        ('revisado', 'Revisado / Dominado'),
-    )
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='flashcard_progress')
-    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='user_progress')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='novo')
-    interval_days = models.PositiveIntegerField(default=1, verbose_name="Intervalo em Dias")
-    next_review = models.DateTimeField(auto_now_add=True, verbose_name="Próxima Revisão")
-    last_reviewed_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        unique_together = ('user', 'flashcard')
-        indexes = [
-            models.Index(fields=['user', 'next_review']),
-        ]
-
-    def __str__(self):
-        return f"{self.user.username} - Flashcard {self.flashcard.id} (Próxima: {self.next_review.date()})"
-
+        return f"Review de {self.user.username} para o curso - Nota: {self.rating}/5"
 class Challenge(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='challenges')
     title = models.CharField(max_length=255)

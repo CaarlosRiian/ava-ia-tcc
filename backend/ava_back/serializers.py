@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import ( LessonComment, StudentChallengeSubmission, User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
-    Favorite, StudentPerformance, Flashcard, UserFlashcardProgress,  Challenge )
+from .models import ( CourseReview, LessonComment, StudentChallengeSubmission, User, Category, Course, Module, Lesson, LessonMaterial, Enrollment, LessonProgress, AIAssistant, InstructorRequest, 
+    Favorite, StudentPerformance,  Challenge )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer 
 from rest_framework_simplejwt.tokens import RefreshToken 
 from django.contrib.auth import authenticate, get_user_model
@@ -370,34 +370,14 @@ class QuizSubmissionSerializer(serializers.Serializer):
         default=list
     )
 
-class FlashcardSerializer(serializers.ModelSerializer):
-    back = serializers.CharField(source='back_main', read_only=True)
-    pergunta = serializers.CharField(source='front', read_only=True)
-    resposta = serializers.CharField(source='back_main', read_only=True)
-
+class CourseReviewSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source='user.username')
+    user_id = serializers.ReadOnlyField(source='user.id')
+    instructor_reply = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     class Meta:
-        model = Flashcard
-        fields = [ 'id', 'lesson', 'front', 'back_main', 'back_analogy', 'back', 
-            'pergunta', 'resposta', 'created_at' ]
-        read_only_fields = ['id', 'created_at']
-
-class UserFlashcardProgressSerializer(serializers.ModelSerializer):
-    flashcard = FlashcardSerializer(read_only=True)
-
-    class Meta:
-        model = UserFlashcardProgress
-        fields = ['id', 'flashcard', 'status', 'interval_days', 'next_review', 'last_reviewed_at']
-        read_only_fields = ['id', 'next_review', 'last_reviewed_at']
-
-class FlashcardAnswerSerializer(serializers.Serializer):
-    FEEDBACK_CHOICES = (
-        ('errei', 'Errei / Difícil'),
-        ('medio', 'Médio / Bom'),
-        ('facil', 'Fácil'),
-    )
-
-    feedback = serializers.ChoiceField(choices=FEEDBACK_CHOICES)
-
+        model = CourseReview
+        fields = ['id', 'user', 'user_id', 'username', 'course', 'rating', 'comment', 'instructor_reply', 'created_at']
+        read_only_fields = ['id', 'user', 'user_id', 'created_at']
 class StudentChallengeSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.username', read_only=True)
     challenge_title = serializers.CharField(source='challenge.title', read_only=True)

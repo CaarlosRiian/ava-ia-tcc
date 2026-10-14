@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, FileText, CheckSquare, ArrowLeft, Layers } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Sparkles, Send, FileText, CheckSquare, ArrowLeft } from "lucide-react";
 import QuizView from "../../../../../components/QuizAI/QuizView";
 import ChatHistory from "../../../../../components/QuizAI/ChatHistory";
-import FlashcardView from "../../../../../components/QuizAI/FlashcardView";
-import { learningService } from "@/services/learningService";
 
 interface Message {
   id: string;
@@ -20,12 +18,6 @@ interface Question {
   options: string[];
   answer: string;
   explanation: string;
-}
-
-interface Flashcard {
-  id: number;
-  pergunta: string;
-  resposta: string;
 }
 
 interface AIChatPanelProps {
@@ -44,7 +36,6 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
-  const [generatedFlashcards, setGeneratedFlashcards] = useState<Flashcard[]>([]);
   const [summaryText, setSummaryText] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -63,31 +54,101 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
     return [welcomeMessage(lessonTitle)];
   });
 
+  const sendPromptDirectly = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+
+    setQuizQuestions([]);
+    setSummaryText(null);
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    setMessages((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).substring(7), sender: "user", text: trimmed, timestamp: new Date() },
+    ]);
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("access");
+      if (!token) throw new Error("Usuário não autenticado.");
+
+      const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/chat/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ message: trimmed }),
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = {};
+        }
+        throw new Error(errorData.error || errorData.detail || "Erro na resposta do servidor");
+      }
+
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        data = { response: responseText };
+      }
+
+      const botReply = data.response || data.message || data.text || (typeof data === "string" ? data : JSON.stringify(data));
+
+      setMessages((prev) => [
+        ...prev,
+        { id: Math.random().toString(36).substring(7), sender: "bot", text: botReply, timestamp: new Date() },
+      ]);
+    } catch (error) {
+      console.error("[DEBUG] Erro capturado no chat:", error);
+      setMessages((prev) => [
+        ...prev,
+        { id: Math.random().toString(36).substring(7), sender: "bot", text: "Ops, tive um problema para processar sua resposta.", timestamp: new Date() },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [lessonId, isLoading]);
+
   useEffect(() => {
     const pendingPrompt = localStorage.getItem("pending_chat_prompt");
     if (pendingPrompt) {
-      setQuizQuestions([]);
-      setGeneratedFlashcards([]);
-      setSummaryText(null);
-      setInput(pendingPrompt);
       localStorage.removeItem("pending_chat_prompt");
+      if (pendingPrompt.includes("exercícios de fixação") || pendingPrompt.includes("múltipla escolha")) {
+        handleQuickAction("quiz");
+      } else {
+        sendPromptDirectly(pendingPrompt);
+      }
     }
-  }, []);
+  }, [sendPromptDirectly]);
 
   useEffect(() => {
     const handlePrefillAndOpen = (event: any) => {
       const promptToFill = event.detail?.prompt;
       if (promptToFill) {
-        setQuizQuestions([]);
-        setGeneratedFlashcards([]);
-        setSummaryText(null);
-        setInput(promptToFill);
+        if (promptToFill.includes("exercícios de fixação") || promptToFill.includes("múltipla escolha")) {
+          handleQuickAction("quiz");
+        } else {
+          sendPromptDirectly(promptToFill);
+        }
       }
     };
 
     window.addEventListener("prefill-and-open-chat", handlePrefillAndOpen);
-    return () => window.removeEventListener("prefill-and-open-chat", handlePrefillAndOpen);
-  }, []);
+    window.addEventListener("send-ai-prompt" as any, handlePrefillAndOpen);
+    return () => {
+      window.removeEventListener("prefill-and-open-chat", handlePrefillAndOpen);
+      window.removeEventListener("send-ai-prompt" as any, handlePrefillAndOpen);
+    };
+  }, [sendPromptDirectly]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && lessonId) {
@@ -121,7 +182,7 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages, isLoading, quizQuestions, generatedFlashcards, summaryText]);
+  }, [messages, isLoading, quizQuestions, summaryText]);
 
   const formatTime = (timestamp: Date | string) => {
     try {
@@ -142,42 +203,13 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
     });
   };
 
-  const executeAPICall = async (payload: { message: string }) => {
+  const fetchStructuredQuiz = async (forceRefresh = false) => {
     const token = localStorage.getItem("access");
-    if (!token) throw new Error("Usuário não autenticado.");
+    const url = forceRefresh
+      ? `http://localhost:8000/api/lessons/${lessonId}/get_quiz/?refresh=true`
+      : `http://localhost:8000/api/lessons/${lessonId}/get_quiz/`;
 
-    const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/chat/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = {};
-      }
-      throw new Error(errorData.error || errorData.detail || "Erro na resposta do servidor");
-    }
-
-    try {
-      return responseText ? JSON.parse(responseText) : {};
-    } catch (e) {
-      console.error("[DEBUG] Erro ao fazer parse do JSON:", e);
-      return { response: responseText };
-    }
-  };
-
-  const fetchStructuredQuiz = async () => {
-    const token = localStorage.getItem("access");
-    const response = await fetch(`http://localhost:8000/api/lessons/${lessonId}/get_quiz/`, {
+    const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -202,31 +234,20 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
       return data.summary || data.response || data.text;
     }
 
-    const fallbackData = await executeAPICall({
-      message: "Por favor, gere um resumo estruturado e detalhado dos pontos principais desta aula.",
+    const tokenHeader = localStorage.getItem("access");
+    const fallbackRes = await fetch(`http://localhost:8000/api/lessons/${lessonId}/chat/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenHeader}`,
+      },
+      body: JSON.stringify({ message: "Por favor, gere um resumo estruturado e detalhado dos pontos principais desta aula." }),
     });
+    const fallbackData = await fallbackRes.json();
     return fallbackData.response || fallbackData.message || fallbackData.text || JSON.stringify(fallbackData);
   };
 
-  const handleAnswerCard = async (cardId: number, feedback: "errei" | "medio" | "facil") => {
-    try {
-      const token = localStorage.getItem("access");
-      if (!token) throw new Error("Usuário não autenticado.");
-
-      await fetch(`http://localhost:8000/api/flashcards/${cardId}/responder/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ feedback }),
-      });
-    } catch (error) {
-      console.error("Erro de rede ao enviar feedback do flashcard:", error);
-    }
-  };
-
-  const handleQuickAction = async (type: "summary" | "quiz" | "flashcards") => {
+  const handleQuickAction = async (type: "summary" | "quiz") => {
     if (isLoading) return;
     setIsLoading(true);
 
@@ -235,12 +256,8 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
         const text = await fetchSummary();
         setSummaryText(text);
       } else if (type === "quiz") {
-        const questionsData = await fetchStructuredQuiz();
+        const questionsData = await fetchStructuredQuiz(true);
         setQuizQuestions(questionsData);
-      } else if (type === "flashcards") {
-        const data = await learningService.generateFlashcards(lessonId);
-        const cards = Array.isArray(data) ? data : data.flashcards;
-        setGeneratedFlashcards(cards);
       }
     } catch (error: any) {
       console.error("Erro na ação rápida:", error);
@@ -260,35 +277,15 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMessageText = input.trim();
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    
-    setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "user", text: userMessageText, timestamp: new Date() }]);
-    setIsLoading(true);
-
-    try {
-      const data = await executeAPICall({ message: userMessageText });
-      const botReply = data.response || data.message || data.text || (typeof data === "string" ? data : JSON.stringify(data));
-
-      setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "bot", text: botReply, timestamp: new Date() }]);
-    } catch (error) {
-      console.error("[DEBUG] Erro capturado no catch do chat:", error);
-      setMessages((prev) => [...prev, { id: Math.random().toString(36).substring(7), sender: "bot", text: "Ops, tive um problema para processar sua resposta.", timestamp: new Date() }]);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendPromptDirectly(input);
   };
 
   const resetCustomView = () => {
     setQuizQuestions([]);
-    setGeneratedFlashcards([]);
     setSummaryText(null);
   };
 
-  const isCustomView = quizQuestions.length > 0 || generatedFlashcards.length > 0 || summaryText !== null;
+  const isCustomView = quizQuestions.length > 0 || summaryText !== null;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-gray-50">
@@ -302,35 +299,24 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
             <ArrowLeft className="h-4 w-4 text-gray-500" />
           </button>
           <h3 className="font-bold text-sm text-[#161B1D]">
-            {quizQuestions.length > 0
-              ? "Exercícios de Fixação"
-              : generatedFlashcards.length > 0
-                ? "Flashcards de Estudo"
-                : "Resumo da Aula"}
+            {quizQuestions.length > 0 ? "Exercícios de Fixação" : "Resumo da Aula"}
           </h3>
         </div>
       ) : (
-        <div className="flex gap-1.5 p-3 bg-white border-b border-gray-100 shadow-sm shrink-0">
+        <div className="flex gap-2 p-3 bg-white border-b border-gray-100 shadow-sm shrink-0">
           <button
             onClick={() => handleQuickAction("summary")}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-1 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-blue-100 cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-blue-100 cursor-pointer"
           >
-            <FileText className="h-3.5 w-3.5" /> Resumo
+            <FileText className="h-4 w-4" /> Resumo
           </button>
           <button
             onClick={() => handleQuickAction("quiz")}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-1 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-600 text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-emerald-100 cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-600 text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-emerald-100 cursor-pointer"
           >
-            <CheckSquare className="h-3.5 w-3.5" /> Exercícios
-          </button>
-          <button
-            onClick={() => handleQuickAction("flashcards")}
-            disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-1 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 text-purple-600 text-[11px] font-semibold py-2 px-2 rounded-xl transition-all border border-purple-100 cursor-pointer"
-          >
-            <Layers className="h-3.5 w-3.5" /> Flashcards
+            <CheckSquare className="h-4 w-4" /> Exercícios
           </button>
         </div>
       )}
@@ -341,12 +327,6 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
             lessonId={lessonId}
             questions={quizQuestions}
             onBackToChat={() => setQuizQuestions([])}
-          />
-        ) : generatedFlashcards.length > 0 ? (
-          <FlashcardView
-            flashcards={generatedFlashcards}
-            onBackToChat={() => setGeneratedFlashcards([])}
-            onAnswerCard={handleAnswerCard}
           />
         ) : summaryText !== null ? (
           <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">

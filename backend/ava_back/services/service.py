@@ -167,20 +167,20 @@ class LessonService:
         """
 
     @staticmethod
-    def handle_get_quiz(lesson: Lesson):
+    def handle_get_quiz(lesson: Lesson, force_refresh: bool = False):
         try:
             ai_content = lesson.ai_assistant
         except AIAssistant.DoesNotExist:
             ai_content = LessonService.processar_ia_da_aula(lesson)
 
-        if not ai_content.quiz_json or "questions" not in ai_content.quiz_json:
+        if force_refresh or not ai_content.quiz_json or "questions" not in ai_content.quiz_json:
             ai_content = LessonService.processar_ia_da_aula(lesson)
 
         return Response(
             ai_content.quiz_json,
             status=status.HTTP_200_OK
         )
-
+    
     @staticmethod
     def responder_duvida_da_aula(lesson: Lesson, pergunta_aluno: str, user=None) -> str:
         texto_material = LessonService.obter_contexto_da_aula(lesson)
