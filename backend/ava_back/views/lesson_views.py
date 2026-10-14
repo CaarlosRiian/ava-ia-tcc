@@ -5,19 +5,19 @@ from django.core.exceptions import PermissionDenied
 import traceback
 import logging
 
-from rest_framework import filters, status, generics, viewsets
+from ..permissions import IsAdminUserRole
+from ava_back import permissions
+from rest_framework import filters, status, generics, viewsets, permissions as drf_permissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from django.core.paginator import Paginator
 
 
-from ..models import ( Flashcard, Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, UserFlashcardProgress, LessonSubmission 
-, LessonComment)
-from ..serializers import ( LessonCommentSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, InstructorLessonSerializer, FlashcardSerializer, UserFlashcardProgressSerializer, FlashcardAnswerSerializer, StudentChallengeSubmissionSerializer, LessonCommentSerializer )
+from ..models import ( Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, LessonSubmission, LessonComment, CourseReview )
+from ..serializers import ( LessonCommentSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, InstructorLessonSerializer, StudentChallengeSubmissionSerializer, LessonCommentSerializer, CourseReviewSerializer )
 from ..services.service import LessonService
 
 logger = logging.getLogger(__name__)
@@ -46,13 +46,13 @@ class LessonViewSet(ModelViewSet):
     def get_queryset(self):
         return Lesson.objects.select_related('module__course').all()
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[drf_permissions.IsAuthenticated])
     def complete(self, request, pk=None):
         lesson = self.get_object()
         data, status_code = LessonService.marcar_aula_como_concluida(user=request.user, lesson=lesson)
         return Response(data, status=status_code)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[drf_permissions.IsAuthenticated])
     def generate_ai(self, request, pk=None):
         lesson = self.get_object()
         ai_content = LessonService.processar_ia_da_aula(lesson)
@@ -61,22 +61,23 @@ class LessonViewSet(ModelViewSet):
             "quiz_json": ai_content.quiz_json
         }, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[drf_permissions.IsAuthenticated])
     def chat(self, request, pk=None):
         lesson = self.get_object()
         return LessonService.handle_chat_action(self, request, lesson)
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated])
     def get_quiz(self, request, pk=None):
         lesson = self.get_object()
-        return LessonService.handle_get_quiz(lesson)
+        force_refresh = request.query_params.get('refresh', 'false').lower() == 'true'
+        return LessonService.handle_get_quiz(lesson, force_refresh=force_refresh)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='submit_quiz')
+    @action(detail=True, methods=['post'], permission_classes=[drf_permissions.IsAuthenticated], url_path='submit_quiz')
     def submit_quiz(self, request, pk=None):
         lesson = self.get_object()
         return LessonService.handle_submit_quiz_action(request, lesson)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='meu-desempenho')
+    @action(detail=False, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='meu-desempenho')
     def meu_desempenho(self, request):
         performances = StudentPerformance.objects.filter(
             user=request.user
@@ -96,25 +97,42 @@ class LessonViewSet(ModelViewSet):
 
         return Response(data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='generate_flashcards')
-    def generate_flashcards(self, request, pk=None):
-        lesson = self.get_object()
-        data, status_code = LessonService.gerar_flashcards_da_aula(lesson)
-        return Response(data, status=status_code)
+class IsOwnerOrInstructorOrReadOnly(drf_permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in drf_permissions.SAFE_METHODS:
+            return True
+        
+        if obj.user == request.user:
+            return True
+        
+        course_owner = (
+            getattr(obj.course, 'instructor', None) or 
+            getattr(obj.course, 'professor', None) or 
+            getattr(obj.course, 'user', None)
+        )
+        
+        if request.method in ['PUT', 'PATCH'] and course_owner == request.user:
+            return True
+            
+        return False
+class CourseReviewListCreateView(generics.ListCreateAPIView):
+    serializer_class = CourseReviewSerializer
+    permission_classes = [drf_permissions.IsAuthenticatedOrReadOnly]
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='flashcards')
-    def list_flashcards(self, request, pk=None):
-        lesson = self.get_object()
-        flashcards = Flashcard.objects.filter(lesson=lesson)
-        serializer = FlashcardSerializer(flashcards, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        course_id = self.kwargs.get('course_id')
+        return CourseReview.objects.filter(course_id=course_id).order_by('-created_at')
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='challenge')
+    def perform_create(self, serializer):
+        course_id = self.kwargs.get('course_id')
+        serializer.save(user=self.request.user, course_id=course_id)
+
+    @action(detail=True, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='challenge')
     def get_challenge(self, request, pk=None):
         lesson = self.get_object()
         return LessonService.handle_get_challenge(lesson)
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='submissions')
+    @action(detail=True, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='submissions')
     def submissions(self, request, pk=None):
         lesson = self.get_object()
 
@@ -135,7 +153,7 @@ class LessonViewSet(ModelViewSet):
         serializer = StudentChallengeSubmissionSerializer(submissions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['get', 'post'], permission_classes=[drf_permissions.IsAuthenticated])
     def submit(self, request, pk=None):
         lesson = self.get_object()
         user = request.user
@@ -240,6 +258,11 @@ class LessonViewSet(ModelViewSet):
             comment.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
+class CourseReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CourseReview.objects.all()
+    serializer_class = CourseReviewSerializer
+    permission_classes = [drf_permissions.IsAuthenticated, IsOwnerOrInstructorOrReadOnly]
+
 class LessonSubmitView(APIView):
     def post(self, request, pk=None):
         try:
@@ -256,68 +279,10 @@ class LessonSubmitView(APIView):
         )
         return Response(data, status=status_code)
 
-class FlashcardViewSet(ModelViewSet):
-    serializer_class = UserFlashcardProgressSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return UserFlashcardProgress.objects.filter(
-            user=self.request.user
-        ).select_related('flashcard', 'flashcard__lesson')
-
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='hoje')
-    def revisoes_de_hoje(self, request):
-        agora = timezone.now()
-        
-        progressos = UserFlashcardProgress.objects.filter(
-            user=request.user,
-            next_review__lte=agora
-        ).select_related('flashcard')
-
-        serializer = self.get_serializer(progressos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='responder')
-    def responder(self, request, pk=None):
-        serializer = FlashcardAnswerSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        feedback = serializer.validated_data['feedback']
-        agora = timezone.now()
-
-        progress, _ = UserFlashcardProgress.objects.get_or_create(
-            user=request.user,
-            flashcard_id=pk,
-            defaults={'interval_days': 1, 'status': 'aprendendo'}
-        )
-
-        if feedback == 'errei':
-            progress.interval_days = 1
-            progress.status = 'aprendendo'
-            progress.next_review = agora + timedelta(days=1)
-        elif feedback == 'medio':
-            progress.interval_days = max(2, progress.interval_days * 2)
-            progress.status = 'aprendendo'
-            progress.next_review = agora + timedelta(days=progress.interval_days)
-        elif feedback == 'facil':
-            progress.interval_days = max(4, progress.interval_days * 3)
-            progress.status = 'revisado'
-            progress.next_review = agora + timedelta(days=progress.interval_days)
-
-        progress.last_reviewed_at = agora
-        progress.save()
-
-        return Response({
-            "message": "Resposta registrada com sucesso!",
-            "proxima_revisao": progress.next_review,
-            "status": progress.status
-        }, status=status.HTTP_200_OK)
-
-
 class LessonMaterialViewSet(ModelViewSet):
     serializer_class = LessonMaterialSerializer
     queryset = LessonMaterial.objects.all()
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [drf_permissions.IsAuthenticated] 
     parser_classes = [MultiPartParser, FormParser] 
 
     def get_queryset(self):
@@ -338,10 +303,9 @@ class LessonMaterialViewSet(ModelViewSet):
         else:
             serializer.save()
 
-
 class ProfessorChallengeSubmissionsView(generics.ListAPIView):
     serializer_class = StudentChallengeSubmissionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [drf_permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user

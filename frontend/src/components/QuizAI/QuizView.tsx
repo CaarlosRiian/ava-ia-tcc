@@ -114,7 +114,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
         <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm space-y-4">
           <div className="text-center space-y-1">
             <h4 className="font-bold text-gray-800 text-base">Diagnóstico do Quiz</h4>
-            <p className="text-xs text-[#2F52E0] font-bold">
+            <p className="text-xs text-[black] font-bold">
               Você acertou {score} de {questions.length} questões ({Math.round((score / questions.length) * 100)}%)
             </p>
           </div>
@@ -160,7 +160,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
                 else if (isSelected) optionStyle = "border-rose-500 bg-rose-50 text-rose-800";
                 else optionStyle = "border-gray-100 bg-gray-50 opacity-60 text-gray-400";
               } else if (isSelected) {
-                optionStyle = "border-[#2F52E0] bg-blue-50 text-[#2F52E0] font-medium";
+                optionStyle = "border-[#FF7A00] bg-gray-50 text-[black] font-bold";
               }
 
               const letras = ["A", "B", "C", "D"];
@@ -175,7 +175,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
                 >
                   <span
                     className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold border shrink-0 ${
-                      isSelected ? "bg-[#2F52E0] text-white border-transparent" : "bg-white border-gray-300 text-gray-500"
+                      isSelected ? "bg-[#FF7A00] text-white border-transparent" : "bg-white border-gray-300 text-gray-500"
                     }`}
                   >
                     {letras[oIdx]}
@@ -188,7 +188,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
 
           {showResults && (
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[11px] text-gray-600 leading-relaxed">
-              💡 <strong>Explicação:</strong> {q.explanation}
+              <strong>Explicação:</strong> {q.explanation}
             </div>
           )}
         </div>
@@ -199,7 +199,7 @@ export default function QuizView({ lessonId, questions, onBackToChat, onQuizComp
           <button
             onClick={handleValidateQuiz}
             disabled={isSubmitting || Object.keys(selectedAnswers).length < questions.length}
-            className="w-full bg-[#2F52E0] hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors shadow-md cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-[#FF7A00] hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors shadow-md cursor-pointer flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

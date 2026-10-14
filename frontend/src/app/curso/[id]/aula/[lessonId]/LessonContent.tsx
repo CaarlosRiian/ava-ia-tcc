@@ -2,16 +2,17 @@
 
 import LessonComments from "../_components/LessonComments";
 import Tabs, { TabItem } from "../_components/tabs/Tabs";
-import LessonNotes from "../_components/tabs/LessonNotes";
-import LessonReviews from "../_components/tabs/LessonReviews";
 import LessonLearningTools from "../_components/tabs/LessonLearningTools";
 import LessonOverview, { LessonOverviewProps } from "./LessonOverView";
+import CourseReviews from "../_components/tabs/CourseReviews";
 
 export type LessonContentProps = LessonOverviewProps;
 
 export default function LessonContent(props: LessonContentProps) {
-  const { lesson, setAiOpen } = props;
+  const { lesson, course, setAiOpen } = props; 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const courseId = course?.id || lesson.course_id || lesson.course;
 
   const tabs: TabItem[] = [
     { id: "overview", label: "Visão geral", content: <LessonOverview {...props} /> },
@@ -24,8 +25,7 @@ export default function LessonContent(props: LessonContentProps) {
         </div>
       ),
     },
-    { id: "notes", label: "Anotações", content: <LessonNotes lessonId={lesson.id} /> },
-    { id: "reviews", label: "Avaliações", content: <LessonReviews /> },
+    { id: "reviews", label: "Avaliações", content: <CourseReviews courseId={Number(courseId)} /> },
     {
       id: "tools",
       label: "Ferramentas de aprendizado",

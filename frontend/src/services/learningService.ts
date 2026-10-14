@@ -1,12 +1,5 @@
 import { api } from './api';
 
-export interface Flashcard {
-  id: number;
-  pergunta: string;
-  resposta: string;
-  lesson_id?: number;
-}
-
 export interface Question {
   bloom_level?: string;
   question: string;
@@ -23,15 +16,6 @@ export interface ChatResponse {
   response: string;
 }
 
-export interface FlashcardProgress {
-  id: number;
-  flashcard: Flashcard;
-  due_date: string;
-  interval: number;
-}
-
-export type FlashcardFeedback = 'easy' | 'good' | 'hard' | 'again' | number;
-
 export interface PerformanceData {
   completed_lessons: number;
   total_quizzes_answered: number;
@@ -40,14 +24,29 @@ export interface PerformanceData {
   [key: string]: any;
 }
 
+export interface CourseReviewPayload {
+  rating: number;
+  comment?: string;
+}
+
+export interface CourseReview {
+  id: number;
+  user_id: number;
+  username: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
 export const learningService = {
   generateAIContent: async (lessonId: number): Promise<any> => {
     const response = await api.post(`/lessons/${lessonId}/generate_ai/`);
     return response.data;
   },
 
-  getQuiz: async (lessonId: number): Promise<{ quiz?: QuizData; questions?: Question[] }> => {
-    const response = await api.get(`/lessons/${lessonId}/get_quiz/`);
+  getQuiz: async (lessonId: number, refresh: boolean = false): Promise<{ quiz?: QuizData; questions?: Question[] }> => {
+    const url = refresh ? `/lessons/${lessonId}/get_quiz/?refresh=true` : `/lessons/${lessonId}/get_quiz/`;
+    const response = await api.get(url);
     return response.data;
   },
 
@@ -61,18 +60,23 @@ export const learningService = {
     return response.data;
   },
 
-  generateFlashcards: async (lessonId: number): Promise<{ flashcards: Flashcard[] } | Flashcard[]> => {
-    const response = await api.post(`/lessons/${lessonId}/generate_flashcards/`);
+  submitCourseReview: async (courseId: number, reviewData: CourseReviewPayload): Promise<any> => {
+    const response = await api.post(`/courses/${courseId}/reviews/`, reviewData);
     return response.data;
   },
 
-  getTodayReviews: async (): Promise<FlashcardProgress[]> => {
-    const response = await api.get<FlashcardProgress[]>('/flashcards/hoje/');
+  getCourseReviews: async (courseId: number): Promise<CourseReview[]> => {
+    const response = await api.get<CourseReview[]>(`/courses/${courseId}/reviews/`);
     return response.data;
   },
 
-  answerFlashcard: async (progressId: number, feedback: FlashcardFeedback): Promise<any> => {
-    const response = await api.post(`/flashcards/${progressId}/responder/`, { feedback });
+  updateCourseReview: async (reviewId: number, reviewData: CourseReviewPayload): Promise<any> => {
+    const response = await api.put(`/courses/reviews/${reviewId}/`, reviewData);
+    return response.data;
+  },
+
+  deleteCourseReview: async (reviewId: number): Promise<any> => {
+    const response = await api.delete(`/courses/reviews/${reviewId}/`);
     return response.data;
   },
 
