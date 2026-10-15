@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 
-            'birth_date', 'interests', 'status', 'created_at'
+            'birth_date', 'interests', 'status', 'specialties', 'created_at'
         ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
@@ -302,7 +302,7 @@ class InstructorRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InstructorRequest
-        fields = ["id", "user", "especialidade", "bio", "linkedin", "portfolio", "arquivo", "status", "created_at"]
+        fields = ["id", "user", "especialidade", "bio", "linkedin", "portfolio", "arquivo", "status", "motivo_rejeicao", "created_at"]
         read_only_fields = ["user", "status"]
 
 class FavoriteSerializer(serializers.ModelSerializer):

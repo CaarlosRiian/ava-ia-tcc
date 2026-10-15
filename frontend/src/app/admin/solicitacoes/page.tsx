@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 import { StatsCards } from "./_components/stats-cards";
 import { RequestCard } from "./_components/request-card";
@@ -11,11 +16,27 @@ import { useSolicitacoes } from "./hooks/useSolicitacoes";
 import LoadingScreen from "@/components/LoadingScreen";
 
 export default function AdminSolicitacoes() {
-  const {
-    solicitacoes,
-    loading,
-    atualizarStatus,
-  } = useSolicitacoes();
+  const { solicitacoes, loading, atualizarStatus, } = useSolicitacoes();
+
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [motivoRejeicao, setMotivoRejeicao] = useState("");
+
+  const abrirModalRejeicao = (id: number) => {
+    setSelectedId(id);
+    setMotivoRejeicao("");
+    setIsRejectModalOpen(true);
+  };
+
+  const confirmarRejeicao = async () => {
+    if (!selectedId) return;
+    
+    await atualizarStatus(selectedId, "rejeitado", motivoRejeicao);
+    
+    setIsRejectModalOpen(false);
+    setSelectedId(null);
+    setMotivoRejeicao("");
+  };
 
   const filtrar = (status: string) =>
     status === "todas"
@@ -83,9 +104,7 @@ export default function AdminSolicitacoes() {
                     onAprovar={(id) =>
                       atualizarStatus(id, "aprovado")
                     }
-                    onRejeitar={(id) =>
-                      atualizarStatus(id, "rejeitado")
-                    }
+                    onRejeitar={(id) => abrirModalRejeicao(id)}
                   />
                 ))}
               </TabsContent>
@@ -93,6 +112,46 @@ export default function AdminSolicitacoes() {
           )}
         </Tabs>
       </main>
+
+      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-2xl bg-white p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-[#161B1D]">
+              Motivo da Rejeição
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Informe ao candidato o motivo pelo qual a solicitação de especialidade está sendo recusada.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-2">
+            <Textarea
+              placeholder="Ex: O documento enviado está ilegível ou o currículo não comprova experiência na área."
+              value={motivoRejeicao}
+              onChange={(e) => setMotivoRejeicao(e.target.value)}
+              className="min-h-[100px] text-xs resize-none rounded-xl"
+            />
+          </div>
+
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRejectModalOpen(false)}
+              className="rounded-x font-bold text-xs cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmarRejeicao}
+              className="bg-red-600 hover:bg-red-700 cursor-pointer text-white rounded-x font-bold text-xs"
+            >
+              Confirmar Rejeição
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

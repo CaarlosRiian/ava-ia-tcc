@@ -29,6 +29,7 @@ export default function CadastroInstrutor() {
   const { form, onSubmit, categorias, loadingCategorias } = useCadastroInstrutor();
   const [minhasSolicitacoes, setMinhasSolicitacoes] = useState<MinhaSolicitacao[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(true);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false); 
   const { toast, activeToast, dismiss } = useToast();
 
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors }, reset,
@@ -36,6 +37,10 @@ export default function CadastroInstrutor() {
 
   const arquivo = watch("arquivo");
   const termos = watch("termos");
+
+  const temPedidoPendente = minhasSolicitacoes.some(
+    (s) => s.status === "pending" || s.status === "pendente"
+  );
 
   async function fetchMinhasSolicitacoes() {
     try {
@@ -56,6 +61,8 @@ export default function CadastroInstrutor() {
   }, [register]);
 
   const handleFormSubmit = async (data: any) => {
+    if (temPedidoPendente) return;
+
     try {
       await onSubmit(data);
 
@@ -158,7 +165,7 @@ export default function CadastroInstrutor() {
                     <Label className="font-bold text-gray-700">Bio <span className="text-red-500">*</span></Label>
                     <textarea
                       {...register("bio")}
-                      className="w-full min-h-[120px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#2F52E0]/50 rounded-xl p-3 text-sm resize-y"
+                      className="w-full min-h-[120px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/50 rounded-xl p-3 text-sm resize-y"
                       placeholder="Descreva um pouco da sua carreira profissional..."
                     />
                     {errors.bio && (<p className="text-xs text-red-500 font-semibold">{String(errors.bio.message)}</p>)}
@@ -167,17 +174,36 @@ export default function CadastroInstrutor() {
                   <SocialLinksInput linkedin={watch("linkedin") || ""} setLinkedin={(v) => setValue("linkedin", v)} portfolio={watch("portfolio") || ""}
                     setPortfolio={(v) => setValue("portfolio", v)} />
 
-                  <FileUpload arquivo={arquivo} setArquivo={(file) => setValue("arquivo", file, { shouldValidate: true })} />
-                  {errors.arquivo && (
-                    <p className="text-xs text-red-500 font-semibold">{String(errors.arquivo.message)}</p>
-                  )}
+                  <div className="space-y-2">
+                    <div className="flex flex-col">
+                      <Label className="font-bold text-gray-700">
+                        Comprovante de Qualificação ou Currículo <span className="text-red-500">*</span>
+                      </Label>
+                      <span className="text-xs text-gray-400 mt-0.5">Anexe seu currículo, diploma ou certificado em PDF ou imagem.</span>
+                    </div>
+                    <FileUpload arquivo={arquivo} setArquivo={(file) => setValue("arquivo", file, { shouldValidate: true })} />
+                    {errors.arquivo && (
+                      <p className="text-xs text-red-500 font-semibold">{String(errors.arquivo.message)}</p>
+                    )}
+                  </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Checkbox id="termos" checked={!!termos} onCheckedChange={(checked) => setValue("termos", !!checked, { shouldValidate: true })}
-                        className="cursor-pointer" />
+                        className="cursor-pointer data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600" />
                       <Label htmlFor="termos" className="cursor-pointer text-sm text-gray-600">
-                        Concordo com os termos e políticas de uso <span className="text-red-500">*</span>
+                        Concordo com os{" "}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsTermsModalOpen(true);
+                          }}
+                          className="text-[black] font-semibold hover:underline inline cursor-pointer"
+                        >
+                          termos e políticas de uso
+                        </button>{" "}
+                        <span className="text-red-500">*</span>
                       </Label>
                     </div>
                     {errors.termos && (
@@ -185,17 +211,57 @@ export default function CadastroInstrutor() {
                     )}
                   </div>
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full bg-[#FF7A00] hover:bg-[#ea7306] h-12 rounded-xl cursor-pointer text-lg font-medium shadow-lg transition-colors flex items-center justify-center"
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting || temPedidoPendente} 
+                    className="w-full bg-[#FF7A00] hover:bg-[#ea7306] h-12 rounded-xl cursor-pointer text-lg font-medium shadow-lg transition-colors flex items-center justify-center disabled:opacity-50"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+                    {isSubmitting ? "Enviando..." : temPedidoPendente ? "Você já possui um pedido em análise" : "Enviar Solicitação"}
                   </Button>
+
+                  {temPedidoPendente && (
+                    <p className="text-xs text-gray-600 text-center font-medium mt-1">
+                      Você só pode ter 1 pedido de especialidade em análise por vez. Aguarde a avaliação do admin.
+                    </p>
+                  )}
                 </form>
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+
+      {isTermsModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">Termos e Políticas de Uso</h3>
+              <button
+                onClick={() => setIsTermsModalOpen(false)}
+                className="p-1.5 hover:bg-gray-200 rounded-full text-gray-500 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4 text-sm text-gray-600 leading-relaxed">
+              <p><strong>1. Aceitação dos Termos:</strong> Ao se cadastrar como instrutor na nossa plataforma, você concorda em cumprir e respeitar todas as diretrizes de qualidade, ética e conduta estabelecidas pela administração.</p>
+              <p><strong>2. Conteúdo Educacional:</strong> Todo o material enviado (vídeos, resumos, documentos e avaliações) deve ser de sua autoria ou devidamente licenciado, respeitando os direitos de propriedade intelectual.</p>
+              <p><strong>3. Processo de Análise:</strong> As solicitações de especialidade passam por uma avaliação individual da equipe administrativa. O prazo de resposta pode variar conforme a demanda.</p>
+              <p><strong>4. Privacidade e Dados:</strong> Seus dados profissionais e de contato serão tratados com total segurança, utilizados exclusivamente para fins de validação e exibição no seu perfil público de instrutor.</p>
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(false)}
+                className="px-5 py-2.5 bg-[#FF7A00] text-white text-sm font-semibold rounded-xl hover:bg-orange-500 transition-colors cursor-pointer"
+              >
+                Entendido e Concordo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeToast && (
         <div className="fixed bottom-5 right-5 z-[100] animate-in slide-in-from-bottom-5 duration-300">

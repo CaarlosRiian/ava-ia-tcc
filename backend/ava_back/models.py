@@ -24,6 +24,7 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     birth_date = models.DateField(null=True, blank=True)
     interests = models.JSONField(default=list, blank=True)
+    specialties = models.JSONField(default=list, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -231,6 +232,7 @@ class InstructorRequest(models.Model):
     linkedin = models.URLField(blank=True, null=True)
     portfolio = models.URLField(blank=True, null=True)
     arquivo = models.FileField(upload_to='instructor_requests/', null=True, blank=True)
+    motivo_rejeicao = models.TextField(blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)

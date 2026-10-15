@@ -10,5 +10,6 @@ export interface Solicitacao {
   documento?: string;
   status: "pendente" | "aprovado" | "rejeitado";
   dataEnvio: string;
+  motivo_rejeicao?: string; 
 }
 

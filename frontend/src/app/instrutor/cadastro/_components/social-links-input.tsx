@@ -12,20 +12,20 @@ export function SocialLinksInput({ linkedin, setLinkedin, portfolio, setPortfoli
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <div className="space-y-2">
-        <Label htmlFor="linkedin" className="font-bold text-gray-700">LinkedIn</Label>
+        <Label htmlFor="linkedin" className="font-boldtext-gray-700">LinkedIn</Label>
         <Input
           id="linkedin"
-          className="h-12 rounded-x border-gray-200"
+          className="h-12 rounded-x border border-gray-300 bg-white"
           placeholder="Link do perfil"
           value={linkedin}
           onChange={(e) => setLinkedin(e.target.value)}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="portfolio" className="font-bold text-gray-700">Portfólio / GitHub</Label>
+        <Label htmlFor="portfolio" className="font-bold bg-white text-gray-700">Portfólio / GitHub</Label>
         <Input
           id="portfolio"
-          className="h-12 rounded-x border-gray-200"
+          className="h-12 rounded-x border border-gray-300 bg-white"
           placeholder="Link do site"
           value={portfolio}
           onChange={(e) => setPortfolio(e.target.value)}
