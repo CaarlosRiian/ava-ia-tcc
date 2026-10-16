@@ -10,7 +10,6 @@ import { updateModule, deleteModule } from "../_services/modules";
 import type { CourseAPI, Module } from "@/types/course";
 import { CreateModuleModal } from "../_components/CreateModuleModal";
 import { ModuleLessons } from "../_components/ModuleLessons";
-import { toast } from "sonner";
 
 type Props = {
   curso?: CourseAPI;
@@ -18,9 +17,17 @@ type Props = {
   onDelete: (cId: string, aId: string) => void;
   onOpenAddOptions: () => void;
   onOpenAnalytics?: (lesson: any) => void; 
+  onShowToast: (message: string, type?: "success" | "error") => void;
 };
 
-export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onOpenAnalytics }: Props) => {
+export const LessonManager = ({
+  curso,
+  onToggle,
+  onDelete,
+  onOpenAddOptions,
+  onOpenAnalytics,
+  onShowToast,
+}: Props) => {
   const [localCurso, setLocalCurso] = useState<CourseAPI | undefined>(curso);
 
   useEffect(() => {
@@ -31,14 +38,11 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
 
   const handleCreateLesson = async (formData: FormData) => {
     try {
-      console.log("=== 1. DISPAROU CREATE LESSON ===");
       const novaAula = await createLesson(formData);
-
       const moduloIdTarget = formData.get("module");
 
       setLocalCurso((prev) => {
         if (!prev) return prev;
-
         const novosModulos = prev.modules.map((m) => {
           if (String(m.id) === String(moduloIdTarget)) {
             return {
@@ -48,13 +52,12 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           }
           return m;
         });
-
         return { ...prev, modules: novosModulos };
       });
 
-      toast.success("Aula criada com sucesso!");
+      onShowToast("Aula criada com sucesso!", "success");
     } catch (error) {
-      toast.error("Erro ao criar a aula.");
+      onShowToast("Erro ao criar a aula.", "error");
     }
   };
 
@@ -75,10 +78,11 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           })),
         };
       });
-      toast.success("Aula atualizada com sucesso!");
+
+      onShowToast("Aula atualizada com sucesso!", "success");
     } catch (error) {
       console.log(error);
-      toast.error("Erro ao atualizar aula.");
+      onShowToast("Erro ao atualizar aula.", "error");
     }
   };
 
@@ -95,10 +99,11 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           })),
         };
       });
-      toast.success("Aula removida com sucesso.");
+
+      onShowToast("Aula removida com sucesso!", "success");
     } catch (error) {
       console.log(error);
-      toast.error("Erro ao remover aula.");
+      onShowToast("Erro ao remover aula.", "error");
     }
   };
 
@@ -133,9 +138,9 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
         };
       });
 
-      toast.success("Material removido com sucesso.");
+      onShowToast("Material removido com sucesso!", "success");
     } catch (error) {
-      toast.error("Erro ao remover material.");
+      onShowToast("Erro ao remover material.", "error");
     }
   };
 
@@ -151,8 +156,10 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           ),
         };
       });
+      onShowToast("Módulo atualizado com sucesso!", "success");
     } catch (error) {
       console.log(error);
+      onShowToast("Erro ao atualizar módulo.", "error");
     }
   };
 
@@ -166,8 +173,11 @@ export const LessonManager = ({ curso, onToggle, onDelete, onOpenAddOptions, onO
           modules: prev.modules.filter((m) => m.id !== moduleId),
         };
       });
+
+      onShowToast("Módulo excluído com sucesso!", "success");
     } catch (error) {
       console.log(error);
+      onShowToast("Erro ao excluir o módulo.", "error");
     }
   };
 

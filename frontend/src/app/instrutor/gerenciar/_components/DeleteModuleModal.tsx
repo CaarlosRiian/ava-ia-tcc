@@ -1,15 +1,14 @@
 "use client";
 
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
   moduleTitle: string;
-
   onConfirm: () => Promise<void>;
-
   loading?: boolean;
 };
 
@@ -20,52 +19,66 @@ export function DeleteModuleModal({
   onConfirm,
   loading,
 }: Props) {
+  const handleConfirmAction = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); 
+    try {
+      await onConfirm();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <AlertDialogContent className="bg-white">
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Excluir módulo
-          </AlertDialogTitle>
-
-          <AlertDialogDescription asChild>
-            <div className="space-y-5">
-              <p className="text-sm text-zinc-600 leading-relaxed">
-                Tem certeza que deseja excluir este módulo?
-              </p>
-
-              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-                <p className="text-sm font-semibold text-red-700">
-                  {moduleTitle}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-zinc-100 px-4 py-3 ">
-                <p className="text-xs text-zinc-600 leading-relaxed">
-                  Esta ação é permanente e não poderá ser desfeita.
-                </p>
-              </div>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="bg-white sm:max-w-md rounded-3xl p-6 shadow-xl border-none">
+        <AlertDialogHeader className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-50 text-red-600 rounded-2xl">
+              <AlertTriangle className="h-5 w-5" />
             </div>
-          </AlertDialogDescription>
+            <div>
+              <AlertDialogTitle className="text-xl font-black text-gray-900">
+                Excluir Módulo
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-gray-500 mt-0.5">
+                Esta ação é permanente e removerá todo o conteúdo associado.
+              </AlertDialogDescription>
+            </div>
+          </div>
         </AlertDialogHeader>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel className="cursor-pointer">
-            Cancelar
+        <div className="py-3 space-y-3">
+          <p className="text-xs font-semibold text-gray-600">
+            Tem certeza que deseja excluir o módulo abaixo?
+          </p>
+
+          <div className="rounded-2xl border border-red-100 bg-red-50/60 px-4 py-3">
+            <p className="text-xs font-bold text-red-700 truncate">
+              {moduleTitle}
+            </p>
+          </div>
+        </div>
+
+        <AlertDialogFooter className="pt-4 border-t border-gray-100 flex items-center justify-between sm:justify-between">
+          <AlertDialogCancel asChild>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading}
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 h-11 px-5 rounded-xl text-xs font-bold cursor-pointer shadow-sm"
+            >
+              Cancelar
+            </Button>
           </AlertDialogCancel>
 
-          <AlertDialogAction
-            onClick={onConfirm}
+          <Button
+            type="button"
+            onClick={handleConfirmAction}
             disabled={loading}
-            className="bg-red-500 hover:bg-red-600 cursor-pointer"
+            className="bg-red-600 hover:bg-red-700 text-white h-11 px-6 rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
           >
-            {loading
-              ? "Excluindo..."
-              : "Excluir módulo"}
-          </AlertDialogAction>
+            {loading ? "Excluindo..." : "Sim, Excluir"}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
