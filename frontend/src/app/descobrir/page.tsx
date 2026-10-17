@@ -10,6 +10,7 @@ import CategoryFilters from "@/app/descobrir/CategoryFilters";
 import { getCourses, getRecommendedCourses } from "@/services/courses";
 import { getCategories } from "@/services/categories";
 import { useSearchParams } from "next/navigation";
+import Footer from "@/components/Footer";
 
 const SORT_OPTIONS = [
   { value: "default", label: "Relevância" },
@@ -327,6 +328,7 @@ function ExplorarContent() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

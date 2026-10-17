@@ -17,6 +17,7 @@ import { useCadastroInstrutor } from "./_components/use-cadastro-instrutor";
 import { api } from "@/services/api";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useToast } from "./_components/use-toast";
+import Footer from "@/components/Footer";
 
 interface MinhaSolicitacao {
   id: number;
@@ -281,6 +282,7 @@ export default function CadastroInstrutor() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

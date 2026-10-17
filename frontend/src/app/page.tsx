@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { BookOpen, Sparkles, Brain, MessageCircle, ArrowRight, CheckCircle } from "lucide-react";
+import { BookOpen, Sparkles, Brain, MessageCircle, ArrowRight, CheckCircle, Compass } from "lucide-react";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function Home() {
   return (
@@ -21,7 +22,7 @@ export default function Home() {
               O AVA-IA é uma plataforma onde a inteligência artificial acompanha seu progresso durante a aprendizagem.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Link href="/cadastro" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-[#FF7A00] text-white font-semibold rounded-lg hover:bg-[#F07301] transition-all shadow-lg shadow-blue-100">
                 Começar Agora <ArrowRight className="h-5 w-5" />
               </Link>
@@ -30,6 +31,13 @@ export default function Home() {
                 Já possuo uma conta
               </Link>
             </div>
+
+            <div className="flex justify-center">
+              <Link href="/descobrir" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#FF7A00] transition-colors">
+                <Compass className="h-4 w-4" /> Explorar cursos e conteúdos livres
+              </Link>
+            </div>
+
           </div>
         </div>
       </section>
@@ -83,21 +91,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="py-12 border-t border-gray-100 bg-white">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <img
-              src="/ava-ia-icon.png"
-              alt="AVA-IA"
-              className="h-10 w-10 rounded-lg object-contain"
-            />
-            <span>AVA-<span className="text-[#FF7A00]">IA</span></span>
-          </div>
-          <p className="text-sm text-gray-400 font-light">
-            © 2026 AVA-IA. Ambiente Virtual de Aprendizagem com IA.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

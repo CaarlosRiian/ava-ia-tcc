@@ -8,6 +8,7 @@ import { Heart } from "lucide-react";
 import { useFavorites } from "./useFavorites";
 import { formatName } from "@/utils/formatName";
 import LoadingScreen from "@/components/LoadingScreen";
+import Footer from "@/components/Footer";
 
 export default function Favoritos() {
   const { favoriteCourses, loading, removeFavorite } = useFavorites();
@@ -68,6 +69,7 @@ export default function Favoritos() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

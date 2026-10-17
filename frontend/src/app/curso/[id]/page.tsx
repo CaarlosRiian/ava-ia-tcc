@@ -9,6 +9,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import CourseHero from "./CourseHero";
 import CourseLessonsSidebar from "./CourseLessonsSidebar";
 import { getCourseDetail, getMyCourses, toggleCourseFavorite } from "@/services/courses";
+import Footer from "@/components/Footer";
 
 export default function CursoDetalhe() {
   const params = useParams();
@@ -154,6 +155,7 @@ export default function CursoDetalhe() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

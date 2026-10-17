@@ -15,6 +15,7 @@ import { EditObjectivesModal } from "./_components/EditObjectivesModal";
 import { useCourseManagement } from "./_hooks/useCourseManagement";
 import { createCourse, updateCourse } from "./_services/courses";
 import { createMaterial } from "./_services/materials";
+import Footer from "@/components/Footer";
 
 export default function GerenciamentoAulas() {
   const {
@@ -283,6 +284,7 @@ export default function GerenciamentoAulas() {
       )}
 
       <Toast message={toastConfig.message} type={toastConfig.type} onClose={hideToast} />
+      <Footer />
     </div>
   );
 }

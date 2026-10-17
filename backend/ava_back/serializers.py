@@ -9,12 +9,14 @@ from django.db.models import Sum
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='username', required=False)
     specialties = serializers.JSONField(required=False, allow_null=True)
+    primary_specialty = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 
-            'birth_date', 'interests', 'status', 'specialties', 'created_at'
+            'birth_date', 'interests', 'status', 'specialties', 'created_at', 'primary_specialty'
         ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
@@ -43,9 +45,21 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+    def get_primary_specialty(self, obj):
+            if hasattr(obj, 'instructor_profile') and obj.instructor_profile.primary_specialty:
+                return obj.instructor_profile.primary_specialty.name
+            if getattr(obj, 'specialty', None):
+                return obj.specialty
+            if obj.specialties and len(obj.specialties) > 0:
+                return obj.specialties[0]
+            return ""
+
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
         
+        if 'username' in validated_data:
+            instance.username = validated_data.pop('username')
+
         specialties = validated_data.pop("specialties", None)
         if specialties is not None:
             instance.specialties = specialties

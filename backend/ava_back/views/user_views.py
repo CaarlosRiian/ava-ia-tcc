@@ -82,16 +82,23 @@ def me(request):
     user = request.user
 
     if request.method == "GET":
+        user_specialties = getattr(user, "specialties", [])
+        if not isinstance(user_specialties, list):
+            user_specialties = []
+
+        primary = getattr(user, "specialty", "") or (user_specialties[0] if user_specialties else "")
+
         return Response({
             "id": user.id,
-            "name": user.username,   
-            "email": user.email,
-            "role": user.role,
+            "name": getattr(user, "username", ""),   
+            "email": getattr(user, "email", ""),
+            "role": getattr(user, "role", "aluno"),
             "bio": getattr(user, "bio", ""),
             "birth_date": getattr(user, "birth_date", None), 
             "interests": getattr(user, "interests", []),    
-            "specialties": getattr(user, "specialties", []),
-        })
+            "specialties": user_specialties,
+            "primary_specialty": primary,
+        }, status=status.HTTP_200_OK)
 
     elif request.method == "PATCH":
         data = request.data
@@ -100,26 +107,37 @@ def me(request):
             user.username = data["name"] 
         if "email" in data:
             user.email = data["email"]
-        if "bio" in data and hasattr(user, "bio"):
+        if "bio" in data:
             user.bio = data["bio"]
-            
-        if "birth_date" in data and hasattr(user, "birth_date"):
+        if "birth_date" in data:
             user.birth_date = data["birth_date"] if data["birth_date"] else None
-
-        if "specialties" in data and hasattr(user, "specialties"): 
+        if "specialties" in data: 
             user.specialties = data["specialties"]
-
-        if "interests" in data and hasattr(user, "interests"):
+        if "interests" in data:
             user.interests = data["interests"]
-            
         if "password" in data and data["password"]:
             user.set_password(data["password"])
 
         user.save()
 
-        return Response({ "id": user.id, "name": user.username, "email": user.email,
-            "role": user.role, "bio": getattr(user, "bio", ""), "birth_date": getattr(user, "birth_date", None), "interests": getattr(user, "interests", []),    
-            "message": "Perfil atualizado com sucesso!" }, status=status.HTTP_200_OK)
+        updated_specialties = getattr(user, "specialties", [])
+        if not isinstance(updated_specialties, list):
+            updated_specialties = []
+            
+        primary = getattr(user, "specialty", "") or (updated_specialties[0] if updated_specialties else "")
+
+        return Response({
+            "id": user.id, 
+            "name": user.username, 
+            "email": user.email,
+            "role": user.role, 
+            "bio": getattr(user, "bio", ""), 
+            "birth_date": getattr(user, "birth_date", None), 
+            "interests": getattr(user, "interests", []),    
+            "specialties": updated_specialties,
+            "primary_specialty": primary,
+            "message": "Perfil atualizado com sucesso!" 
+        }, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])

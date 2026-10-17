@@ -9,6 +9,7 @@ import { BookOpen, Award, CheckCircle, GraduationCap, ShieldCheck } from "lucide
 import { getMyCourses } from "@/services/courses";
 import LoadingScreen from "@/components/LoadingScreen";
 import { formatName } from "@/utils/formatName"; 
+import Footer from "@/components/Footer";
 
 type Course = {
   course_id: number;
@@ -183,6 +184,7 @@ export default function MeusCursos() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

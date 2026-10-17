@@ -7,7 +7,7 @@ import { Save } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner"; 
 
 import { ProfileHeader } from "./_components/profile-header";
 import { ProfileSkeleton } from "./_components/ProfileSkeleton";
@@ -15,8 +15,8 @@ import { ProfileDataForm } from "./_components/ProfileDataForm";
 import { InterestsForm } from "./_components/InterestsForm";
 import { SpecialtiesForm } from "./_components/SpecialtiesForm";
 import { SecurityForm } from "./_components/SecurityForm";
-import { FormStatusBadge } from "./_components/FormStatusBadge";
 import { formatName } from "@/utils/formatName";
+import Footer from "@/components/Footer";
 
 export default function ConfiguracoesPerfil() {
   const [name, setName] = useState("");
@@ -43,9 +43,6 @@ export default function ConfiguracoesPerfil() {
 
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -78,8 +75,7 @@ export default function ConfiguracoesPerfil() {
         const userInterests = data.interests || [];
         const userSpecialties = data.specialties || [];
         
-        const userPrimarySpecialty = data.specialty || data.primary_specialty || userSpecialties[0] || "UX/UI";
-
+        const userPrimarySpecialty = data.primary_specialty || data.specialty || (userSpecialties.length > 0 ? userSpecialties[0] : "");
 
         setName(formattedName);
         setEmail(userEmail);
@@ -118,17 +114,7 @@ export default function ConfiguracoesPerfil() {
     primarySpecialty !== initialData.primarySpecialty ||
     password !== "";
 
-  useEffect(() => {
-    if (hasUnsavedChanges) {
-      setSaveSuccess(false);
-      setErrorMessage(null);
-    }
-  }, [name, email, bio, birthDate, interests, specialties, password]);
-
   const handleSave = async () => {
-    setErrorMessage(null);
-    setSaveSuccess(false);
-
     const token = localStorage.getItem("access");
     if (!token) {
       toast.error("Sessão expirada. Faça login novamente.");
@@ -137,11 +123,11 @@ export default function ConfiguracoesPerfil() {
 
     if (password || confirmPassword) {
       if (password !== confirmPassword) {
-        setErrorMessage("As senhas não coincidem!");
+        toast.error("As senhas não coincidem!");
         return;
       }
       if (password.length < 6) {
-        setErrorMessage("A senha deve ter ao menos 6 caracteres.");
+        toast.error("A senha deve ter ao menos 6 caracteres.");
         return;
       }
     }
@@ -168,20 +154,15 @@ export default function ConfiguracoesPerfil() {
 
       await updateMe(token, payload);
 
-      setSaveSuccess(true);
       setInitialData({ name, email, bio, birthDate, interests, specialties, primarySpecialty });
 
       setPassword("");
       setConfirmPassword("");
       toast.success("Perfil atualizado com sucesso!");
 
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 4000);
-
     } catch (error: any) {
       console.error("Erro ao atualizar o perfil:", error);
-      setErrorMessage(error.message || "Erro ao salvar alterações.");
+      toast.error(error.message || "Erro ao salvar alterações.");
     } finally {
       setIsSaving(false);
     }
@@ -194,6 +175,7 @@ export default function ConfiguracoesPerfil() {
         <main className="flex-1 container max-w-3xl mx-auto px-6 py-12">
           <ProfileSkeleton />
         </main>
+        <Footer />
       </div>
     );
   }
@@ -206,11 +188,13 @@ export default function ConfiguracoesPerfil() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
+      <Toaster position="bottom-right" richColors />
+
       <Header />
 
       <Breadcrumb items={[{ label: "Configurações" }]} />
 
-      <main className="flex-1 container max-w-3xl mx-auto px-6 pt-6 pb-12 relative">
+      <main className="flex-1 container max-w-3xl mx-auto px-6 pt-6 pb-12">
         
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#161B1D] tracking-tight text-inter">Configurações</h1>
@@ -267,8 +251,6 @@ export default function ConfiguracoesPerfil() {
                 setPrimarySpecialty(initialData.primarySpecialty);
                 setPassword("");
                 setConfirmPassword("");
-                setErrorMessage(null);
-                setSaveSuccess(false);
                 toast.info("Alterações descartadas.");
               }}
             >
@@ -284,14 +266,8 @@ export default function ConfiguracoesPerfil() {
             </Button>
           </div>
         </div>
-
-        <FormStatusBadge
-          isSaving={isSaving}
-          hasUnsavedChanges={hasUnsavedChanges}
-          errorMessage={errorMessage}
-          saveSuccess={saveSuccess}
-        />
       </main>
+      <Footer />
     </div>
   );
 }
