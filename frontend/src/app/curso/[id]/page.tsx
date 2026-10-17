@@ -42,7 +42,10 @@ export default function CursoDetalhe() {
           return;
         }
 
-        const favoritesData = responseFavorites.ok ? await responseFavorites.json() : [];
+        const rawFavorites = responseFavorites.ok ? await responseFavorites.json() : [];
+        const favoritesArray = Array.isArray(rawFavorites) 
+          ? rawFavorites 
+          : (Array.isArray(rawFavorites?.results) ? rawFavorites.results : []);
 
         const [myCourses, courseData] = await Promise.all([
           getMyCourses(),
@@ -63,7 +66,7 @@ export default function CursoDetalhe() {
           return;
         }
 
-        const alreadyFavorited = favoritesData?.some((f: any) => Number(f.course) === courseId);
+        const alreadyFavorited = favoritesArray.some((f: any) => Number(f.course) === courseId);
         
         setIsFavorited(alreadyFavorited);
         setCourse(courseData);

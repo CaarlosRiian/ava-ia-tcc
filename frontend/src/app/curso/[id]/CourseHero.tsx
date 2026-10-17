@@ -14,9 +14,9 @@ interface CourseHeroProps {
 export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPlayClick }: CourseHeroProps) {
   const lessons = course.modules?.flatMap((m: any) => m.lessons) || [];
 
-  const professorSlug = course.professor_name
-    ? course.professor_name.toLowerCase().trim().replaceAll(" ", "_")
-    : "";
+  const professorSlug = course.professor_slug || course.professor?.slug || (course.professor_name
+    ? course.professor_name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll(" ", "_")
+    : "");
 
   const objetivos = course.learning_objectives || [
     "Domínio completo dos Conceitos Fundamentais e Arquitetura",
@@ -99,10 +99,8 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
             <User size={22} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">Instrutor da Disciplina</p>
-            </div>
-            <h3 className="text-sm font-bold text-zinc-900 group-hover:text-[gray-50] transition-colors mt-0.5">
+            <p className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">Instrutor da Disciplina</p>
+            <h3 className="text-sm font-bold text-zinc-900 group-hover:text-blue-600 transition-colors mt-0.5">
               {course.professor_name ? formatName(course.professor_name) : "Professor Titular"}
             </h3>
           </div>

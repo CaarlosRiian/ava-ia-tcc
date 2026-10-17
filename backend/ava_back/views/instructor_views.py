@@ -1,3 +1,6 @@
+import urllib.parse
+from django.db.models import Q
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
@@ -5,8 +8,11 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from ..models import InstructorRequest
-from ..serializers import InstructorRequestSerializer
+from ..serializers import InstructorRequestSerializer, ProfessorSerializer
 from rest_framework import status
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class InstructorRequestViewSet(ModelViewSet):
     serializer_class = InstructorRequestSerializer
@@ -57,3 +63,19 @@ class InstructorRequestViewSet(ModelViewSet):
             
         obj.save()
         return Response({"status": "rejeitado", "motivo_rejeicao": obj.motivo_rejeicao})
+
+class ProfessorDetailView(APIView):
+    def get(self, request, name):
+        decoded_name = urllib.parse.unquote(name).strip().lower().rstrip('/')
+
+        professor = User.objects.filter(slug__iexact=decoded_name).first()
+
+        if not professor:
+            professor = User.objects.filter(username__iexact=decoded_name).first()
+
+        if not professor:
+            return Response({"error": "Professor não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProfessorSerializer(professor, context={'request': request})
+        return Response(serializer.data)
+    

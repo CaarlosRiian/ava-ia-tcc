@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { SlidersHorizontal, RotateCcw, ArrowRight, X, ArrowUpDown, Clock, SearchX, Sparkles } from "lucide-react";
+import { SlidersHorizontal, RotateCcw, X, ArrowUpDown, Clock, SearchX, Sparkles, Compass } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
-import { getCourses, getRecommendedCourses } from "@/services/courses";
+import { TopicSection } from "@/app/descobrir/TopicSection";
+import { Pagination } from "@/components/Pagination";
+import { getCourses } from "@/services/courses";
 import { getCategories } from "@/services/categories";
 import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
+import axios from "axios";
 
 const SORT_OPTIONS = [
   { value: "default", label: "Relevância" },
@@ -27,52 +30,97 @@ const DURATION_OPTIONS = [
 function ExplorarContent() {
   const searchParams = useSearchParams();
   const searchUrlParam = searchParams.get("search") || "";
+  const categoryUrlParam = searchParams.get("category"); 
 
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [activeCategory, setActiveCategory] = useState<number | null>(
+    categoryUrlParam ? Number(categoryUrlParam) : null
+  );
   const [courses, setCourses] = useState<any[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
+  const [newAreasCourses, setNewAreasCourses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [searchQuery, setSearchQuery] = useState(searchUrlParam);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
+  const [searchQuery, setSearchQuery] = useState(searchUrlParam);
   const [sortBy, setSortBy] = useState<string>("default");
   const [durationFilter, setDurationFilter] = useState<string>("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
-
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
 
   useEffect(() => {
-    if (searchUrlParam !== searchQuery) {
-      setSearchQuery(searchUrlParam);
-    }
+    if (searchUrlParam !== searchQuery) setSearchQuery(searchUrlParam);
   }, [searchUrlParam]);
+
+  useEffect(() => {
+    if (categoryUrlParam) {
+      setActiveCategory(Number(categoryUrlParam));
+    }
+  }, [categoryUrlParam]);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [coursesData, categoriesData, recommendedData] = await Promise.all([
-          getCourses(),
+        const token = localStorage.getItem("access");
+
+        const [coursesData, categoriesData] = await Promise.all([
+          getCourses(currentPage), 
           getCategories(),
-          getRecommendedCourses().catch(() => []),
         ]);
 
-        setCourses(coursesData || []);
-        setCategories(categoriesData || []);
+        const rawCourses = coursesData?.results || coursesData || [];
+        const allCategories = categoriesData?.results || categoriesData || [];
+        setCategories(allCategories);
 
-        const normalizedRecommendations = (recommendedData || []).map((item: any) =>
-          item.course ? item.course : item
-        );
-        setRecommendedCourses(normalizedRecommendations);
+        const totalCount = coursesData?.count || rawCourses.length;
+        setTotalPages(Math.ceil(totalCount / 10));
+
+        const shuffledCourses = [...rawCourses].sort(() => Math.random() - 0.5);
+        setCourses(shuffledCourses);
+
+        let userInterests: string[] = [];
+        if (token) {
+          try {
+            const userRes = await axios.get("http://localhost:8000/api/me/", {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            userInterests = (userRes.data.interests || []).map((i: string) => i.toLowerCase());
+          } catch (err) {
+            console.error("Erro ao buscar interesses do utilizador", err);
+          }
+        }
+
+        const recommended = shuffledCourses.filter((course: any) => {
+          const catName = typeof course.category === "object" 
+            ? course.category?.name 
+            : allCategories.find((c: any) => c.id === course.category)?.name;
+          
+          return userInterests.some((interest: string) => interest === catName?.toLowerCase());
+        });
+
+        setRecommendedCourses(recommended.length > 0 ? recommended : shuffledCourses.slice(0, 4));
+
+        const newAreas = shuffledCourses.filter((course: any) => {
+          const catName = typeof course.category === "object" 
+            ? course.category?.name 
+            : allCategories.find((c: any) => c.id === course.category)?.name;
+
+          return !userInterests.includes(catName?.toLowerCase());
+        });
+
+        setNewAreasCourses(newAreas.length > 0 ? newAreas : shuffledCourses.slice(4, 8));
+
       } catch (error) {
-        console.error("Erro ao carregar a página de explorar:", error);
+        console.error("Erro ao carregar explorar:", error);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, []);
+  }, [currentPage]);
 
   const filteredCourses = courses.filter((course) => {
     const courseCatId = typeof course.category === "object" ? course.category?.id : course.category;
@@ -81,16 +129,9 @@ function ExplorarContent() {
     const matchesSearch = (() => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
-      
       const titleMatch = course.title?.toLowerCase().includes(query);
-      
-      const categoryName = typeof course.category === "object" 
-        ? course.category?.name 
-        : categories.find((c) => c.id === course.category)?.name;
-      
-      const categoryMatch = categoryName?.toLowerCase().includes(query);
-
-      return titleMatch || categoryMatch;
+      const categoryName = typeof course.category === "object" ? course.category?.name : categories.find((c) => c.id === course.category)?.name;
+      return titleMatch || categoryName?.toLowerCase().includes(query);
     })();
 
     const totalLessons = course.modules?.length || 0;
@@ -107,19 +148,21 @@ function ExplorarContent() {
     return 0;
   });
 
-  const recommendedCoursesData = expandedTopic === "recommended" ? recommendedCourses : recommendedCourses.slice(0, 4);
-  const popularCoursesData = [...courses].sort((a, b) => (b.students_count || b.id) - (a.students_count || a.id));
-  const recentCoursesData = [...courses].reverse();
-  const completeCoursesData = [...courses].sort((a, b) => (b.modules?.length || 0) - (a.modules?.length || 0));
+  const recommendedList = expandedTopic === "recommended" ? recommendedCourses : recommendedCourses.slice(0, 4);
+  const excludedIds = new Set(recommendedList.map((c: any) => c.id));
 
-  const popularCourses = expandedTopic === "popular" ? popularCoursesData : popularCoursesData.slice(0, 4);
-  const recentCourses = expandedTopic === "recent" ? recentCoursesData : recentCoursesData.slice(0, 4);
-  const completeCourses = expandedTopic === "complete" ? completeCoursesData : completeCoursesData.slice(0, 4);
+  const newAreasList = expandedTopic === "newAreas" ? newAreasCourses : newAreasCourses.filter((c: any) => !excludedIds.has(c.id)).slice(0, 4);
+  newAreasList.forEach((c: any) => excludedIds.add(c.id));
+
+  const popularCoursesData = courses.filter((c: any) => !excludedIds.has(c.id));
+  const popularList = expandedTopic === "popular" ? popularCoursesData : popularCoursesData.slice(0, 4);
+  popularList.forEach((c: any) => excludedIds.add(c.id));
+
+  const recentCoursesData = [...courses].filter((c: any) => !excludedIds.has(c.id)).reverse();
+  const recentList = expandedTopic === "recent" ? recentCoursesData : recentCoursesData.slice(0, 4);
 
   const isBrowsingResults = Boolean(activeCategory || searchQuery || sortBy !== "default" || durationFilter !== "all");
   const hasActiveFilters = activeCategory !== null || sortBy !== "default" || durationFilter !== "all" || searchQuery !== "" || expandedTopic !== null;
-
-  const activeCategoryLabel = categories.find((c) => c.id === activeCategory)?.name;
 
   const handleResetFilters = () => {
     setActiveCategory(null);
@@ -127,47 +170,33 @@ function ExplorarContent() {
     setDurationFilter("all");
     setSearchQuery("");
     setExpandedTopic(null);
+    setCurrentPage(1);
   };
 
-  if (loading) {
-    return <LoadingScreen text="Carregando cursos..." />;
-  }
+  if (loading && courses.length === 0) return <LoadingScreen text="Carregando cursos..." />;
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
       <Header value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} />
-
       <Breadcrumb items={[{ label: "Explorar" }]} />
 
       <main className="flex-1 container mx-auto px-6 pt-6 pb-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-[#161B1D]">
-              {hasActiveFilters ? "Resultados da Busca" : "O que aprender em seguida"}
-            </h1>
-          </div>
+          <h1 className="text-3xl font-extrabold text-[#161B1D]">
+            {hasActiveFilters ? "Resultados da Busca" : "O que aprender em seguida"}
+          </h1>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all duration-200 cursor-pointer ${
-                showAdvanced
-                  ? "bg-[#FF7A00] text-white border-transparent shadow-md shadow-indigo-200"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:shadow-sm"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
+                showAdvanced ? "bg-[#FF7A00] text-white border-transparent shadow-md" : "bg-white text-gray-600 border-gray-200"
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" />
-              Filtros
-              {(sortBy !== "default" || durationFilter !== "all") && !showAdvanced && (
-                <span className="ml-0.5 flex h-2 w-2 rounded-full bg-[#FF7A00]" />
-              )}
+              <SlidersHorizontal className="h-4 w-4" /> Filtros
             </button>
-
             {hasActiveFilters && (
-              <button
-                onClick={handleResetFilters}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-              >
+              <button onClick={handleResetFilters} className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 cursor-pointer">
                 <RotateCcw className="h-4 w-4" /> Limpar
               </button>
             )}
@@ -175,156 +204,62 @@ function ExplorarContent() {
         </div>
 
         <div className="mb-4">
-          <CategoryFilters
-            categories={categories}
-            activeCategory={activeCategory}
-            onSelect={setActiveCategory}
-          />
+          <CategoryFilters categories={categories} activeCategory={activeCategory} onSelect={setActiveCategory} />
         </div>
 
-        <div
-          className={`grid transition-all duration-300 ease-in-out ${
-            showAdvanced ? "grid-rows-[1fr] opacity-100 mb-8" : "grid-rows-[0fr] opacity-0 mb-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="p-6 bg-white rounded-2xl border border-gray-200/70 shadow-sm shadow-gray-100">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                <div className="flex flex-col gap-2.5">
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar por
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 rounded-xl w-fit">
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setSortBy(opt.value)}
-                        className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-                          sortBy === opt.value
-                            ? "bg-white text-[#161B1D] shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="hidden sm:block w-px bg-gray-100 self-stretch" />
-
-                <div className="flex flex-col gap-2.5">
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    <Clock className="h-3.5 w-3.5" /> Duração do curso
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 rounded-xl w-fit">
-                    {DURATION_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setDurationFilter(opt.value)}
-                        className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                          durationFilter === opt.value
-                            ? "bg-white text-[#161B1D] shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {showAdvanced && (
+          <div className="p-6 bg-white rounded-2xl border border-gray-200/70 shadow-sm mb-8 flex flex-col sm:flex-row gap-6">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block"><ArrowUpDown className="inline h-3.5 w-3.5 mr-1" /> Ordenar por</label>
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                {SORT_OPTIONS.map((opt) => (
+                  <button key={opt.value} onClick={() => setSortBy(opt.value)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer ${sortBy === opt.value ? "bg-white shadow-sm" : "text-gray-500"}`}>{opt.label}</button>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-
-        {(activeCategory || sortBy !== "default" || durationFilter !== "all") && (
-          <div className="flex flex-wrap items-center gap-2 mb-6 -mt-2">
-            {activeCategoryLabel && (
-              <FilterChip label={activeCategoryLabel} onRemove={() => setActiveCategory(null)} />
-            )}
-            {sortBy !== "default" && (
-              <FilterChip
-                label={SORT_OPTIONS.find((o) => o.value === sortBy)?.label || ""}
-                onRemove={() => setSortBy("default")}
-              />
-            )}
-            {durationFilter !== "all" && (
-              <FilterChip
-                label={DURATION_OPTIONS.find((o) => o.value === durationFilter)?.label || ""}
-                onRemove={() => setDurationFilter("all")}
-              />
-            )}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block"><Clock className="inline h-3.5 w-3.5 mr-1" /> Duração</label>
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                {DURATION_OPTIONS.map((opt) => (
+                  <button key={opt.value} onClick={() => setDurationFilter(opt.value)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer ${durationFilter === opt.value ? "bg-white shadow-sm" : "text-gray-500"}`}>{opt.label}</button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {isBrowsingResults ? (
-          <div className="animate-in fade-in duration-500">
-            <p className="text-sm font-semibold text-gray-400 mb-4">
-              {sortedCourses.length} {sortedCourses.length === 1 ? "curso encontrado" : "cursos encontrados"}
-            </p>
-
+          <div>
+            <p className="text-sm font-semibold text-gray-400 mb-4">{sortedCourses.length} cursos encontrados</p>
             {sortedCourses.length > 0 ? (
-              <CourseGrid courses={sortedCourses} />
+              <>
+                <CourseGrid courses={sortedCourses} />
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              </>
             ) : (
-              <div className="py-20 bg-white rounded-2xl text-center border border-gray-200/70 shadow-sm flex flex-col items-center gap-3">
-                <div className="h-14 w-14 rounded-2xl bg-orange-50 flex items-center justify-center">
-                  <SearchX className="h-7 w-7 text-[#FF7A00]" />
-                </div>
-                <p className="text-gray-500 font-semibold">Nenhum curso corresponde aos critérios definidos.</p>
-                <p className="text-gray-400 text-sm max-w-sm">
-                  Tente ajustar a categoria, a ordenação ou o termo buscado.
-                </p>
-                <button
-                  onClick={handleResetFilters}
-                  className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-[#FFFFFF] bg-[#FF7A00] hover:bg-[#FF6B00] transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="h-4 w-4" /> Limpar filtros
-                </button>
+              <div className="py-20 bg-white rounded-2xl text-center border border-gray-200 flex flex-col items-center gap-3">
+                <SearchX className="h-7 w-7 text-[#FF7A00]" />
+                <p className="text-gray-500 font-semibold">Nenhum curso corresponde aos critérios.</p>
+                <button onClick={handleResetFilters} className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-[#FF7A00] cursor-pointer">Limpar filtros</button>
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-14 mt-2">
             {recommendedCourses.length > 0 && (expandedTopic === null || expandedTopic === "recommended") && (
-              <TopicSection
-                title="Recomendados para Você"
-                courses={recommendedCoursesData}
-                total={recommendedCourses.length}
-                expanded={expandedTopic === "recommended"}
-                onExpand={() => setExpandedTopic("recommended")}
-              />
+              <TopicSection title="Recomendados para Você" icon={<Sparkles className="h-5 w-5 text-[#FF7A00]" />} courses={recommendedList} total={recommendedCourses.length} expanded={expandedTopic === "recommended"} onExpand={() => setExpandedTopic("recommended")} />
+            )}
+            {newAreasList.length > 0 && (expandedTopic === null || expandedTopic === "newAreas") && (
+              <TopicSection title="Dê uma chance a novas áreas" icon={<Compass className="h-5 w-5 text-[#2F52E0]" />} courses={newAreasList} total={newAreasCourses.length} expanded={expandedTopic === "newAreas"} onExpand={() => setExpandedTopic("newAreas")} />
+            )}
+            {popularList.length > 0 && (expandedTopic === null || expandedTopic === "popular") && (
+              <TopicSection title="Cursos em destaque" courses={popularList} total={popularCoursesData.length} expanded={expandedTopic === "popular"} onExpand={() => setExpandedTopic("popular")} />
+            )}
+            {recentList.length > 0 && (expandedTopic === null || expandedTopic === "recent") && (
+              <TopicSection title="Novidades na plataforma" courses={recentList} total={recentCoursesData.length} expanded={expandedTopic === "recent"} onExpand={() => setExpandedTopic("recent")} />
             )}
 
-            {popularCourses.length > 0 && (expandedTopic === null || expandedTopic === "popular") && (
-              <TopicSection
-                title="Cursos em destaque"
-                courses={popularCourses}
-                total={popularCoursesData.length}
-                expanded={expandedTopic === "popular"}
-                onExpand={() => setExpandedTopic("popular")}
-              />
-            )}
-
-            {recentCourses.length > 0 && (expandedTopic === null || expandedTopic === "recent") && (
-              <TopicSection
-                title="Novidades na plataforma"
-                courses={recentCourses}
-                total={recentCoursesData.length}
-                expanded={expandedTopic === "recent"}
-                onExpand={() => setExpandedTopic("recent")}
-              />
-            )}
-
-            {completeCourses.length > 0 && (expandedTopic === null || expandedTopic === "complete") && (
-              <TopicSection
-                title="Formações completas e detalhadas"
-                courses={completeCourses}
-                total={completeCoursesData.length}
-                expanded={expandedTopic === "complete"}
-                onExpand={() => setExpandedTopic("complete")}
-              />
-            )}
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>
         )}
       </main>
@@ -338,49 +273,5 @@ export default function Explorar() {
     <Suspense fallback={<LoadingScreen text="Carregando..." />}>
       <ExplorarContent />
     </Suspense>
-  );
-}
-
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span className="flex items-center gap-1.5 pl-3.5 pr-2 py-1.5 rounded-full bg-orange-50 text-[#FF7A00] text-sm font-semibold">
-      {label}
-      <button
-        onClick={onRemove}
-        className="h-5 w-5 flex items-center justify-center rounded-full hover:bg-orange-200 transition-colors cursor-pointer"
-        aria-label={`Remover filtro ${label}`}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </span>
-  );
-}
-
-function TopicSection({ title, icon, courses, total, expanded, onExpand }: {
-  title: string;
-  icon?: React.ReactNode;
-  courses: any[];
-  total: number;
-  expanded: boolean;
-  onExpand: () => void;
-}) {
-  return (
-    <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h2 className="text-2xl font-bold text-[#161B1D]">{title}</h2>
-        </div>
-        {!expanded && total > 4 && (
-          <button
-            onClick={onExpand}
-            className="text-[#2F52E0] text-sm font-bold flex items-center gap-1 hover:underline cursor-pointer"
-          >
-            Ver todos <ArrowRight className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      <CourseGrid courses={courses} />
-    </section>
   );
 }

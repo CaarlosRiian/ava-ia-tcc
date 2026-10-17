@@ -26,7 +26,7 @@ export function InterestsForm({
       try {
         setLoading(true);
         const data = await getCategories();
-        setCategories(data || []);
+        setCategories(Array.isArray(data) ? data : (data?.results || []));
       } catch (error) {
         console.error("Erro ao carregar categorias:", error);
       } finally {

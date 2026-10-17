@@ -1,10 +1,11 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from ava_back.views.lesson_views import CourseReviewListCreateView, CourseReviewDetailView
 from rest_framework.routers import DefaultRouter
 from .views import ( CourseViewSet, UserViewSet, CategoryViewSet, ModuleViewSet, 
     LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, 
-    EmailTokenView, me, professor_by_slug, FavoriteViewSet, 
+    EmailTokenView, me, FavoriteViewSet, 
     LessonMaterialViewSet )
+from ava_back.views.instructor_views import ProfessorDetailView
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet)
@@ -18,10 +19,10 @@ router.register(r'instructor-requests', InstructorRequestViewSet, basename='inst
 router.register(r'favorites', FavoriteViewSet, basename='favorites')
 
 urlpatterns = [
-    path('professor/<slug:slug>/', professor_by_slug),
     path('me/', me),  
     path('courses/<int:course_id>/reviews/', CourseReviewListCreateView.as_view(), name='course-review-list-create'),
     path('courses/reviews/<int:pk>/', CourseReviewDetailView.as_view(), name='course-review-detail'),
+    re_path(r'^professor/(?P<name>.+)/?$', ProfessorDetailView.as_view(), name='professor-detail'),
 ]
 
 urlpatterns += router.urls

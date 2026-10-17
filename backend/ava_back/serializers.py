@@ -423,3 +423,43 @@ class LessonCommentSerializer(serializers.ModelSerializer):
         if obj.replies.exists():
             return LessonCommentSerializer(obj.replies.all().order_by('created_at'), many=True).data
         return []
+
+class CourseSimpleSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.SerializerMethodField()
+    lessons_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'slug', 'thumbnail', 'price', 'category', 'lessons_count']
+
+    def get_thumbnail(self, obj):
+        if obj.thumbnail:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return f"http://localhost:8000{obj.thumbnail.url}"
+        return None
+
+    def get_lessons_count(self, obj):
+        return sum(module.lessons.count() for module in obj.modules.all())
+class ProfessorSerializer(serializers.ModelSerializer):
+    courses = CourseSimpleSerializer(many=True, read_only=True)
+    total_lessons = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 
+            'role', 'specialties', 'bio', 'avatar_url', 'courses', 'date_joined', 'total_lessons'
+        ]
+
+    def get_total_lessons(self, obj):
+        return sum(module.lessons.count() for course in obj.courses.all() for module in course.modules.all())
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['stats'] = {
+            'coursesCount': instance.courses.count(),
+            'lessons': self.get_total_lessons(instance),
+        }
+        return representation

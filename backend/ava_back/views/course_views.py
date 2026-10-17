@@ -25,7 +25,7 @@ class CategoryViewSet(ModelViewSet):
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
-    queryset = Course.objects.all()
+    queryset = Course.objects.all().order_by('-id')
     
     permission_classes = [IsAuthenticatedOrReadOnly]
 

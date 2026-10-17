@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Search, Heart, ChevronDown, User, Settings, LogOut, BookMarked, GraduationCap,
-  LayoutDashboard, ShieldCheck, Users, } from "lucide-react";
+  LayoutDashboard, ShieldCheck, Users } from "lucide-react";
+import { getCategories } from "@/services/categories";
 
 interface HeaderProps {
   value?: string;
@@ -22,6 +23,10 @@ export default function Header({ value, onChange }: HeaderProps) {
 
   const [localSearch, setLocalSearch] = useState("");
 
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const exploreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const token = localStorage.getItem("access");
     const role = localStorage.getItem("user_role");
@@ -32,7 +37,28 @@ export default function Header({ value, onChange }: HeaderProps) {
     setUserRole(role || "");
     setUserName(name || "");
     setUserEmail(email || "");
+
+    async function loadCategories() {
+      try {
+        const data = await getCategories();
+        setCategories(Array.isArray(data) ? data : (data?.results || []));
+      } catch (err) {
+        console.error("Erro ao carregar categorias do header:", err);
+      }
+    }
+    loadCategories();
   }, []);
+
+  const handleExploreEnter = () => {
+    if (exploreTimeoutRef.current) clearTimeout(exploreTimeoutRef.current);
+    setIsExploreOpen(true);
+  };
+
+  const handleExploreLeave = () => {
+    exploreTimeoutRef.current = setTimeout(() => {
+      setIsExploreOpen(false);
+    }, 200); 
+  };
 
   const formatName = (name: string) => {
     const cleaned = name.replace(/_/g, " ");
@@ -90,13 +116,46 @@ export default function Header({ value, onChange }: HeaderProps) {
               className="h-10 w-10 rounded-lg object-contain"
             />
           </Link>
+
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-            <Link
-              href="/"
-              className="flex items-center gap-1 hover:text-[#FF7A00] transition-colors cursor-pointer"
+            <div 
+              className="relative py-4"
+              onMouseEnter={handleExploreEnter}
+              onMouseLeave={handleExploreLeave}
             >
-              Explorar <ChevronDown className="h-4 w-4" />
-            </Link>
+              <Link
+                href="/descobrir"
+                className="flex items-center gap-1 hover:text-[#FF7A00] transition-colors cursor-pointer"
+              >
+                Explorar <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExploreOpen ? "rotate-180" : ""}`} />
+              </Link>
+
+              {isExploreOpen && (
+                <div className="absolute top-full left-0 w-64 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Categorias de Cursos</p>
+                  </div>
+                  
+                  <div className="max-h-72 overflow-y-auto px-2 space-y-0.5">
+                    {categories.length > 0 ? (
+                      categories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`/descobrir?category=${cat.id}`}
+                          onClick={() => setIsExploreOpen(false)}
+                          className="block px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-orange-50 hover:text-[#FF7A00] transition-all"
+                        >
+                          {cat.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-xs text-gray-400">Carregando categorias...</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link
               href="/meus-cursos"
               className="hover:text-[#FF7A00] transition-colors"
@@ -105,6 +164,7 @@ export default function Header({ value, onChange }: HeaderProps) {
             </Link>
           </nav>
         </div>
+
         <div className="flex-1 max-w-md hidden sm:block">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#FF7A00]" />
@@ -119,12 +179,10 @@ export default function Header({ value, onChange }: HeaderProps) {
               onKeyDown={handleKeyDown}
               className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none bg-white border border-gray-400 transition-all duration-500 ease-in-out focus:ring-2 focus:ring-[#FF7A00] focus:border-transparent"
             />
-
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-
           <Link
             href="/favoritos"
             className="flex items-center gap-3 px-3 py-2.5 p-2 text-gray-400 hover:text-red-500 transition-colors duration-300 cursor-pointer"
@@ -133,11 +191,8 @@ export default function Header({ value, onChange }: HeaderProps) {
           </Link>
 
           {isAuth ? (
-
             <div className="relative group">
-
               <div className="flex items-center gap-2 cursor-pointer p-1">
-
                 <div className="h-9 w-9 rounded-full bg-[#FF7A00] text-white flex items-center justify-center font-bold shadow-sm">
                   {getInitials(userName)}
                 </div>
@@ -146,13 +201,11 @@ export default function Header({ value, onChange }: HeaderProps) {
               </div>
 
               <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
-
                 <div className="p-4 flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-[#FF7A00] text-white flex items-center justify-center text-lg font-bold">
                     {getInitials(userName)}
                   </div>
                   <div className="flex flex-col">
-
                     <span className="text-[15px] font-bold text-gray-800">
                       {formatName(userName)}
                     </span>
@@ -170,22 +223,20 @@ export default function Header({ value, onChange }: HeaderProps) {
                 <div className="h-[1px] bg-gray-50 w-full" />
 
                 <div className="p-2">
-
                   <span className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                     Conta
                   </span>
 
                   <div className="mt-1 space-y-0.5 text-[14px] text-gray-700 font-medium">
-
                     {userRole === "professor" && (
                       <Link
-                        href={`/professor/${userName.toLowerCase()}`}
+                        href={`/professor/${userName ? userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_") : ""}`}
                         className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors"
                       >
                         <User className="h-5 w-5 text-gray-500" />
                         Meu perfil
                       </Link>
-                    )}
+                    )}  
 
                     <Link
                       href="/meus-cursos"
@@ -202,20 +253,17 @@ export default function Header({ value, onChange }: HeaderProps) {
                       <Settings className="h-5 w-5 text-gray-500" />
                       Configurações
                     </Link>
-
                   </div>
                 </div>
 
                 <div className="h-[1px] bg-gray-50 w-full" />
 
                 <div className="p-2">
-
                   <span className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                     Áreas
                   </span>
 
                   <div className="mt-1 space-y-0.5 text-[14px] text-gray-700 font-medium">
-
                     {userRole === "aluno" && (
                       <Link
                         href="/instrutor/cadastro"
@@ -263,14 +311,12 @@ export default function Header({ value, onChange }: HeaderProps) {
                         </Link>
                       </>
                     )}
-
                   </div>
                 </div>
 
                 <div className="h-[1px] bg-gray-50 w-full" />
 
                 <div className="p-2">
-
                   <button
                     onClick={logout}
                     className="flex items-center gap-3 w-full px-3 py-3 text-red-500 font-bold text-[14px] hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
@@ -278,16 +324,11 @@ export default function Header({ value, onChange }: HeaderProps) {
                     <LogOut className="h-5 w-5" />
                     Sair
                   </button>
-
                 </div>
-
               </div>
             </div>
-
           ) : (
-
             <div className="flex items-center gap-2">
-
               <Link
                 href="/entrar"
                 className="px-5 py-2.5 text-sm font-bold text-gray-600 border border-gray-400 rounded-xl"
@@ -301,10 +342,8 @@ export default function Header({ value, onChange }: HeaderProps) {
               >
                 Cadastrar
               </Link>
-
             </div>
           )}
-
         </div>
       </div>
     </header>

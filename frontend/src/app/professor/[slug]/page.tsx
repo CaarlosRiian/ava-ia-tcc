@@ -129,8 +129,10 @@ export default function PerfilProfessor() {
                 key={course.id}
                 id={course.id}
                 title={course.title}
+                slug={course.slug}
                 thumbnail={course.thumbnail}
-                lessonsCount={course.modules?.length || 0}
+                price={course.price}
+                lessonsCount={course.lessons_count || 0}
                 author={displayFormattedName}
               />
             ))}

@@ -22,6 +22,7 @@ export default function CourseGrid({ courses }: CourseGridProps) {
             author={formattedAuthor} 
             lessonsCount={course.modules?.length || 0} 
             thumbnail={course.thumbnail} 
+            price={course.price} 
           />
         );
       })}

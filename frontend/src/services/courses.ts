@@ -1,7 +1,7 @@
 const API_URL = "http://localhost:8000/api";
 import { CourseRecommendation } from "../types/course";
 
-export async function getCourses() {
+export async function getCourses(page: number = 1) {
   const token = localStorage.getItem("access");
 
   const headers: Record<string, string> = {};
@@ -10,7 +10,7 @@ export async function getCourses() {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}/courses/`, {
+  const response = await fetch(`${API_URL}/courses/?page=${page}`, {
     headers: headers,
   });
 
