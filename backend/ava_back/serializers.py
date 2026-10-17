@@ -9,6 +9,7 @@ from django.db.models import Sum
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    specialties = serializers.JSONField(required=False, allow_null=True)
     class Meta:
         model = User
         fields = [
@@ -45,6 +46,10 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
         
+        specialties = validated_data.pop("specialties", None)
+        if specialties is not None:
+            instance.specialties = specialties
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
             

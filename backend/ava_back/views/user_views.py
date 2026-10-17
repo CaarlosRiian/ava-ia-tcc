@@ -90,6 +90,7 @@ def me(request):
             "bio": getattr(user, "bio", ""),
             "birth_date": getattr(user, "birth_date", None), 
             "interests": getattr(user, "interests", []),    
+            "specialties": getattr(user, "specialties", []),
         })
 
     elif request.method == "PATCH":
@@ -104,6 +105,9 @@ def me(request):
             
         if "birth_date" in data and hasattr(user, "birth_date"):
             user.birth_date = data["birth_date"] if data["birth_date"] else None
+
+        if "specialties" in data and hasattr(user, "specialties"): 
+            user.specialties = data["specialties"]
 
         if "interests" in data and hasattr(user, "interests"):
             user.interests = data["interests"]

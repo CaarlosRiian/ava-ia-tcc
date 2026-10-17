@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { getMe, updateMe } from "@/services/auth";
 import { Save } from "lucide-react";
 import Header from "@/components/Header";
@@ -12,6 +13,7 @@ import { ProfileHeader } from "./_components/profile-header";
 import { ProfileSkeleton } from "./_components/ProfileSkeleton";
 import { ProfileDataForm } from "./_components/ProfileDataForm";
 import { InterestsForm } from "./_components/InterestsForm";
+import { SpecialtiesForm } from "./_components/SpecialtiesForm";
 import { SecurityForm } from "./_components/SecurityForm";
 import { FormStatusBadge } from "./_components/FormStatusBadge";
 import { formatName } from "@/utils/formatName";
@@ -25,6 +27,9 @@ export default function ConfiguracoesPerfil() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [primarySpecialty, setPrimarySpecialty] = useState<string>("");
+  const [categories, setCategories] = useState<{ id: string | number; name: string }[]>([]);
 
   const [initialData, setInitialData] = useState({ 
     name: "", 
@@ -32,6 +37,8 @@ export default function ConfiguracoesPerfil() {
     bio: "", 
     birthDate: "", 
     interests: [] as string[],
+    specialties: [] as string[],
+    primarySpecialty: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -50,13 +57,29 @@ export default function ConfiguracoesPerfil() {
 
       try {
         setLoading(true);
-        const data = await getMe(token);
+
+        const [data, categoriesRes] = await Promise.all([
+          getMe(token),
+          axios.get("http://localhost:8000/api/categories/", {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => ({ data: [] }))
+        ]);
+
+        const fetchedCategories = Array.isArray(categoriesRes.data) 
+          ? categoriesRes.data 
+          : categoriesRes.data.results || [];
+
+        setCategories(fetchedCategories);
 
         const formattedName = data.name ? formatName(data.name) : "";
         const userEmail = data.email || "";
         const userBio = data.bio || "";
         const userBirthDate = data.birth_date || "";
         const userInterests = data.interests || [];
+        const userSpecialties = data.specialties || [];
+        
+        const userPrimarySpecialty = data.specialty || data.primary_specialty || userSpecialties[0] || "UX/UI";
+
 
         setName(formattedName);
         setEmail(userEmail);
@@ -64,6 +87,8 @@ export default function ConfiguracoesPerfil() {
         setUserRole(data.role || "");
         setBirthDate(userBirthDate);
         setInterests(userInterests);
+        setSpecialties(userSpecialties);
+        setPrimarySpecialty(userPrimarySpecialty);
 
         setInitialData({
           name: formattedName, 
@@ -71,9 +96,10 @@ export default function ConfiguracoesPerfil() {
           bio: userBio, 
           birthDate: userBirthDate, 
           interests: userInterests, 
+          specialties: userSpecialties,
+          primarySpecialty: userPrimarySpecialty,
         });
       } catch (error) {
-        console.error("Erro ao buscar dados do usuário:", error);
         toast.error("Não foi possível carregar os dados do perfil.");
       } finally {
         setLoading(false);
@@ -88,6 +114,8 @@ export default function ConfiguracoesPerfil() {
     bio !== initialData.bio ||
     birthDate !== initialData.birthDate ||
     JSON.stringify(interests) !== JSON.stringify(initialData.interests) ||
+    JSON.stringify(specialties) !== JSON.stringify(initialData.specialties) || 
+    primarySpecialty !== initialData.primarySpecialty ||
     password !== "";
 
   useEffect(() => {
@@ -95,7 +123,7 @@ export default function ConfiguracoesPerfil() {
       setSaveSuccess(false);
       setErrorMessage(null);
     }
-  }, [name, email, bio, birthDate, interests, password]);
+  }, [name, email, bio, birthDate, interests, specialties, password]);
 
   const handleSave = async () => {
     setErrorMessage(null);
@@ -120,12 +148,18 @@ export default function ConfiguracoesPerfil() {
 
     try {
       setIsSaving(true);
+
+      const allSpecialties = primarySpecialty 
+        ? Array.from(new Set([primarySpecialty, ...specialties])) 
+        : specialties;
+
       const payload: any = { 
         name, 
         email, 
         bio, 
         birth_date: birthDate || null, 
         interests,
+        specialties: allSpecialties, 
       };
 
       if (password) {
@@ -135,7 +169,7 @@ export default function ConfiguracoesPerfil() {
       await updateMe(token, payload);
 
       setSaveSuccess(true);
-      setInitialData({ name, email, bio, birthDate, interests });
+      setInitialData({ name, email, bio, birthDate, interests, specialties, primarySpecialty });
 
       setPassword("");
       setConfirmPassword("");
@@ -168,6 +202,8 @@ export default function ConfiguracoesPerfil() {
     ? name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "U";
 
+  const isInstructor = userRole === "professor" || userRole === "instructor";
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <Header />
@@ -197,6 +233,15 @@ export default function ConfiguracoesPerfil() {
             birthDate={birthDate} setBirthDate={setBirthDate}
           />
 
+          {isInstructor && (
+            <SpecialtiesForm
+              specialties={specialties}
+              setSpecialties={setSpecialties}
+              availableCategories={categories}
+              primarySpecialty={primarySpecialty}
+            />
+          )}
+
           <InterestsForm
             interests={interests}
             setInterests={setInterests}
@@ -218,6 +263,8 @@ export default function ConfiguracoesPerfil() {
                 setBio(initialData.bio);
                 setBirthDate(initialData.birthDate);
                 setInterests(initialData.interests);
+                setSpecialties(initialData.specialties);
+                setPrimarySpecialty(initialData.primarySpecialty);
                 setPassword("");
                 setConfirmPassword("");
                 setErrorMessage(null);
