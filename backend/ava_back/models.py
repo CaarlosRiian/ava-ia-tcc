@@ -79,6 +79,7 @@ class Course(models.Model):
     min_age = models.PositiveIntegerField(default=0)     
     max_age = models.PositiveIntegerField(default=100)   
     target_area = models.CharField(max_length=100, blank=True, null=True)
+    learning_objectives = models.JSONField(default=list, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:

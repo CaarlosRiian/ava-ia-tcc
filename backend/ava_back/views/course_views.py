@@ -35,7 +35,7 @@ class CourseViewSet(ModelViewSet):
     filterset_fields = ['category']
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action in ['retrieve', 'update', 'partial_update']:
             return CourseDetailSerializer
         return CourseSerializer
 

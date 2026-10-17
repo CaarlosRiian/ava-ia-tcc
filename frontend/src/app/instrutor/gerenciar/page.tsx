@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Users, Star, UserPlus, TrendingUp, BookOpen, BarChart3 } from "lucide-react";
+import axios from "axios";
+import { Settings, BarChart3, GraduationCap } from "lucide-react";
 
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
@@ -10,17 +11,30 @@ import { CourseCard } from "./_components/CourseCard-Item";
 import { LessonManager } from "./_components/LessonManager";
 import { CourseFormModal } from "./_components/CourseFormModal";
 import { AddOptionsModal } from "./_components/AddOptionsModal";
+import { EditObjectivesModal } from "./_components/EditObjectivesModal";
 import { useCourseManagement } from "./_hooks/useCourseManagement";
 import { createCourse, updateCourse } from "./_services/courses";
 import { createMaterial } from "./_services/materials";
 
 export default function GerenciamentoAulas() {
-  const { cursos, cursoSelecionado, setCursoSelecionado, categories, cursoAtivo, toastConfig, showToast, hideToast, handleCreateModule, handleCreateLesson, setCursos,
+  const {
+    cursos,
+    cursoSelecionado,
+    setCursoSelecionado,
+    categories,
+    cursoAtivo,
+    toastConfig,
+    showToast,
+    hideToast,
+    handleCreateModule,
+    handleCreateLesson,
+    setCursos,
   } = useCourseManagement();
 
   const [openAddOptionsModal, setOpenAddOptionsModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
+  const [openObjectivesModal, setOpenObjectivesModal] = useState(false);
 
   const handleToggle = async (cId: string, aId: string) => {
     setCursos((prev) =>
@@ -28,7 +42,7 @@ export default function GerenciamentoAulas() {
         String(c.id) === String(cId)
           ? {
               ...c,
-              aulas: c.aulas.map((a) =>
+              aulas: c.aulas.map((a: any) =>
                 a.id === aId ? { ...a, status: a.status === "publicada" ? "rascunho" : "publicada" } : a
               ),
             }
@@ -42,7 +56,7 @@ export default function GerenciamentoAulas() {
     setCursos((prev) =>
       prev.map((c) =>
         String(c.id) === String(cId)
-          ? { ...c, aulas: c.aulas.filter((a) => a.id !== aId) }
+          ? { ...c, aulas: c.aulas.filter((a: any) => a.id !== aId) }
           : c
       )
     );
@@ -75,6 +89,33 @@ export default function GerenciamentoAulas() {
     }
   };
 
+  const handleSaveObjectives = async (objectives: string[]) => {
+    if (!cursoAtivo) return;
+
+    try {
+      const token = localStorage.getItem("access");
+      const response = await axios.patch(
+        `http://localhost:8000/api/courses/${cursoAtivo.id}/`,
+        { learning_objectives: objectives },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setCursos((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(cursoAtivo.id)
+            ? { ...c, ...response.data }
+            : c
+        )
+      );
+
+      showToast("Objetivos atualizados com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao salvar objetivos:", error);
+      showToast("Falha ao salvar objetivos de aprendizado.", "error");
+      throw error;
+    }
+  };
+
   const handleAddMaterial = async (payload: any) => {
     try {
       const formData = new FormData();
@@ -94,11 +135,11 @@ export default function GerenciamentoAulas() {
             String(c.id) === String(cursoSelecionado)
               ? {
                   ...c,
-                  modules: c.modules?.map((m) => ({
+                  modules: c.modules?.map((m: any) => ({
                     ...m,
-                    lessons: m.lessons?.map((l) =>
+                    lessons: m.lessons?.map((l: any) =>
                       String(l.id) === String(payload.lesson)
-                        ? { ...l, materials: [...((l as any).materials || []), novoMaterialSalvo] }
+                        ? { ...l, materials: [...(l.materials || []), novoMaterialSalvo] }
                         : l
                     ),
                   })),
@@ -173,8 +214,20 @@ export default function GerenciamentoAulas() {
                     </span>
                     <h3 className="text-lg font-bold text-gray-900 mt-1">{cursoAtivo.title}</h3>
                   </div>
-                  <BarChart3 className="h-5 w-5 text-[#FF7A00]" />
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenObjectivesModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 text-[#FF7A00] hover:bg-orange-100 font-bold text-xs transition border border-orange-100 cursor-pointer"
+                    >
+                      <GraduationCap size={15} />
+                      <span>Objetivos do Curso</span>
+                    </button>
+                    <BarChart3 className="h-5 w-5 text-[#FF7A00]" />
+                  </div>
                 </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100">
                     <span className="text-xs text-gray-500 font-semibold">Alunos</span>
@@ -190,7 +243,7 @@ export default function GerenciamentoAulas() {
                   </div>
                   <div className="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100">
                     <span className="text-xs text-gray-500 font-semibold">Total Aulas</span>
-                    <p className="text-xl font-black text-gray-900">{cursoAtivo.aulas.length}</p>
+                    <p className="text-xl font-black text-gray-900">{cursoAtivo.aulas?.length || 0}</p>
                   </div>
                 </div>
               </div>
@@ -217,6 +270,17 @@ export default function GerenciamentoAulas() {
         onCreateLesson={handleCreateLesson}
         onShowToast={showToast}
       />
+
+      {cursoAtivo && (
+        <EditObjectivesModal
+          open={openObjectivesModal}
+          onOpenChange={setOpenObjectivesModal}
+          courseId={cursoAtivo.id}
+          initialObjectives={cursoAtivo.learning_objectives || []}
+          onSave={handleSaveObjectives}
+          onShowToast={showToast}
+        />
+      )}
 
       <Toast message={toastConfig.message} type={toastConfig.type} onClose={hideToast} />
     </div>

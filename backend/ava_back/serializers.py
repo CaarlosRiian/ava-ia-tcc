@@ -222,7 +222,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'id', 'title', 'description', 'category', 'professor_name', 
-            'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules'
+            'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules', 'learning_objectives'
         ]
 
     def get_hours(self, obj):
@@ -233,19 +233,21 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     modules = ModuleDetailSerializer(many=True, read_only=True)
     professor_name = serializers.CharField(source='professor.username', read_only=True)
     thumbnail = serializers.ImageField(required=False)
+    learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'modules']
+        fields = ['id', 'title', 'description', 'category', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'modules', 'learning_objectives']
 
 class InstructorCourseSerializer(serializers.ModelSerializer):
     modules = serializers.SerializerMethodField()
     alunos = serializers.SerializerMethodField()
     thumbnail = serializers.ImageField(required=False)
+    learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "category", "price", "published", "thumbnail", "alunos", "modules"]
+        fields = ["id", "title", "description", "category", "price", "published", "thumbnail", "alunos", "modules", "learning_objectives"]
     
     def get_modules(self, obj):
         modules = obj.modules.all().order_by('order')

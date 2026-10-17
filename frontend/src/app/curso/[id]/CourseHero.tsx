@@ -2,7 +2,7 @@
 
 import Link from "next/link"; 
 import { formatName } from "@/utils/formatName";
-import { Clock, User, BookOpen, Play, Heart, Award, CheckCircle2 } from "lucide-react";
+import { User, BookOpen, Play, Heart, Award, CheckCircle2, Sparkles, GraduationCap, ArrowRight } from "lucide-react";
 
 interface CourseHeroProps {
   course: any;
@@ -11,114 +11,136 @@ interface CourseHeroProps {
   onPlayClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-export default function CourseHero({course, isFavorited, onFavoriteToggle, onPlayClick
-}: CourseHeroProps) {
+export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPlayClick }: CourseHeroProps) {
   const lessons = course.modules?.flatMap((m: any) => m.lessons) || [];
-
-  const totalSeconds = lessons.reduce(
-    (acc: number, lesson: any) => acc + lesson.duration_seconds,
-    0
-  );
 
   const professorSlug = course.professor_name
     ? course.professor_name.toLowerCase().trim().replaceAll(" ", "_")
     : "";
 
+  const objetivos = course.learning_objectives || [
+    "Domínio completo dos Conceitos Fundamentais e Arquitetura",
+    "Aplicação prática de padrões recomendados pelo Mercado",
+    "Desenvolvimento guiado de Projetos Reais e Escaláveis",
+    "Mentoria e Inteligência Artificial orientada à prática"
+  ];
+
   return (
-    <>
-      <div 
-        onClick={(e) => onPlayClick?.(e)} 
-        className="aspect-video rounded-2xl bg-gray-900 mb-6 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-md border border-gray-100"
-      >
-        {course?.thumbnail && (
-          <img
-            src={course.thumbnail}
-            alt={course.title}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-          />
-        )}
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-x text-[11px] font-bold bg-gray-100 text-[black] border border-gray-100">
+             Vídeo de Apresentação
+          </span>
+          <span className="text-xs text-zinc-400 font-medium">Visão geral do curso</span>
+        </div>
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+        <div 
+          onClick={(e) => onPlayClick?.(e)} 
+          className="aspect-video rounded-3xl bg-zinc-900 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-xl border border-zinc-100/80 transition-all hover:shadow-2xl"
+        >
+          {course?.thumbnail && (
+            <img
+              src={course.thumbnail}
+              alt={course.title}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+            />
+          )}
 
-        <div className="bg-white rounded-full p-5 shadow-2xl scale-100 group-hover:scale-110 transition-transform z-10 relative bg-white/90 backdrop-blur-sm">
-          <Play className="h-7 w-7 text-[#2F52E0] fill-[#2F52E0] ml-0.5" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-300" />
+
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20">
+            <div className="w-12 h-12 rounded-xl bg-[#FF7A00] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <Play className="h-6 w-6 fill-white ml-0.5" />
+            </div>
+            <div className="pr-2 text-left hidden sm:block">
+              <p className="text-xs font-bold text-zinc-900">Assistir Aula Inicial</p>
+              <p className="text-[10px] text-zinc-500 font-medium">Começar introdução</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#161B1D]">
-          {course.title}
-        </h1>
+      <div className="flex items-start justify-between gap-4 pt-2">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 leading-tight">
+            {course.title}
+          </h1>
+        </div>
 
         <button 
           onClick={(e) => {
             e.stopPropagation();
             onFavoriteToggle();
           }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-95 cursor-pointer shadow-sm select-none shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm select-none shrink-0 ${
             isFavorited
-              ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100/70"
-              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+              ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100/70 shadow-red-100"
+              : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
           }`} 
         >
-          <Heart className={`h-3.5 w-3.5 transition-transform ${isFavorited ? "fill-red-600 text-red-600 scale-105" : ""}`} />
+          <Heart className={`h-4 w-4 transition-transform ${isFavorited ? "fill-red-600 text-red-600 scale-110" : ""}`} />
           <span className="hidden sm:inline">
             {isFavorited ? "Favoritado" : "Favoritar"}
           </span>
         </button>
       </div>
 
-      <p className="text-sm text-gray-500 font-light leading-relaxed mb-6">
+      <p className="text-sm text-zinc-600 font-normal leading-relaxed bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm">
         {course.description}
       </p>
 
-      <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
-        
-        <Link 
-          href={`/professor/${professorSlug}`}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 group/instructor cursor-pointer block"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gray-50 text-[#FF7A00] flex items-center justify-center border border-blue-100/50 group-hover/instructo transition-all">
-              <User size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Instrutor da Disciplina</p>
-              <h3 className="text-sm font-semibold text-gray-800 group-hover/instructor:font-bold transition-colors">
-                {course.professor_name ? formatName(course.professor_name) : "Professor Da Silva"}
-              </h3>
-            </div>
+      <Link 
+        href={`/professor/${professorSlug}`}
+        className="flex items-center justify-between p-5 rounded-2xl bg-white border border-zinc-100 hover:border-orange-200 hover:shadow-md transition-all group cursor-pointer block"
+      >
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-orange-50 text-[#FF7A00] flex items-center justify-center border border-orange-100/80 group-hover:scale-105 transition-transform shrink-0 shadow-sm">
+            <User size={22} />
           </div>
-          
-          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-lg text-[11px] text-gray-500 font-medium w-fit group-hover/instructor:bg-gray-100 transition-colors">
-            <Award size={14} className="text-amber-500" />
-            <span>Conteúdo Acadêmico Verificado</span>
-          </div>
-        </Link>
-
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3.5 flex items-center gap-2">
-            <BookOpen size={15} className="text-[#00000]" />
-            Objetivos de Aprendizado
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {[
-              "Conceitos Fundamentais e Teoria",
-              "Práticas Alinhadas ao Mercado",
-              "Desenvolvimento de Projetos Reais",
-              "Apoio e Consultoria com a Comunidade"
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-50 bg-gray-50/30 hover:bg-gray-50 transition duration-200">
-                <div className="h-5 w-5 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 size={13} className="stroke-[2.5]" />
-                </div>
-                <span className="text-xs font-medium text-gray-600">{item}</span>
-              </div>
-            ))}
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">Instrutor da Disciplina</p>
+            </div>
+            <h3 className="text-sm font-bold text-zinc-900 group-hover:text-[gray-50] transition-colors mt-0.5">
+              {course.professor_name ? formatName(course.professor_name) : "Professor Titular"}
+            </h3>
           </div>
         </div>
+        
+        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 group-hover:text-[#FF7A00] transition-colors pr-2">
+          <span>Ver perfil completo</span>
+          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+        </div>
+      </Link>
 
+      <div className="bg-white border border-zinc-100 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-extrabold uppercase tracking-wider text-zinc-800 flex items-center gap-2">
+            <div className="p-1.5 rounded-xl bg-orange-50 text-[#FF7A00]">
+              <GraduationCap size={16} />
+            </div>
+            Objetivos de Aprendizado
+          </h2>
+          <span className="text-[11px] font-semibold text-zinc-400">Metas do Curso</span>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3.5">
+          {objetivos.map((item: string, idx: number) => (
+            <div 
+              key={idx} 
+              className="flex items-start gap-3 p-3.5 rounded-2xl border border-zinc-100 bg-zinc-50/50 hover:bg-orange-50/40 hover:border-orange-200/60 transition-all duration-200 group cursor-default shadow-2xs"
+            >
+              <div className="h-6 w-6 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 border border-emerald-100 group-hover:scale-110 transition-transform">
+                <CheckCircle2 size={14} className="stroke-[3]" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-700 leading-snug group-hover:text-zinc-900">
+                {item}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

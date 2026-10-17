@@ -27,6 +27,7 @@ export type CourseAPI = {
   thumbnail?: string | null
   alunos: number;
   modules: Module[];
+  learning_objectives?: string[];
 };
 
 export type CourseUI = CourseAPI & {
