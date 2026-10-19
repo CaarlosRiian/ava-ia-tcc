@@ -15,7 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'password', 'role', 'avatar_url', 'bio', 
+            'id', 'username','name', 'email', 'password', 'role', 'avatar_url', 'bio', 
             'birth_date', 'interests', 'status', 'specialties', 'created_at', 'primary_specialty'
         ]
         extra_kwargs = {
@@ -395,10 +395,26 @@ class CourseReviewSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
     user_id = serializers.ReadOnlyField(source='user.id')
     instructor_reply = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = CourseReview
         fields = ['id', 'user', 'user_id', 'username', 'course', 'rating', 'comment', 'instructor_reply', 'created_at']
         read_only_fields = ['id', 'user', 'user_id', 'created_at']
+
+    def validate(self, data):
+        request = self.context.get('request')
+        course = data.get('course')
+
+        if request and request.user and course:
+            user_id = request.user.id
+            instructor_id = getattr(course, 'instructor_id', None) or getattr(getattr(course, 'instructor', None), 'id', None)
+            created_by_id = getattr(course, 'created_by_id', None) or getattr(getattr(course, 'created_by', None), 'id', None)
+
+            if user_id in [instructor_id, created_by_id]:
+                raise serializers.ValidationError("Como instrutor, você não pode avaliar o seu próprio curso.")
+
+        return data
+    
 class StudentChallengeSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.username', read_only=True)
     challenge_title = serializers.CharField(source='challenge.title', read_only=True)

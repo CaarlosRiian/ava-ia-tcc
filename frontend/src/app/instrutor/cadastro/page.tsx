@@ -46,10 +46,15 @@ export default function CadastroInstrutor() {
   async function fetchMinhasSolicitacoes() {
     try {
       setLoadingHistorico(true);
-      const response = await api.get<MinhaSolicitacao[]>("/instructor-requests/");
-      setMinhasSolicitacoes(response.data);
+      const response = await api.get("/instructor-requests/");
+      
+      const rawData = response.data;
+      const safeData = Array.isArray(rawData) ? rawData : (rawData?.results || []);
+      
+      setMinhasSolicitacoes(safeData);
     } catch (err) {
       console.error("Erro ao buscar histórico", err);
+      setMinhasSolicitacoes([]); 
     } finally {
       setLoadingHistorico(false);
     }
@@ -92,6 +97,10 @@ export default function CadastroInstrutor() {
       });
     }
   };
+
+  const categoriasList = Array.isArray(categorias) 
+    ? categorias 
+    : ((categorias as any)?.results || []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col relative">
@@ -144,10 +153,10 @@ export default function CadastroInstrutor() {
                       </SelectTrigger>
 
                       <SelectContent className="rounded-xl border border-slate-200 bg-white shadow-lg min-w-[var(--radix-select-trigger-width)] z-[50]">
-                        {categorias.length === 0 && !loadingCategorias ? (
+                        {categoriasList.length === 0 && !loadingCategorias ? (
                           <div className="p-3 text-xs text-gray-400 text-center">Nenhuma especialidade disponível</div>
                         ) : (
-                          categorias.map((cat) => (
+                          categoriasList.map((cat: any) => (
                             <SelectItem
                               key={cat.id}
                               value={cat.name}

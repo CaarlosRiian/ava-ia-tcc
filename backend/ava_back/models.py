@@ -73,7 +73,7 @@ class Course(models.Model):
         related_name='courses',
         limit_choices_to={'role': 'professor'}
     )
-    published = models.BooleanField(default=False)
+    published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     min_age = models.PositiveIntegerField(default=0)     

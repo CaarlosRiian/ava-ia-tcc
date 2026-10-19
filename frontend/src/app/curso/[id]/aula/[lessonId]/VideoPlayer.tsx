@@ -15,7 +15,7 @@ export default function VideoPlayer({ lesson, onToggleAI }: VideoPlayerProps) {
   const lessonThumbnail = lesson?.thumbnail; 
 
   return (
-    <div className="bg-black flex items-center justify-center aspect-video w-full shadow-2xl relative select-none overflow-hidden rounded-2xl border border-gray-800">
+    <div className="bg-black flex items-center justify-center aspect-video w-full  relative select-none overflow-hidden border border-gray-800">
       
       {playing ? (
         videoUrl ? (

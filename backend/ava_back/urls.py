@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import ( CourseViewSet, UserViewSet, CategoryViewSet, ModuleViewSet, 
     LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, 
     EmailTokenView, me, FavoriteViewSet, 
-    LessonMaterialViewSet )
+    LessonMaterialViewSet)
 from ava_back.views.instructor_views import ProfessorDetailView
 
 router = DefaultRouter()

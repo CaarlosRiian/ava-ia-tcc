@@ -14,7 +14,7 @@ import { toast } from "sonner";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  categories: { id: string; name: string }[];
+  categories: any; 
   initialData?: CourseUI | null;
   onCreate: (data: FormData) => Promise<void>;
   onEdit: (courseId: string, data: FormData) => Promise<void>;
@@ -32,6 +32,10 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+
+  const categoriesList = Array.isArray(categories) 
+    ? categories 
+    : (categories?.results || []);
 
   useEffect(() => {
     if (initialData) {
@@ -179,7 +183,7 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
                   onChange={(e) => setCategory(e.target.value)}
                 >
                   <option value="">Selecione uma categoria</option>
-                  {categories.map((c) => (
+                  {categoriesList.map((c: any) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

@@ -87,8 +87,7 @@ export default function Aula() {
         const token = typeof window !== "undefined" ? localStorage.getItem("access") : null;
 
         if (!token) {
-          console.warn("Token não encontrado. Redirecionando para login/curso...");
-          if (isMounted) router.replace(`/curso/${courseId}`);
+          if (isMounted) router.replace(`/login`); 
           return;
         }
 
@@ -120,8 +119,7 @@ export default function Aula() {
         });
 
         if (!isEnrolled) {
-          console.warn(`Usuário não matriculado no curso ${courseId}.`);
-          router.replace(`/curso/${courseId}`);
+          router.replace(`/meus-cursos`);
           return;
         }
 

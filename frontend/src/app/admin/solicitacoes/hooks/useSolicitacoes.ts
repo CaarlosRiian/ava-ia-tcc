@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Solicitacao } from "@/data/solicitacoes";
+import { api } from "@/services/api"; 
 
 const mapStatus = (status: string): Solicitacao["status"] => {
   const map: Record<string, Solicitacao["status"]> = {
@@ -22,20 +23,13 @@ export function useSolicitacoes() {
 
   const fetchSolicitacoes = async () => {
     try {
-      const token = localStorage.getItem("access");
+      setLoading(true);
+      const res = await api.get("/instructor-requests/");
+      
+      const rawData = res.data;
+      const dataArray = Array.isArray(rawData) ? rawData : (rawData?.results || []);
 
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/instructor-requests/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await res.json();
-
-      const normalizado: Solicitacao[] = data.map((item: any) => ({
+      const normalizado: Solicitacao[] = dataArray.map((item: any) => ({
         id: item.id,
         nome: item.user?.username ?? "sem nome",
         user: item.user,
@@ -51,8 +45,10 @@ export function useSolicitacoes() {
       }));
 
       setSolicitacoes(normalizado);
-    } catch {
+    } catch (err) {
+      console.error("Erro ao carregar solicitações:", err);
       toast.error("Erro ao carregar solicitações");
+      setSolicitacoes([]);
     } finally {
       setLoading(false);
     }
@@ -64,30 +60,13 @@ export function useSolicitacoes() {
     motivo_rejeicao?: string
   ) => {
     try {
-      const token = localStorage.getItem("access");
       const endpoint = status === "aprovado" ? "aprovar" : "rejeitar";
+      
+      const payload = status === "rejeitado" && motivo_rejeicao 
+        ? { motivo_rejeicao } 
+        : undefined;
 
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${token}`,
-      };
-
-      let body: string | undefined = undefined;
-
-      if (status === "rejeitado" && motivo_rejeicao) {
-        headers["Content-Type"] = "application/json";
-        body = JSON.stringify({ motivo_rejeicao });
-      }
-
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/instructor-requests/${id}/${endpoint}/`,
-        {
-          method: "POST",
-          headers,
-          body,
-        }
-      );
-
-      if (!res.ok) throw new Error();
+      await api.post(`/instructor-requests/${id}/${endpoint}/`, payload);
 
       setSolicitacoes((prev) =>
         prev.map((s) =>
@@ -100,7 +79,8 @@ export function useSolicitacoes() {
       toast.success(
         status === "aprovado" ? "Aprovado com sucesso!" : "Rejeitado com sucesso!"
       );
-    } catch {
+    } catch (err) {
+      console.error("Erro ao atualizar status:", err);
       toast.error("Erro ao atualizar status");
     }
   };

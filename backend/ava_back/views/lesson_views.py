@@ -97,6 +97,64 @@ class LessonViewSet(ModelViewSet):
 
         return Response(data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get', 'post'], permission_classes=[drf_permissions.IsAuthenticated], url_path='comments')
+    def comments(self, request, pk=None):
+        lesson = self.get_object()
+        
+        if request.method == 'GET':
+            total_count = lesson.comments.count()
+            root_comments = lesson.comments.filter(parent__isnull=True).order_by('-created_at')
+
+            page_number = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 5))
+
+            paginator = Paginator(root_comments, page_size)
+            page_obj = paginator.get_page(page_number)
+
+            serializer = LessonCommentSerializer(page_obj.object_list, many=True)
+
+            return Response({
+                'total_count': total_count,
+                'has_next': page_obj.has_next(),
+                'next_page': page_number + 1 if page_obj.has_next() else None,
+                'results': serializer.data
+            })
+            
+        elif request.method == 'POST':
+            serializer = LessonCommentSerializer(data=request.data)
+            if serializer.is_valid():
+                parent_id = request.data.get('parent')
+                parent_comment = None
+                if parent_id:
+                    parent_comment = LessonComment.objects.filter(id=parent_id, lesson=lesson).first()
+                
+                serializer.save(user=request.user, lesson=lesson, parent=parent_comment)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['put', 'delete'], permission_classes=[drf_permissions.IsAuthenticated], url_path=r'comments/(?P<comment_id>\d+)')
+    def comment_detail(self, request, pk=None, comment_id=None):
+        try:
+            comment = LessonComment.objects.get(id=comment_id, lesson_id=pk)
+        except LessonComment.DoesNotExist:
+            return Response({"error": "Comentário não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if comment.user != request.user:
+            return Response({"error": "Você não tem permissão para alterar este comentário."}, status=status.HTTP_403_FORBIDDEN)
+
+        if request.method == 'PUT':
+            content = request.data.get('content')
+            if not content:
+                return Response({"error": "O conteúdo não pode ser vazio."}, status=status.HTTP_400_BAD_REQUEST)
+            comment.content = content
+            comment.save()
+            serializer = LessonCommentSerializer(comment)
+            return Response(serializer.data)
+
+        elif request.method == 'DELETE':
+            comment.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
 class IsOwnerOrInstructorOrReadOnly(drf_permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in drf_permissions.SAFE_METHODS:
@@ -126,6 +184,11 @@ class CourseReviewListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         course_id = self.kwargs.get('course_id')
         serializer.save(user=self.request.user, course_id=course_id)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     @action(detail=True, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='challenge')
     def get_challenge(self, request, pk=None):

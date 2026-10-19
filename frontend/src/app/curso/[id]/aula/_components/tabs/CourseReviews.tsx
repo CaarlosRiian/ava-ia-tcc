@@ -1,193 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Star, Send, Loader2, Trash2, Edit3, X, MessageSquareReply, AlertTriangle } from "lucide-react";
-import { learningService, CourseReview } from "@/services/learningService";
-import { api } from "@/services/api";
 import Toast from "@/components/ui/Toast"; 
+import { useCourseReviews } from "./hooks/useCourseReviews";
 
 interface CourseReviewsProps {
   courseId: number;
 }
 
 export default function CourseReviews({ courseId }: CourseReviewsProps) {
-  const [reviews, setReviews] = useState<CourseReview[]>([]);
-  const [courseData, setCourseData] = useState<any>(null);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  
-  const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [isInstructor, setIsInstructor] = useState(false);
-  
-  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
-  const [replyingReviewId, setReplyingReviewId] = useState<number | null>(null);
-  const [replyText, setReplyText] = useState("");
+  const {
+    reviewsList,
+    currentUserId,
+    isInstructor,
+    isOwnerInstructor,
+    loadingReviews,
+    rating, setRating,
+    hoverRating, setHoverRating,
+    comment, setComment,
+    editingReviewId,
+    replyingReviewId, setReplyingReviewId,
+    replyText, setReplyText,
+    isSubmitting,
+    toast, setToast,
+    userExistingReview,
+    deleteReviewModalOpen, setDeleteReviewModalOpen,
+    setReviewToDeleteId,
+    deleteReplyModalOpen, setDeleteReplyModalOpen,
+    setReplyToDeleteId,
+    handleSubmitReview,
+    handleEdit,
+    handleCancelEdit,
+    executeDeleteReview,
+    handleReplySubmit,
+    executeDeleteReply,
+  } = useCourseReviews(courseId);
 
-  const [deleteReviewModalOpen, setDeleteReviewModalOpen] = useState(false);
-  const [reviewToDeleteId, setReviewToDeleteId] = useState<number | null>(null);
-
-  const [deleteReplyModalOpen, setDeleteReplyModalOpen] = useState(false);
-  const [replyToDeleteId, setReplyToDeleteId] = useState<number | null>(null);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-  
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  useEffect(() => {
-    async function loadData() {
-      let resolvedCourseId = courseId;
-      if (!resolvedCourseId || isNaN(resolvedCourseId)) {
-        const match = window.location.pathname.match(/\/curso\/(\d+)/);
-        if (match) resolvedCourseId = Number(match[1]);
-      }
-
-      if (!resolvedCourseId) return;
-
-      try {
-        const [userRes, courseRes, reviewsData] = await Promise.all([
-          api.get('/me/'),
-          api.get(`/courses/${resolvedCourseId}/`),
-          learningService.getCourseReviews(resolvedCourseId)
-        ]);
-
-        const user = userRes.data;
-        const course = courseRes.data;
-
-        setCurrentUserId(user.id);
-        setCourseData(course);
-        setReviews(reviewsData);
-
-        const courseInstructor = course?.instructor;
-        const instructorId = typeof courseInstructor === 'object' ? courseInstructor?.id : courseInstructor;
-        
-        const isUserInstructor = 
-          (instructorId && Number(user.id) === Number(instructorId)) ||
-          user.email === "alonso14@gmail.com" || 
-          user.is_staff || 
-          user.is_instructor;
-
-        if (isUserInstructor) {
-          setIsInstructor(true);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-      } finally {
-        setLoadingReviews(false);
-      }
-    }
-    loadData();
-  }, [courseId]);
-
-  const userExistingReview = reviews.find(r => r.user_id === currentUserId);
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!courseId || isNaN(courseId)) return;
-
-    setIsSubmitting(true);
-
-    try {
-      if (editingReviewId) {
-        await learningService.updateCourseReview(editingReviewId, { rating, comment });
-        showToast("Avaliação atualizada com sucesso!", "success");
-      } else {
-        await learningService.submitCourseReview(courseId, { rating, comment });
-        showToast("Avaliação enviada com sucesso!", "success");
-      }
-
-      const updatedReviews = await learningService.getCourseReviews(courseId);
-      setReviews(updatedReviews);
-      
-      setComment("");
-      setRating(5);
-      setEditingReviewId(null);
-    } catch (err: any) {
-      console.error("Erro ao salvar review:", err);
-      showToast("Erro ao processar a avaliação. Tente novamente.", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEdit = (review: CourseReview) => {
-    setEditingReviewId(review.id);
-    setRating(review.rating);
-    setComment(review.comment || "");
-  };
-
-  const handleCancelEdit = () => {
-    setEditingReviewId(null);
-    setRating(5);
-    setComment("");
-  };
-
-  const confirmDeleteReview = (reviewId: number) => {
-    setReviewToDeleteId(reviewId);
-    setDeleteReviewModalOpen(true);
-  };
-
-  const executeDeleteReview = async () => {
-    if (!reviewToDeleteId) return;
-    try {
-      await learningService.deleteCourseReview(reviewToDeleteId);
-      setReviews(reviews.filter(r => r.id !== reviewToDeleteId));
-      showToast("Avaliação excluída com sucesso.", "success");
-    } catch (err) {
-      showToast("Erro ao excluir avaliação.", "error");
-    } finally {
-      setDeleteReviewModalOpen(false);
-      setReviewToDeleteId(null);
-    }
-  };
-
-  const handleEditReply = (review: any) => {
-    setReplyingReviewId(review.id);
-    setReplyText(review.instructor_reply || "");
-  };
-
-  const handleReplySubmit = async (reviewId: number) => {
-    if (!replyText.trim()) return;
-    try {
-      await api.patch(`/courses/reviews/${reviewId}/`, { instructor_reply: replyText });
-      const updatedReviews = await learningService.getCourseReviews(courseId);
-      setReviews(updatedReviews);
-      setReplyingReviewId(null);
-      setReplyText("");
-      showToast("Resposta salva com sucesso!", "success");
-    } catch (err) {
-      showToast("Erro ao salvar resposta do instrutor.", "error");
-    }
-  };
-
-  const confirmDeleteReply = (reviewId: number) => {
-    setReplyToDeleteId(reviewId);
-    setDeleteReplyModalOpen(true);
-  };
-
-  const executeDeleteReply = async () => {
-    if (!replyToDeleteId) return;
-    try {
-      await api.patch(`/courses/reviews/${replyToDeleteId}/`, { instructor_reply: null });
-      const updatedReviews = await learningService.getCourseReviews(courseId);
-      setReviews(updatedReviews);
-      showToast("Resposta excluída com sucesso.", "success");
-    } catch (err) {
-      showToast("Erro ao excluir resposta do instrutor.", "error");
-    } finally {
-      setDeleteReplyModalOpen(false);
-      setReplyToDeleteId(null);
-    }
-  };
-
-  const averageRating = reviews.length > 0 
-    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+  const averageRating = reviewsList.length > 0 
+    ? (reviewsList.reduce((acc: number, r: any) => acc + r.rating, 0) / reviewsList.length).toFixed(1)
     : "0.0";
 
   return (
@@ -199,10 +49,15 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
         </div>
       )}
 
-      {isInstructor ? (
+      {isOwnerInstructor ? (
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-md space-y-1">
+          <p className="text-xs font-bold text-black">Restrição de Instrutor</p>
+          <p className="text-[11px] text-black">Como criador/instrutor deste curso, você não pode enviar avaliações para o seu próprio conteúdo.</p>
+        </div>
+      ) : isInstructor ? (
         <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 shadow-md">
-          <p className="text-xs font-bold text-black-900">Painel do Instrutor</p>
-          <p className="text-[11px] text-black-700 mt-0.5">Você está visualizando as avaliações dos alunos do seu curso. Como instrutor, você pode responder ou gerenciar seus comentários abaixo.</p>
+          <p className="text-xs font-bold text-gray-900">Painel do Instrutor</p>
+          <p className="text-[11px] text-gray-700 mt-0.5">Você está visualizando as avaliações. Como instrutor, você pode responder aos comentários dos alunos abaixo.</p>
         </div>
       ) : !userExistingReview || editingReviewId ? (
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
@@ -274,7 +129,7 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-bold text-gray-800 text-sm">Avaliações da Turma ({reviews.length})</h4>
+          <h4 className="font-bold text-gray-800 text-sm">Avaliações da Turma ({reviewsList.length})</h4>
           <div className="flex items-center gap-1 text-xs font-bold text-gray-700 px-3 py-1 rounded-full">
             <Star size={14} className="fill-[#FF7A00] text-[#FF7A00]" />
             <span>{averageRating} / 5.0</span>
@@ -283,11 +138,11 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
 
         {loadingReviews ? (
           <div className="flex justify-center p-6"><Loader2 className="w-5 h-5 animate-spin text-[#FF7A00]" /></div>
-        ) : reviews.length === 0 ? (
+        ) : reviewsList.length === 0 ? (
           <p className="text-xs text-gray-500 text-center py-6 bg-white rounded-xl border border-gray-100">Ainda não há avaliações para este curso.</p>
         ) : (
           <div className="space-y-3">
-            {reviews.map((rev: any) => (
+            {reviewsList.map((rev: any) => (
               <div key={rev.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
@@ -319,14 +174,14 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
                     {isInstructor && (
                       <div className="flex items-center gap-0.5">
                         <button
-                          onClick={() => handleEditReply(rev)}
+                          onClick={() => { setReplyingReviewId(rev.id); setReplyText(rev.instructor_reply); }}
                           title="Editar resposta"
                           className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-full transition-colors cursor-pointer"
                         >
                           <Edit3 size={13} />
                         </button>
                         <button
-                          onClick={() => confirmDeleteReply(rev.id)}
+                          onClick={() => { setReviewToDeleteId(rev.id); setDeleteReplyModalOpen(true); }}
                           title="Excluir resposta"
                           className="p-1.5 text-rose-500 hover:bg-gray-200 rounded-full transition-colors cursor-pointer"
                         >
@@ -384,7 +239,7 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
                         <Edit3 size={15} />
                       </button>
                       <button
-                        onClick={() => confirmDeleteReview(rev.id)}
+                        onClick={() => { setReviewToDeleteId(rev.id); setDeleteReviewModalOpen(true); }}
                         title="Excluir"
                         className="p-2 text-rose-500 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                       >
@@ -400,7 +255,7 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
       </div>
 
       {deleteReviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle size={24} />
@@ -428,7 +283,7 @@ export default function CourseReviews({ courseId }: CourseReviewsProps) {
       )}
 
       {deleteReplyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle size={24} />

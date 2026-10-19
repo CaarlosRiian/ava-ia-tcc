@@ -68,7 +68,7 @@ class CourseViewSet(ModelViewSet):
         if self.request.user.role != "professor":
             raise PermissionDenied("Apenas professores podem criar cursos")
         
-        course = serializer.save(professor=self.request.user)
+        course = serializer.save(professor=self.request.user, published=True)
         
         Enrollment.objects.get_or_create(
             user=self.request.user,
