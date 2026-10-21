@@ -22,9 +22,12 @@ export type CourseAPI = {
   id: string;
   title: string;
   description?: string;
-  category?: string | { id: string; name: string };
-  price?: number | number;
-  thumbnail?: string | null
+  
+  categories?: Category[];
+  category?: string | { id: string | number; name: string }; 
+
+  price?: number;
+  thumbnail?: string | null;
   alunos: number;
   modules: Module[];
   learning_objectives?: string[];
@@ -45,10 +48,13 @@ export interface CourseRecommendation {
   description?: string;
   thumbnail?: string | null;
   professor: string;
+  
+  categories?: Category[];
   category?: {
     id: number;
     name: string;
   };
+
   min_age?: number;
   max_age?: number;
   target_area?: string;

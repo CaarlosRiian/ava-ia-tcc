@@ -195,7 +195,7 @@ export default function GerenciamentoAulas() {
                 cursos.map((c) => (
                   <CourseCard
                     key={c.id}
-                    curso={c}
+                    curso={{ ...c, alunos: c.alunos ?? 0 }}
                     isSelected={String(cursoSelecionado) === String(c.id)}
                     onClick={() => setCursoSelecionado(String(c.id))}
                     onEdit={() => { setEditingCourse(c); setOpenModal(true); }}

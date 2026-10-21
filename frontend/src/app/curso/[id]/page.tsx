@@ -8,7 +8,8 @@ import Breadcrumb from "@/components/BreadCrumb";
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseHero from "./CourseHero";
 import CourseLessonsSidebar from "./CourseLessonsSidebar";
-import { getCourseDetail, getMyCourses, toggleCourseFavorite } from "@/services/courses";
+import { getCourseDetail, getMyCourses } from "@/services/courses";
+import { getWishlist, toggleWishlist } from "../../lista_desejos/wishlist.service"; 
 import Footer from "@/components/Footer";
 
 export default function CursoDetalhe() {
@@ -19,7 +20,7 @@ export default function CursoDetalhe() {
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false); 
+  const [isInWishlist, setIsInWishlist] = useState(false); 
 
   useEffect(() => {
     async function checkAuthAndFetchCourse() {
@@ -31,21 +32,10 @@ export default function CursoDetalhe() {
           return;
         }
 
-        const responseFavorites = await fetch(`http://localhost:8000/api/favorites/`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (responseFavorites.status === 401) {
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
-          window.location.href = "/entrar";
-          return;
-        }
-
-        const rawFavorites = responseFavorites.ok ? await responseFavorites.json() : [];
-        const favoritesArray = Array.isArray(rawFavorites) 
-          ? rawFavorites 
-          : (Array.isArray(rawFavorites?.results) ? rawFavorites.results : []);
+        const rawWishlist = await getWishlist(token).catch(() => []);
+        const wishlistArray = Array.isArray(rawWishlist) 
+          ? rawWishlist 
+          : (Array.isArray(rawWishlist?.results) ? rawWishlist.results : []);
 
         const [myCourses, courseData] = await Promise.all([
           getMyCourses(),
@@ -66,9 +56,12 @@ export default function CursoDetalhe() {
           return;
         }
 
-        const alreadyFavorited = favoritesArray.some((f: any) => Number(f.course) === courseId);
+        const alreadyInWishlist = wishlistArray.some((item: any) => {
+          const cId = typeof item.course === 'object' ? item.course?.id : item.course;
+          return Number(cId) === courseId;
+        });
         
-        setIsFavorited(alreadyFavorited);
+        setIsInWishlist(alreadyInWishlist);
         setCourse(courseData);
         setIsAuthorized(true);
       } catch (err) {
@@ -84,19 +77,21 @@ export default function CursoDetalhe() {
     }
   }, [courseId, router]);
 
-  const handleToggleFavorite = async () => {
-    const previousState = isFavorited;
+  const handleToggleWishlist = async () => {
+    const previousState = isInWishlist;
     try {
-      setIsFavorited(!isFavorited);
+      setIsInWishlist(!isInWishlist);
 
-      const data = await toggleCourseFavorite(courseId);
+      const token = localStorage.getItem("access") || "";
       
-      if (data && typeof data.favorited === "boolean") {
-        setIsFavorited(data.favorited);
+      const data = await toggleWishlist(token, courseId);
+      
+      if (data && typeof data.in_wishlist === "boolean") {
+        setIsInWishlist(data.in_wishlist);
       }
     } catch (error) {
-      console.error("Erro ao favoritar curso:", error);
-      setIsFavorited(previousState);
+      console.error("Erro ao atualizar lista de desejos:", error);
+      setIsInWishlist(previousState); 
     }
   };
 
@@ -133,8 +128,8 @@ export default function CursoDetalhe() {
           <div className="lg:col-span-2 space-y-8">
             <CourseHero
               course={course}
-              isFavorited={isFavorited}
-              onFavoriteToggle={handleToggleFavorite}
+              isFavorited={isInWishlist} 
+              onFavoriteToggle={handleToggleWishlist}
               onPlayClick={(e) => {
                 if (e) {
                   e.preventDefault();

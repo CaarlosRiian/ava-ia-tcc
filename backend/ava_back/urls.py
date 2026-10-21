@@ -3,7 +3,7 @@ from ava_back.views.lesson_views import CourseReviewListCreateView, CourseReview
 from rest_framework.routers import DefaultRouter
 from .views import ( CourseViewSet, UserViewSet, CategoryViewSet, ModuleViewSet, 
     LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, 
-    EmailTokenView, me, FavoriteViewSet, 
+    EmailTokenView, me, WishListViewSet, 
     LessonMaterialViewSet)
 from ava_back.views.instructor_views import ProfessorDetailView
 
@@ -16,7 +16,7 @@ router.register(r'lessons', LessonViewSet)
 router.register(r'materials', LessonMaterialViewSet, basename='lesson-material')
 router.register(r'enrollments', EnrollmentViewSet)
 router.register(r'instructor-requests', InstructorRequestViewSet, basename='instructor-requests')
-router.register(r'favorites', FavoriteViewSet, basename='favorites')
+router.register(r'wishlist', WishListViewSet, basename='wishlist')
 
 urlpatterns = [
     path('me/', me),  

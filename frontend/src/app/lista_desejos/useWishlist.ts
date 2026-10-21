@@ -1,40 +1,38 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getFavorites, toggleFavorite } from "./favorites.service";
+import { getWishlist, toggleWishlist } from "./wishlist.service";
 
-export interface FavoriteCourse {
+export interface WishlistItem {
   id: number;
   course: number;
   title: string;
   author: string;
-  hours: number;
+  price?: string | number;
+  hours?: number;
   thumbnail?: string | null;  
   lessons_count: number;
 }
 
-export function useFavorites() {
-  const [favoriteCourses, setFavoriteCourses] = useState<FavoriteCourse[]>([]);
+export function useWishlist() {
+  const [wishlistCourses, setWishlistCourses] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
-
   const router = useRouter();
 
   useEffect(() => {
-    fetchFavorites();
+    fetchWishlist();
   }, []);
 
-  async function fetchFavorites() {
+  async function fetchWishlist() {
     try {
       const token = localStorage.getItem("access");
-
       if (!token) {
         router.push("/entrar");
         return;
       }
 
-      const data = await getFavorites(token);
-      setFavoriteCourses(data);
+      const data = await getWishlist(token);
+      const list = data?.results || data || [];
+      setWishlistCourses(list);
     } catch (error) {
       console.error(error);
     } finally {
@@ -42,14 +40,14 @@ export function useFavorites() {
     }
   }
 
-  async function removeFavorite(courseId: number) {
+  async function removeItem(courseId: number) {
     try {
       const token = localStorage.getItem("access");
       if (!token) return;
 
-      await toggleFavorite(token, courseId);
+      await toggleWishlist(token, courseId);
 
-      setFavoriteCourses((prev) =>
+      setWishlistCourses((prev) =>
         prev.filter((item) => item.course !== courseId)
       );
     } catch (error) {
@@ -58,8 +56,8 @@ export function useFavorites() {
   }
 
   return {
-    favoriteCourses,
+    wishlistCourses,
     loading,
-    removeFavorite,
+    removeItem,
   };
 }

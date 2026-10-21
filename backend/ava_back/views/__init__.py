@@ -1,5 +1,5 @@
 from .user_views import UserViewSet, me, professor_by_slug
-from .course_views import CourseViewSet, CategoryViewSet, FavoriteViewSet
+from .course_views import CourseViewSet, CategoryViewSet, WishListViewSet
 from .lesson_views import ( ModuleViewSet, LessonViewSet, LessonMaterialViewSet,  LessonSubmitView )
 from .enrollment_views import EnrollmentViewSet
 from .instructor_views import InstructorRequestViewSet
@@ -11,7 +11,7 @@ __all__ = [
     'professor_by_slug',
     'CourseViewSet',
     'CategoryViewSet',
-    'FavoriteViewSet',
+    'WishListViewSet',
     'ModuleViewSet',
     'LessonViewSet',
     'LessonMaterialViewSet',  

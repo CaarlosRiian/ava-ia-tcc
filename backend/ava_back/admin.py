@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import ( User, Category, Course, Module, Lesson, LessonMaterial, 
-    Enrollment, AIAssistant, InstructorRequest, Favorite, LessonChallenge, LessonSubmission, StudentChallengeSubmission, LessonProgress )
+    Enrollment, AIAssistant, InstructorRequest, LessonChallenge, LessonSubmission, StudentChallengeSubmission, LessonProgress, Wishlist )
 
 class LessonMaterialInline(admin.StackedInline):
     model = LessonMaterial
@@ -19,11 +19,13 @@ class ModuleInline(admin.TabularInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'professor', 'published', 'created_at')
-    list_filter = ('category', 'published', 'created_at')
+    list_display = ('title', 'get_categories', 'professor', 'published', 'created_at')
+    list_filter = ('categories', 'published', 'created_at')
     search_fields = ('title', 'description')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('preview_thumbnail',)
+    
+    filter_horizontal = ('categories',)
 
     fieldsets = (
         (
@@ -33,7 +35,7 @@ class CourseAdmin(admin.ModelAdmin):
                     'title',
                     'slug',
                     'description',
-                    'category',
+                    'categories',  
                     'price',
                     'professor',
                     'published'
@@ -52,6 +54,10 @@ class CourseAdmin(admin.ModelAdmin):
     )
 
     inlines = [ModuleInline]
+
+    def get_categories(self, obj):
+        return ", ".join([c.name for c in obj.categories.all()])
+    get_categories.short_description = 'Categorias'
 
     def preview_thumbnail(self, obj):
         if obj.thumbnail:
@@ -106,8 +112,8 @@ class InstructorRequestAdmin(admin.ModelAdmin):
     list_filter = ("status", "created_at")
     search_fields = ("especialidade", "bio", "user__username")
 
-@admin.register(Favorite)
-class FavoriteAdmin(admin.ModelAdmin):
+@admin.register(Wishlist)
+class WishlistAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'course', 'created_at')
     search_fields = ('user__username', 'course__title')
     list_filter = ('created_at',)

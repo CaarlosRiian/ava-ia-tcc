@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, User, Clock, BookOpen } from "lucide-react";
+import { ArrowLeft, User, Clock, BookOpen, Heart } from "lucide-react";
 import { formatName } from "@/utils/formatName"; 
 
 interface CourseHeroProps {
@@ -11,9 +11,11 @@ interface CourseHeroProps {
     hours?: number;
     modules?: any[];
   };
+  isInWishlist?: boolean;
+  onToggleWishlist?: () => void;
 }
 
-export default function CourseHero({ course }: CourseHeroProps) {
+export default function CourseHero({ course, isInWishlist = false, onToggleWishlist }: CourseHeroProps) {
   const rawInstructor = course.professor_name || "Instrutor";
   
   const instructor = rawInstructor !== "Instrutor" ? formatName(rawInstructor) : rawInstructor;
@@ -37,12 +39,29 @@ export default function CourseHero({ course }: CourseHeroProps) {
       )}
       
       <div className="relative max-w-7xl mx-auto w-full px-6 md:px-2 py-8 md:py-20 text-primary-foreground">
-        <Link
-          href="/descobrir"
-          className="inline-flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar para cursos
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/descobrir"
+            className="inline-flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Voltar para cursos
+          </Link>
+
+          {onToggleWishlist && (
+            <button
+              onClick={onToggleWishlist}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur transition-all active:scale-95 cursor-pointer border ${
+                isInWishlist
+                  ? "bg-red-500/20 text-red-100 border-red-400/40 hover:bg-red-500/30"
+                  : "bg-white/15 text-primary-foreground border-white/20 hover:bg-white/25"
+              }`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${isInWishlist ? "fill-red-400 text-red-400" : ""}`} />
+              <span>{isInWishlist ? "Salvo nos Desejos" : "Salvar na Lista"}</span>
+            </button>
+          )}
+        </div>
+
         <div className="max-w-3xl">
           <span className="inline-block text-xs uppercase tracking-wider bg-white/15 backdrop-blur px-3 py-1 rounded-full mb-4">
             Curso completo

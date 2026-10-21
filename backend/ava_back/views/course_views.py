@@ -2,6 +2,7 @@ from django.db.models import Prefetch
 from django.http import HttpResponse, request
 from django_filters.rest_framework import DjangoFilterBackend
 
+from ava_back.serializers.interaction import WishlistSerializer
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
@@ -10,9 +11,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Favorite, StudentChallengeSubmission
+from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Wishlist, StudentChallengeSubmission
 from ..serializers import ( CourseSerializer, CategorySerializer, CourseDetailSerializer, 
-    InstructorCourseSerializer, FavoriteSerializer )
+    InstructorCourseSerializer )
 from ..services.service import LessonService, CourseService 
 
 class CategoryViewSet(ModelViewSet):
@@ -25,14 +26,15 @@ class CategoryViewSet(ModelViewSet):
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
-    queryset = Course.objects.all().order_by('-id')
+    queryset = Course.objects.prefetch_related('categories', 'modules', 'professor').all()
     
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    search_fields = ['title', 'category__name']
-    filterset_fields = ['category']
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]   
+    
+    search_fields = ['title', 'categories__name']
+    filterset_fields = ['categories']
 
     def get_serializer_class(self):
         if self.action in ['retrieve', 'update', 'partial_update']:
@@ -41,9 +43,9 @@ class CourseViewSet(ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            qs = Course.objects.select_related('professor', 'category')
+            qs = Course.objects.select_related('professor').prefetch_related('categories')
         else:
-            qs = Course.objects.filter(published=True).select_related('professor', 'category')
+            qs = Course.objects.filter(published=True).select_related('professor').prefetch_related('categories')
 
         if self.action in ['retrieve', 'instructor_dashboard']:
             qs = qs.prefetch_related(
@@ -170,9 +172,9 @@ class CourseViewSet(ModelViewSet):
         courses = Course.objects.filter(
             professor=request.user
         ).select_related(
-            'professor',
-            'category'
+            'professor'
         ).prefetch_related(
+            'categories',
             'modules__lessons'
         )
 
@@ -212,12 +214,12 @@ class CourseViewSet(ModelViewSet):
         serializer = self.get_serializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class FavoriteViewSet(ModelViewSet):
-    serializer_class = FavoriteSerializer
+class WishListViewSet(ModelViewSet):
+    serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Favorite.objects.filter(
+        return Wishlist.objects.filter(
             user=self.request.user
         ).select_related(
             'course',
@@ -237,18 +239,32 @@ class FavoriteViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        favorite = Favorite.objects.filter(
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Curso não encontrado."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if course.professor == request.user:
+            return Response(
+                {"error": "Você é o instrutor deste curso e não pode adicioná-lo à sua Lista de Desejos."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        wishlist_item = Wishlist.objects.filter(
             user=request.user,
             course_id=course_id
         ).first()
 
-        if favorite:
-            favorite.delete()
-            return Response({"favorited": False}, status=status.HTTP_200_OK)
+        if wishlist_item:
+            wishlist_item.delete()
+            return Response({"in_wishlist": False}, status=status.HTTP_200_OK)
 
-        Favorite.objects.create(
+        Wishlist.objects.create(
             user=request.user,
-            course_id=course_id
+            course=course
         )
 
-        return Response({"favorited": True}, status=status.HTTP_201_CREATED)
+        return Response({"in_wishlist": True}, status=status.HTTP_201_CREATED)

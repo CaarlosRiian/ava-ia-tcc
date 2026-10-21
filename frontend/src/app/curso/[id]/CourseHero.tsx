@@ -6,7 +6,7 @@ import { User, BookOpen, Play, Heart, Award, CheckCircle2, Sparkles, GraduationC
 
 interface CourseHeroProps {
   course: any;
-  isFavorited: boolean;
+  isFavorited: boolean; 
   onFavoriteToggle: () => void;
   onPlayClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
@@ -30,7 +30,7 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-x text-[11px] font-bold bg-gray-100 text-[black] border border-gray-100">
-             Vídeo de Apresentação
+              Vídeo de Apresentação
           </span>
           <span className="text-xs text-zinc-400 font-medium">Visão geral do curso</span>
         </div>
@@ -81,14 +81,19 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
         >
           <Heart className={`h-4 w-4 transition-transform ${isFavorited ? "fill-red-600 text-red-600 scale-110" : ""}`} />
           <span className="hidden sm:inline">
-            {isFavorited ? "Favoritado" : "Favoritar"}
+            {isFavorited ? "Na Lista de Desejos" : "Adicionar aos Desejos"}
           </span>
         </button>
       </div>
 
-      <p className="text-sm text-zinc-600 font-normal leading-relaxed bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm">
-        {course.description}
-      </p>
+      <div className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm space-y-2">
+        <span className="block text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">
+          Descrição
+        </span>
+        <p className="text-sm text-zinc-600 font-normal leading-relaxed">
+          {course.description}
+        </p>
+      </div>
 
       <Link 
         href={`/professor/${professorSlug}`}
@@ -100,7 +105,7 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">Instrutor da Disciplina</p>
-            <h3 className="text-sm font-bold text-zinc-900 group-hover:text-blue-600 transition-colors mt-0.5">
+            <h3 className="text-sm font-bold text-zinc-900 group-hover:text-black transition-colors mt-0.5">
               {course.professor_name ? formatName(course.professor_name) : "Professor Titular"}
             </h3>
           </div>

@@ -3,17 +3,17 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LayoutGrid, Palette, BrainCircuit, FlaskConical, UserRound, PenTool, ChefHat,
-  Code2, Megaphone, Briefcase, Cloud, Wallet, BookOpen, Layers } from "lucide-react";
+  Code2, Megaphone, Briefcase, Cloud, Wallet, Layers } from "lucide-react";
 
 interface Category {
-  id: number;
+  id: number | string;
   name: string;
 }
 
 interface Props {
   categories: Category[];
-  activeCategory: number | null;
-  onSelect: (id: number | null) => void;
+  activeCategory: number | string | null;
+  onSelect: (id: number | string | null) => void;
 }
 
 const ICON_MAP: { keywords: string[]; icon: React.ElementType }[] = [
@@ -110,7 +110,7 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
 
         {categories.map((cat) => {
           const Icon = getCategoryIcon(cat.name);
-          const isActive = activeCategory === cat.id;
+          const isActive = activeCategory !== null && String(activeCategory) === String(cat.id);
           return (
             <button
               key={cat.id}

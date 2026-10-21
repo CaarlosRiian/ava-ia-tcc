@@ -32,9 +32,9 @@ function ExplorarContent() {
   const searchUrlParam = searchParams.get("search") || "";
   const categoryUrlParam = searchParams.get("category"); 
 
-  const [activeCategory, setActiveCategory] = useState<number | null>(
-    categoryUrlParam ? Number(categoryUrlParam) : null
-  );
+  const [activeCategory, setActiveCategory] = useState<number | string | null>(
+  categoryUrlParam ? Number(categoryUrlParam) : null
+);
   const [courses, setCourses] = useState<any[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
   const [newAreasCourses, setNewAreasCourses] = useState<any[]>([]);
@@ -94,21 +94,23 @@ function ExplorarContent() {
         }
 
         const recommended = shuffledCourses.filter((course: any) => {
-          const catName = typeof course.category === "object" 
-            ? course.category?.name 
-            : allCategories.find((c: any) => c.id === course.category)?.name;
-          
-          return userInterests.some((interest: string) => interest === catName?.toLowerCase());
+          const courseCats = course.categories || [];
+          const matchesAnyCategory = courseCats.some((cat: any) => {
+            const catName = typeof cat === "object" ? cat.name : allCategories.find((c: any) => c.id === cat)?.name;
+            return userInterests.includes(catName?.toLowerCase());
+          });
+          return matchesAnyCategory;
         });
 
         setRecommendedCourses(recommended.length > 0 ? recommended : shuffledCourses.slice(0, 4));
 
         const newAreas = shuffledCourses.filter((course: any) => {
-          const catName = typeof course.category === "object" 
-            ? course.category?.name 
-            : allCategories.find((c: any) => c.id === course.category)?.name;
-
-          return !userInterests.includes(catName?.toLowerCase());
+          const courseCats = course.categories || [];
+          const matchesAnyCategory = courseCats.some((cat: any) => {
+            const catName = typeof cat === "object" ? cat.name : allCategories.find((c: any) => c.id === cat)?.name;
+            return userInterests.includes(catName?.toLowerCase());
+          });
+          return !matchesAnyCategory;
         });
 
         setNewAreasCourses(newAreas.length > 0 ? newAreas : shuffledCourses.slice(4, 8));
@@ -123,15 +125,36 @@ function ExplorarContent() {
   }, [currentPage]);
 
   const filteredCourses = courses.filter((course) => {
-    const courseCatId = typeof course.category === "object" ? course.category?.id : course.category;
-    const matchesCategory = activeCategory ? courseCatId === activeCategory : true;
+
+    let courseCategoryIds: (number | string)[] = [];
+
+    if (Array.isArray(course.categories)) {
+      courseCategoryIds = course.categories.map((cat: any) => 
+        typeof cat === "object" && cat !== null ? cat.id : cat
+      );
+    } else if (course.category) {
+      courseCategoryIds = [course.category];
+    }
+
+    const matchesCategory = activeCategory !== null
+      ? courseCategoryIds.some((catId) => {
+          const isMatch = String(catId) === String(activeCategory);
+          return isMatch;
+        })
+      : true;
 
     const matchesSearch = (() => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       const titleMatch = course.title?.toLowerCase().includes(query);
-      const categoryName = typeof course.category === "object" ? course.category?.name : categories.find((c) => c.id === course.category)?.name;
-      return titleMatch || categoryName?.toLowerCase().includes(query);
+      
+      const matchesCategoryName = courseCategoryIds.some((cat: any) => {
+        const catName = typeof cat === "object" 
+          ? cat?.name 
+          : categories.find((c) => String(c.id) === String(cat))?.name;
+        return catName?.toLowerCase().includes(query);
+      });
+      return titleMatch || matchesCategoryName;
     })();
 
     const totalLessons = course.modules?.length || 0;
@@ -204,7 +227,11 @@ function ExplorarContent() {
         </div>
 
         <div className="mb-4">
-          <CategoryFilters categories={categories} activeCategory={activeCategory} onSelect={setActiveCategory} />
+          <CategoryFilters 
+            categories={categories} 
+            activeCategory={activeCategory} 
+            onSelect={(id) => setActiveCategory(id !== null ? Number(id) : null)} 
+          />
         </div>
 
         {showAdvanced && (

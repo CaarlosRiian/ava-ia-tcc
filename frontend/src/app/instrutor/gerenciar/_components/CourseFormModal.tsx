@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import type { CourseUI } from "@/types/course";
 import { deleteCourse } from "@/app/instrutor/gerenciar/_services/courses";
 import { DeleteCourseModal } from "./DeleteCourseModal";
+import { CategoryTagInput } from "./CategoryTagInput"; 
 import { Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,7 +26,7 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryIds, setCategoryIds] = useState<number[]>([]); 
   const [price, setPrice] = useState("");
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -33,19 +34,20 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
-  const categoriesList = Array.isArray(categories) 
-    ? categories 
-    : (categories?.results || []);
-
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || "");
       setDescription(initialData.description || "");
-      setCategory(
-        typeof initialData.category === "object"
-          ? initialData.category.id
-          : initialData.category || ""
-      );
+      
+      if (initialData.categories && Array.isArray(initialData.categories)) {
+        setCategoryIds(initialData.categories.map((c: any) => typeof c === 'object' ? c.id : c));
+      } else if (initialData.category) {
+        const singleId = typeof initialData.category === "object" ? initialData.category.id : initialData.category;
+        setCategoryIds(singleId ? [Number(singleId)] : []);
+      } else {
+        setCategoryIds([]);
+      }
+
       setPrice(initialData.price?.toString() || "");
 
       if (initialData.thumbnail) {
@@ -63,7 +65,7 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
     } else {
       setTitle("");
       setDescription("");
-      setCategory("");
+      setCategoryIds([]);
       setPrice("");
       setThumbnail(null);
       setPreview(null);
@@ -89,15 +91,18 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
       return toast.error("Digite o nome do curso");
     }
 
-    if (!category) {
-      return toast.error("Selecione uma categoria");
+    if (categoryIds.length === 0) {
+      return toast.error("Selecione pelo menos uma categoria");
     }
 
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("category", category);
     formData.append("price", price || "0");
+
+    categoryIds.forEach((id) => {
+      formData.append("category_ids", id.toString());
+    });
 
     if (thumbnail) {
       formData.append("thumbnail", thumbnail);
@@ -174,41 +179,30 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-gray-700">Categoria</Label>
-                <select
-                  className="w-full border border-gray-200 rounded-xl h-11 px-3 text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FF7A00] text-gray-700 shadow-sm"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="">Selecione uma categoria</option>
-                  {categoriesList.map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <CategoryTagInput
+                selectedCategoryIds={categoryIds}
+                onChange={setCategoryIds}
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-gray-700">Preço do Curso</Label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-semibold text-sm">
-                    R$
-                  </div>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    className="pl-9 bg-white border-gray-200 rounded-xl h-11 text-sm focus-visible:ring-[#FF7A00]"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                  />
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-gray-700">Preço do Curso</Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-semibold text-sm">
+                  R$
                 </div>
-                <p className="text-[11px] text-gray-400 font-medium">
-                  {Number(price) > 0 ? `O curso ficará por R$ ${Number(price).toFixed(2)}` : "Curso gratuito (R$ 0,00)"}
-                </p>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  className="pl-9 bg-white border-gray-200 rounded-xl h-11 text-sm focus-visible:ring-[#FF7A00]"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
               </div>
+              <p className="text-[11px] text-gray-400 font-medium">
+                {Number(price) > 0 ? `O curso ficará por R$ ${Number(price).toFixed(2)}` : "Curso gratuito (R$ 0,00)"}
+              </p>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-gray-100">
