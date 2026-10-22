@@ -38,7 +38,12 @@ class CourseAdmin(admin.ModelAdmin):
                     'categories',  
                     'price',
                     'professor',
-                    'published'
+                    'published',
+                    'intro_video',        
+                    'min_age',
+                    'max_age',
+                    'target_area',
+                    'learning_objectives'
                 )
             }
         ),

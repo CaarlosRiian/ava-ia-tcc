@@ -78,7 +78,7 @@ class Course(models.Model):
     )
     published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    intro_video = models.CharField(max_length=255, blank=True, null=True)
     min_age = models.PositiveIntegerField(default=0)     
     max_age = models.PositiveIntegerField(default=100)   
     target_area = models.CharField(max_length=100, blank=True, null=True)

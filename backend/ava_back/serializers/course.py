@@ -11,6 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)
     thumbnail = serializers.ImageField(required=False)
+    intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True) 
     hours = serializers.SerializerMethodField()
     modules = ModuleSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
@@ -18,7 +19,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'categories', 'category_ids', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules', 'learning_objectives']
+        fields = ['id', 'title', 'description', 'categories', 'category_ids', 'professor_name', 'price', 'thumbnail', 'intro_video', 'published', 'created_at', 'hours', 'modules', 'learning_objectives']
         read_only_fields = ['id', 'created_at', 'slug']
 
     def to_representation(self, instance):
@@ -35,13 +36,14 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     modules = ModuleDetailSerializer(many=True, read_only=True)
     professor_name = serializers.CharField(source='professor.username', read_only=True)
     thumbnail = serializers.ImageField(required=False)
+    intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
     categories = CategorySerializer(many=True, read_only=True)
     hours = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'categories', 'professor_name', 'price', 'thumbnail', 'published', 'created_at', 'hours', 'modules', 'learning_objectives']
+        fields = ['id', 'title', 'description', 'categories', 'professor_name', 'price', 'thumbnail', 'intro_video', 'published', 'created_at', 'hours', 'modules', 'learning_objectives']
         read_only_fields = ['id', 'created_at', 'slug']
 
     def to_representation(self, instance):
@@ -58,11 +60,12 @@ class InstructorCourseSerializer(serializers.ModelSerializer):
     modules = serializers.SerializerMethodField()
     alunos = serializers.SerializerMethodField()
     thumbnail = serializers.ImageField(required=False)
+    intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "categories", "price", "published", "thumbnail", "alunos", "modules", "learning_objectives"]
+        fields = ["id", "title", "description", "categories", "price", "published", "thumbnail", "intro_video", "alunos", "modules", "learning_objectives"]
     
     def get_modules(self, obj):
         modules = obj.modules.all().order_by('order')
