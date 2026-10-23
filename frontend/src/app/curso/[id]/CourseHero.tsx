@@ -19,50 +19,49 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   useEffect(() => {
-  async function fetchSignedUrl() {
-    console.log("=== DEBUG CURSO ===");
-    console.log("Objeto curso recebido:", course);
-    console.log("Campo intro_video:", course?.intro_video);
+    async function fetchSignedUrl() {
 
-    if (!course?.intro_video) {
-      console.warn("O campo intro_video está vazio ou é undefined/null.");
-      return;
-    }
-
-    try {
-      setLoadingVideo(true);
-
-      if (course.intro_video.startsWith("http://") || course.intro_video.startsWith("https://")) {
-        setVideoUrl(course.intro_video);
+      if (!course?.intro_video) {
+        console.warn("O campo intro_video está vazio ou é undefined/null.");
         return;
       }
 
-      console.log("Solicitando Signed URL para o path:", course.intro_video);
+      try {
+        setLoadingVideo(true);
 
-      const { data, error } = await supabase.storage
-        .from("course-lessons")
-        .createSignedUrl(course.intro_video, 3600);
+        if (course.intro_video.startsWith("http://") || course.intro_video.startsWith("https://")) {
+          setVideoUrl(course.intro_video);
+          return;
+        }
 
-      if (error) {
-        console.error("Erro do Supabase Storage ao gerar Signed URL:", error);
-        return;
+        console.log("Solicitando Signed URL para o path:", course.intro_video);
+
+        const { data, error } = await supabase.storage
+          .from("course-lessons")
+          .createSignedUrl(course.intro_video, 3600);
+
+        if (error) {
+          console.error("Erro do Supabase Storage ao gerar Signed URL:", error);
+          return;
+        }
+
+        console.log("Signed URL gerada com sucesso:", data?.signedUrl);
+        if (data?.signedUrl) {
+          setVideoUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error("Erro inesperado ao carregar vídeo:", err);
+      } finally {
+        setLoadingVideo(false);
       }
-
-      console.log("Signed URL gerada com sucesso:", data?.signedUrl);
-      if (data?.signedUrl) {
-        setVideoUrl(data.signedUrl);
-      }
-    } catch (err) {
-      console.error("Erro inesperado ao carregar vídeo:", err);
-    } finally {
-      setLoadingVideo(false);
     }
-  }
 
-  fetchSignedUrl();
-}, [course?.intro_video]);
+    fetchSignedUrl();
+  }, [course?.intro_video]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
     onPlayClick?.(e);
 
     if (videoUrl) {
@@ -96,12 +95,17 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
           className="aspect-video rounded-3xl bg-zinc-900 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-xl border border-zinc-100/80 transition-all hover:shadow-2xl"
         >
           {isPlaying && videoUrl ? (
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              className="w-full h-full object-contain"
-            />
+            <div 
+              className="w-full h-full flex items-center justify-center bg-black"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            </div>
           ) : (
             <>
               {course?.thumbnail && (
@@ -114,7 +118,16 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-300" />
 
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20">
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (videoUrl) {
+                    setIsPlaying(true);
+                  }
+                }}
+                className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20 cursor-pointer"
+              >
                 <div className="w-12 h-12 rounded-xl bg-[#FF7A00] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
                   {loadingVideo ? (
                     <Loader2 className="h-6 w-6 animate-spin text-white" />

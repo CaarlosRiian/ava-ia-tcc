@@ -81,11 +81,11 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'module', 'status', 'visibility', 'order')
+    list_display = ('title', 'module', 'status', 'visibility', 'order', 'video')
     list_filter = ('status', 'visibility', 'module__course')
-    search_fields = ('title', 'slug')
+    search_fields = ('title', 'slug', 'video')
     prepopulated_fields = {'slug': ('title',)}
-    inlines = [LessonMaterialInline]  
+    inlines = [LessonMaterialInline]
 
 @admin.register(LessonMaterial)
 class LessonMaterialAdmin(admin.ModelAdmin):

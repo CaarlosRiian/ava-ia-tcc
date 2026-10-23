@@ -127,7 +127,7 @@ class Lesson(models.Model):
     module = models.ForeignKey('Module', on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
-    video = models.FileField(upload_to='videos/', blank=True, null=True)
+    video = models.CharField(max_length=500, blank=True, null=True)
     duration_seconds = models.IntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default='rascunho')
