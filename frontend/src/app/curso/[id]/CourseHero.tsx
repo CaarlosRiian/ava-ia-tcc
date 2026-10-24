@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link"; 
 import { formatName } from "@/utils/formatName";
-import { User, BookOpen, Play, Heart, Award, CheckCircle2, Sparkles, GraduationCap, ArrowRight } from "lucide-react";
+import { User, Play, Heart, CheckCircle2, GraduationCap, ArrowRight, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient"; 
 
 interface CourseHeroProps {
   course: any;
@@ -12,7 +14,60 @@ interface CourseHeroProps {
 }
 
 export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPlayClick }: CourseHeroProps) {
-  const lessons = course.modules?.flatMap((m: any) => m.lessons) || [];
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [loadingVideo, setLoadingVideo] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  useEffect(() => {
+    async function fetchSignedUrl() {
+
+      if (!course?.intro_video) {
+        console.warn("O campo intro_video está vazio ou é undefined/null.");
+        return;
+      }
+
+      try {
+        setLoadingVideo(true);
+
+        if (course.intro_video.startsWith("http://") || course.intro_video.startsWith("https://")) {
+          setVideoUrl(course.intro_video);
+          return;
+        }
+
+        console.log("Solicitando Signed URL para o path:", course.intro_video);
+
+        const { data, error } = await supabase.storage
+          .from("course-lessons")
+          .createSignedUrl(course.intro_video, 3600);
+
+        if (error) {
+          console.error("Erro do Supabase Storage ao gerar Signed URL:", error);
+          return;
+        }
+
+        console.log("Signed URL gerada com sucesso:", data?.signedUrl);
+        if (data?.signedUrl) {
+          setVideoUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error("Erro inesperado ao carregar vídeo:", err);
+      } finally {
+        setLoadingVideo(false);
+      }
+    }
+
+    fetchSignedUrl();
+  }, [course?.intro_video]);
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onPlayClick?.(e);
+
+    if (videoUrl) {
+      setIsPlaying(true);
+    }
+  };
 
   const professorSlug = course.professor_slug || course.professor?.slug || (course.professor_name
     ? course.professor_name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll(" ", "_")
@@ -30,34 +85,67 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-x text-[11px] font-bold bg-gray-100 text-[black] border border-gray-100">
-              Vídeo de Apresentação
+            Vídeo de Apresentação
           </span>
           <span className="text-xs text-zinc-400 font-medium">Visão geral do curso</span>
         </div>
 
         <div 
-          onClick={(e) => onPlayClick?.(e)} 
+          onClick={handleContainerClick} 
           className="aspect-video rounded-3xl bg-zinc-900 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-xl border border-zinc-100/80 transition-all hover:shadow-2xl"
         >
-          {course?.thumbnail && (
-            <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-            />
+          {isPlaying && videoUrl ? (
+            <div 
+              className="w-full h-full flex items-center justify-center bg-black"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            </div>
+          ) : (
+            <>
+              {course?.thumbnail && (
+                <img
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                />
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-300" />
+
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (videoUrl) {
+                    setIsPlaying(true);
+                  }
+                }}
+                className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20 cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#FF7A00] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  {loadingVideo ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  ) : (
+                    <Play className="h-6 w-6 fill-white ml-0.5" />
+                  )}
+                </div>
+                <div className="pr-2 text-left hidden sm:block">
+                  <p className="text-xs font-bold text-zinc-900">
+                    {loadingVideo ? "Carregando vídeo..." : "Assistir Aula Inicial"}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 font-medium">
+                    {course?.intro_video ? "Clique para dar o play" : "Vídeo indisponível"}
+                  </p>
+                </div>
+              </div>
+            </>
           )}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-300" />
-
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20">
-            <div className="w-12 h-12 rounded-xl bg-[#FF7A00] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <Play className="h-6 w-6 fill-white ml-0.5" />
-            </div>
-            <div className="pr-2 text-left hidden sm:block">
-              <p className="text-xs font-bold text-zinc-900">Assistir Aula Inicial</p>
-              <p className="text-[10px] text-zinc-500 font-medium">Começar introdução</p>
-            </div>
-          </div>
         </div>
       </div>
 

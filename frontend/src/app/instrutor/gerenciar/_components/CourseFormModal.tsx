@@ -11,6 +11,7 @@ import { DeleteCourseModal } from "./DeleteCourseModal";
 import { CategoryTagInput } from "./CategoryTagInput"; 
 import { Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient";
 
 type Props = {
   open: boolean;
@@ -28,8 +29,9 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
   const [description, setDescription] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]); 
   const [price, setPrice] = useState("");
-  const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
@@ -54,20 +56,22 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
         if (initialData.thumbnail.startsWith("http://") || initialData.thumbnail.startsWith("https://")) {
           setPreview(initialData.thumbnail);
         } else {
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "").replace(/\/$/, "") || "";
-          const thumbUrl = initialData.thumbnail.startsWith("/") ? initialData.thumbnail : `/${initialData.thumbnail}`;
-          setPreview(`${baseUrl}${thumbUrl}`);
+          const { data } = supabase.storage
+            .from("course-thumbnails")
+            .getPublicUrl(initialData.thumbnail);
+          setPreview(data.publicUrl);
         }
       } else {
         setPreview(null);
       }
-      setThumbnail(null);
+      
+      setThumbnailFile(null);
     } else {
       setTitle("");
       setDescription("");
       setCategoryIds([]);
       setPrice("");
-      setThumbnail(null);
+      setThumbnailFile(null);
       setPreview(null);
     }
   }, [initialData, open]);
@@ -75,14 +79,14 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setThumbnail(file);
+      setThumbnailFile(file);
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
     }
   };
 
   const handleRemoveThumbnail = () => {
-    setThumbnail(null);
+    setThumbnailFile(null);
     setPreview(null);
   };
 
@@ -95,20 +99,36 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
       return toast.error("Selecione pelo menos uma categoria");
     }
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("price", price || "0");
-
-    categoryIds.forEach((id) => {
-      formData.append("category_ids", id.toString());
-    });
-
-    if (thumbnail) {
-      formData.append("thumbnail", thumbnail);
-    }
-
     try {
+      setUploadingThumb(true);
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("price", price || "0");
+
+      categoryIds.forEach((id) => {
+        formData.append("category_ids", id.toString());
+      });
+
+      if (thumbnailFile) {
+        const courseIdForPath = initialData?.id || "temp";
+        const fileExt = thumbnailFile.name.split('.').pop();
+        const fileName = `thumb-${Date.now()}.${fileExt}`;
+        const filePath = `courses/${courseIdForPath}/thumbnails/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("course-thumbnails")
+          .upload(filePath, thumbnailFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        formData.append("thumbnail", filePath);
+      } else if (initialData?.thumbnail && preview) {
+        formData.append("thumbnail", initialData.thumbnail);
+      } else {
+        formData.append("thumbnail", "");
+      }
+
       if (isEditing && initialData) {
         await onEdit(initialData.id, formData);
         toast.success("Curso atualizado com sucesso!");
@@ -121,6 +141,8 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
     } catch (err) {
       console.error(err);
       toast.error("Erro ao salvar curso");
+    } finally {
+      setUploadingThumb(false);
     }
   }
 
@@ -286,9 +308,10 @@ export function CourseFormModal({ open, onOpenChange, categories, initialData, o
               <Button
                 type="button"
                 onClick={handleSubmit}
-                className="bg-[#FF7A00] hover:bg-[#ea7306] text-white h-11 px-6 rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
+                disabled={uploadingThumb}
+                className="bg-[#FF7A00] hover:bg-[#ea7306] text-white h-11 px-6 rounded-xl text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50"
               >
-                {isEditing ? "Salvar Alterações" : "Criar Curso"}
+                {uploadingThumb ? "A enviar capa..." : isEditing ? "Salvar Alterações" : "Criar Curso"}
               </Button>
             </div>
           </DialogFooter>

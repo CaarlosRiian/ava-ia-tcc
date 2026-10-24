@@ -31,6 +31,7 @@ export type CourseAPI = {
   alunos: number;
   modules: Module[];
   learning_objectives?: string[];
+  intro_video: string | null;
 };
 
 export type CourseUI = CourseAPI & {

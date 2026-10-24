@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Settings, BarChart3, GraduationCap } from "lucide-react";
+import { Settings, BarChart3, GraduationCap, Video } from "lucide-react";
 
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
@@ -12,30 +12,21 @@ import { LessonManager } from "./_components/LessonManager";
 import { CourseFormModal } from "./_components/CourseFormModal";
 import { AddOptionsModal } from "./_components/AddOptionsModal";
 import { EditObjectivesModal } from "./_components/EditObjectivesModal";
+import { IntroVideoModal } from "./_components/IntroVideoModal";
 import { useCourseManagement } from "./_hooks/useCourseManagement";
 import { createCourse, updateCourse } from "./_services/courses";
 import { createMaterial } from "./_services/materials";
 import Footer from "@/components/Footer";
 
 export default function GerenciamentoAulas() {
-  const {
-    cursos,
-    cursoSelecionado,
-    setCursoSelecionado,
-    categories,
-    cursoAtivo,
-    toastConfig,
-    showToast,
-    hideToast,
-    handleCreateModule,
-    handleCreateLesson,
-    setCursos,
+  const { cursos, cursoSelecionado, setCursoSelecionado, categories, cursoAtivo, toastConfig, showToast, hideToast, handleCreateModule, handleCreateLesson, setCursos,
   } = useCourseManagement();
 
   const [openAddOptionsModal, setOpenAddOptionsModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
   const [openObjectivesModal, setOpenObjectivesModal] = useState(false);
+  const [openIntroVideoModal, setOpenIntroVideoModal] = useState(false);
 
   const handleToggle = async (cId: string, aId: string) => {
     setCursos((prev) =>
@@ -113,6 +104,30 @@ export default function GerenciamentoAulas() {
     } catch (error) {
       console.error("Erro ao salvar objetivos:", error);
       showToast("Falha ao salvar objetivos de aprendizado.", "error");
+      throw error;
+    }
+  };
+
+  const handleSaveIntroVideo = async (videoPath: string | null) => {
+    if (!cursoAtivo) return;
+
+    try {
+      const token = localStorage.getItem("access");
+      const response = await axios.patch(
+        `http://localhost:8000/api/courses/${cursoAtivo.id}/`,
+        { intro_video: videoPath },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setCursos((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(cursoAtivo.id)
+            ? { ...c, ...response.data }
+            : c
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao salvar aula introdutória:", error);
       throw error;
     }
   };
@@ -219,13 +234,22 @@ export default function GerenciamentoAulas() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setOpenObjectivesModal(true)}
+                      onClick={() => setOpenIntroVideoModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 text-[#FF7A00] hover:bg-orange-100 font-bold text-xs transition border border-orange-100 cursor-pointer"
                     >
-                      <GraduationCap size={15} />
-                      <span>Objetivos do Curso</span>
+                      <Video size={15} />
+                      <span>Aula Introdutória</span>
                     </button>
-                    <BarChart3 className="h-5 w-5 text-[#FF7A00]" />
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenObjectivesModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50 text-gray-700 hover:bg-gray-100 font-bold text-xs transition border border-gray-200 cursor-pointer"
+                    >
+                      <GraduationCap size={15} />
+                      <span>Objetivos</span>
+                    </button>
+                    <BarChart3 className="h-5 w-5 text-[#FF7A00] ml-1" />
                   </div>
                 </div>
 
@@ -273,14 +297,25 @@ export default function GerenciamentoAulas() {
       />
 
       {cursoAtivo && (
-        <EditObjectivesModal
-          open={openObjectivesModal}
-          onOpenChange={setOpenObjectivesModal}
-          courseId={cursoAtivo.id}
-          initialObjectives={cursoAtivo.learning_objectives || []}
-          onSave={handleSaveObjectives}
-          onShowToast={showToast}
-        />
+        <>
+          <EditObjectivesModal
+            open={openObjectivesModal}
+            onOpenChange={setOpenObjectivesModal}
+            courseId={cursoAtivo.id}
+            initialObjectives={cursoAtivo.learning_objectives || []}
+            onSave={handleSaveObjectives}
+            onShowToast={showToast}
+          />
+
+          <IntroVideoModal
+            open={openIntroVideoModal}
+            onOpenChange={setOpenIntroVideoModal}
+            courseId={cursoAtivo.id}
+            currentVideoUrl={cursoAtivo.intro_video}
+            onSave={handleSaveIntroVideo}
+            onShowToast={showToast}
+          />
+        </>
       )}
 
       <Toast message={toastConfig.message} type={toastConfig.type} onClose={hideToast} />
