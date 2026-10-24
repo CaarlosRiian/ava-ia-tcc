@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
@@ -15,6 +15,12 @@ import { RemoveWishlistModal } from "./_components/RemoveWishlistModal";
 
 export default function ListaDeDesejos() {
   const { wishlistCourses, loading, removeItem } = useWishlist();
+
+  useEffect(() => {
+    if (!loading) {
+      console.log("Cursos carregados:", wishlistCourses);
+    }
+  }, [wishlistCourses, loading]);
 
   const [toastConfig, setToastConfig] = useState<{
     message: string;
@@ -86,33 +92,38 @@ export default function ListaDeDesejos() {
           <LoadingScreen text="Carregando lista de desejos..." />
         ) : wishlistCourses.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {wishlistCourses.map((course) => (
-              <div 
-                key={course.id} 
-                className="flex flex-col bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex-1">
-                  <CourseCard
-                    id={course.course}
-                    title={course.title}
-                    author={formatName(course.author)}
-                    price={course.price}                 
-                    hours={course.hours}
-                    thumbnail={course.thumbnail || undefined}
-                    lessonsCount={course.lessons_count}
-                    showFavoriteButton={false}
-                  />
-                </div>
+            {wishlistCourses.map((course) => {
+              // Log individual de cada curso e sua thumbnail para rastreio preciso
+              console.log(`🖼️ [Wishlist Item] Curso: ${course.title} | Thumbnail recebida:`, course.thumbnail);
 
-                <button
-                  onClick={() => setSelectedCourse({ courseId: course.course, title: course.title })}
-                  className="mt-3 w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer border border-red-100 active:scale-[0.98]"
+              return (
+                <div 
+                  key={course.id} 
+                  className="flex flex-col bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Remover da Lista</span>
-                </button>
-              </div>
-            ))}
+                  <div className="flex-1">
+                    <CourseCard
+                      id={course.course}
+                      title={course.title}
+                      author={formatName(course.author)}
+                      price={course.price}                
+                      hours={course.hours}
+                      thumbnail={course.thumbnail || (course as any).course_thumbnail || (course as any).image || undefined}
+                      lessonsCount={course.lessons_count}
+                      showFavoriteButton={false}
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedCourse({ courseId: course.course, title: course.title })}
+                    className="mt-3 w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer border border-red-100 active:scale-[0.98]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Remover da Lista</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-32 bg-white rounded-3xl border border-gray-200 shadow-sm">

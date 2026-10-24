@@ -1,3 +1,4 @@
+from core import settings
 from rest_framework import serializers
 from django.db.models import Sum
 from ..models import AIAssistant, CourseReview, StudentChallengeSubmission, LessonComment, Wishlist, Lesson
@@ -25,12 +26,17 @@ class WishlistSerializer(serializers.ModelSerializer):
         )['total'] or 0
         return round(total_seconds / 3600, 1)
 
-    def get_thumbnail(self, obj): 
-        if obj.course.thumbnail:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.course.thumbnail.url)
-            return obj.course.thumbnail.url
+    def get_thumbnail(self, obj):
+        if obj.course and obj.course.thumbnail:
+            thumb_str = str(obj.course.thumbnail)
+            if thumb_str.startswith("http://") or thumb_str.startswith("https://"):
+                return thumb_str
+            
+            supabase_url = getattr(settings, 'SUPABASE_URL', '')
+            bucket = "course-thumbnails"
+            if supabase_url:
+                return f"{supabase_url}/storage/v1/object/public/{bucket}/{thumb_str}"
+            return thumb_str
         return None
 
     def get_lessons_count(self, obj): 

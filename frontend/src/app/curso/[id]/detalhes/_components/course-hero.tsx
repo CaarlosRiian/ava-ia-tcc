@@ -28,21 +28,24 @@ export default function CourseHero({ course, isInWishlist = false, onToggleWishl
   }, 0) || course.modules?.length || 0;
 
   return (
-    <section className="relative overflow-hidden border-b">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary to-primary/70" />
+    <section className="relative overflow-hidden border-b border-gray-800">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950" />
+      
       {course.thumbnail && (
         <img
           src={course.thumbnail}
           alt={course.title}
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40"
+          className="absolute inset-0 w-full h-full object-cover mix-blend-luminosity opacity-20 filter blur-[2px]"
         />
       )}
+
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" />
       
-      <div className="relative max-w-7xl mx-auto w-full px-6 md:px-2 py-8 md:py-20 text-primary-foreground">
+      <div className="relative max-w-7xl mx-auto w-full px-6 md:px-2 py-8 md:py-20 text-white">
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/descobrir"
-            className="inline-flex items-center gap-1 text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-gray-300 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Voltar para cursos
           </Link>
@@ -50,10 +53,10 @@ export default function CourseHero({ course, isInWishlist = false, onToggleWishl
           {onToggleWishlist && (
             <button
               onClick={onToggleWishlist}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur transition-all active:scale-95 cursor-pointer border ${
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition-all active:scale-95 cursor-pointer border ${
                 isInWishlist
-                  ? "bg-red-500/20 text-red-100 border-red-400/40 hover:bg-red-500/30"
-                  : "bg-white/15 text-primary-foreground border-white/20 hover:bg-white/25"
+                  ? "bg-red-500/20 text-red-200 border-red-500/40 hover:bg-red-500/30"
+                  : "bg-white/10 text-white border-white/20 hover:bg-white/20"
               }`}
             >
               <Heart className={`h-3.5 w-3.5 ${isInWishlist ? "fill-red-400 text-red-400" : ""}`} />
@@ -63,22 +66,22 @@ export default function CourseHero({ course, isInWishlist = false, onToggleWishl
         </div>
 
         <div className="max-w-3xl">
-          <span className="inline-block text-xs uppercase tracking-wider bg-white/15 backdrop-blur px-3 py-1 rounded-full mb-4">
+          <span className="inline-block text-xs uppercase tracking-wider bg-white/10 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full mb-4 text-gray-200 font-medium">
             Curso completo
           </span>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">{course.title}</h1>
-          <p className="text-base md:text-lg text-primary-foreground/90 mb-6 max-w-2xl">
+          <h1 className="text-3xl md:text-5xl font-extrabold leading-tight mb-4 text-white tracking-tight">{course.title}</h1>
+          <p className="text-base md:text-lg text-gray-300 mb-6 max-w-2xl font-light">
             {course.description}
           </p>
-          <div className="flex flex-wrap items-center gap-5 text-sm text-primary-foreground/90">
+          <div className="flex flex-wrap items-center gap-5 text-sm text-gray-300 font-medium">
             <span className="flex items-center gap-1.5">
-              <User className="h-4 w-4" /> {instructor}
+              <User className="h-4 w-4 text-gray-400" /> {instructor}
             </span>
             <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" /> {courseHours}h de conteúdo
+              <Clock className="h-4 w-4 text-gray-400" /> {courseHours}h de conteúdo
             </span>
             <span className="flex items-center gap-1.5">
-              <BookOpen className="h-4 w-4" /> {totalLessons} aulas
+              <BookOpen className="h-4 w-4 text-gray-400" /> {totalLessons} aulas
             </span>
           </div>
         </div>

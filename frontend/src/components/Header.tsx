@@ -183,13 +183,6 @@ export default function Header({ value, onChange }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link
-            href="/favoritos"
-            className="flex items-center gap-3 px-3 py-2.5 p-2 text-gray-400 hover:text-red-500 transition-colors duration-300 cursor-pointer"
-          >
-            <Heart className="h-5 w-5" />
-          </Link>
-
           {isAuth ? (
             <div className="relative group">
               <div className="flex items-center gap-2 cursor-pointer p-1">
@@ -244,6 +237,14 @@ export default function Header({ value, onChange }: HeaderProps) {
                     >
                       <BookMarked className="h-5 w-5 text-gray-500" />
                       Meus cursos
+                    </Link>
+
+                    <Link
+                      href="/lista_desejos"
+                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                      <Heart className="h-5 w-5 text-gray-500" />
+                      Lista de desejos
                     </Link>
 
                     <Link

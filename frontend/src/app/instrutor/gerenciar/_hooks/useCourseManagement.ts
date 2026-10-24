@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { getCourses, createCourse, updateCourse } from "../_services/courses";
 import { createModule } from "../_services/modules";
 import { createLesson } from "@/services/lessons";
@@ -82,9 +83,28 @@ export function useCourseManagement() {
     }
   };
 
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      const token = localStorage.getItem("access");
+      await axios.delete(`http://localhost:8000/api/courses/${courseId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setCursos((prev) => prev.filter((c) => String(c.id) !== String(courseId)));
+
+      if (String(cursoSelecionado) === String(courseId)) {
+        setCursoSelecionado(null);
+      }
+
+      showToast("Curso excluído com sucesso!", "success");
+    } catch (err) {
+      console.error("Erro ao deletar curso:", err);
+      showToast("Erro ao excluir o curso", "error");
+    }
+  };
+
   const handleDeleteModule = async (moduleId: string) => {
     try {
-
       setCursos((prevCursos) =>
         prevCursos.map((curso) => {
           if (String(curso.id) === String(cursoSelecionado)) {
@@ -149,6 +169,7 @@ export function useCourseManagement() {
     handleCreateModule,
     handleCreateLesson,
     handleDeleteModule,
+    handleDeleteCourse,
     setCursos,
   };
 }

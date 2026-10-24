@@ -78,21 +78,23 @@ class InstructorCourseSerializer(serializers.ModelSerializer):
 class CourseSimpleSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     lessons_count = serializers.SerializerMethodField()
+    categories = CategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'slug', 'thumbnail', 'price', 'category', 'lessons_count']
+        fields = ['id', 'title', 'slug', 'thumbnail', 'price', 'categories', 'lessons_count']
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
-            if obj.thumbnail.startswith("http://") or obj.thumbnail.startswith("https://"):
-                return obj.thumbnail
+            thumb_str = str(obj.thumbnail)
+            if thumb_str.startswith("http://") or thumb_str.startswith("https://"):
+                return thumb_str
             
             supabase_url = getattr(settings, 'SUPABASE_URL', '')
-            bucket = "course-lessons"
+            bucket = "course-thumbnails" 
             if supabase_url:
-                return f"{supabase_url}/storage/v1/object/public/{bucket}/{obj.thumbnail}"
-            return obj.thumbnail
+                return f"{supabase_url}/storage/v1/object/public/{bucket}/{thumb_str}"
+            return thumb_str
         return None
 
     def get_lessons_count(self, obj):

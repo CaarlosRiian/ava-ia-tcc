@@ -13,20 +13,46 @@ import { CourseFormModal } from "./_components/CourseFormModal";
 import { AddOptionsModal } from "./_components/AddOptionsModal";
 import { EditObjectivesModal } from "./_components/EditObjectivesModal";
 import { IntroVideoModal } from "./_components/IntroVideoModal";
+import { DeleteCourseModal } from "./_components/DeleteCourseModal";
 import { useCourseManagement } from "./_hooks/useCourseManagement";
 import { createCourse, updateCourse } from "./_services/courses";
 import { createMaterial } from "./_services/materials";
 import Footer from "@/components/Footer";
 
 export default function GerenciamentoAulas() {
-  const { cursos, cursoSelecionado, setCursoSelecionado, categories, cursoAtivo, toastConfig, showToast, hideToast, handleCreateModule, handleCreateLesson, setCursos,
-  } = useCourseManagement();
+  const { cursos, cursoSelecionado, setCursoSelecionado, categories, cursoAtivo, toastConfig, showToast, hideToast, handleCreateModule, handleCreateLesson, handleDeleteCourse, setCursos, } = useCourseManagement();
 
   const [openAddOptionsModal, setOpenAddOptionsModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
   const [openObjectivesModal, setOpenObjectivesModal] = useState(false);
   const [openIntroVideoModal, setOpenIntroVideoModal] = useState(false);
+
+  const [deleteCourseOpen, setDeleteCourseOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<any | null>(null);
+  const [loadingDeleteCourse, setLoadingDeleteCourse] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4; 
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCourses = cursos.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(cursos.length / itemsPerPage);
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    try {
+      setLoadingDeleteCourse(true);
+      await handleDeleteCourse(courseToDelete.id);
+      setDeleteCourseOpen(false);
+      setCourseToDelete(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingDeleteCourse(false);
+    }
+  };
 
   const handleToggle = async (cId: string, aId: string) => {
     setCursos((prev) =>
@@ -207,17 +233,45 @@ export default function GerenciamentoAulas() {
                   Nenhum curso cadastrado ainda.
                 </div>
               ) : (
-                cursos.map((c) => (
+                currentCourses.map((c) => (
                   <CourseCard
                     key={c.id}
                     curso={{ ...c, alunos: c.alunos ?? 0 }}
                     isSelected={String(cursoSelecionado) === String(c.id)}
                     onClick={() => setCursoSelecionado(String(c.id))}
                     onEdit={() => { setEditingCourse(c); setOpenModal(true); }}
+                    onDelete={() => {
+                      setCourseToDelete(c);
+                      setDeleteCourseOpen(true);
+                    }}
                   />
                 ))
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 px-1 border-t border-gray-200/60 mt-4">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-50 transition cursor-pointer text-gray-700 shadow-2xs"
+                >
+                  Anterior
+                </button>
+                
+                <span className="text-xs text-gray-500 font-medium">
+                  <strong className="text-gray-800">{currentPage}</strong> / <strong className="text-gray-800">{totalPages}</strong>
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 rounded-xl disabled:opacity-40 hover:bg-gray-50 transition cursor-pointer text-gray-700 shadow-2xs"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-2 space-y-6">
@@ -316,6 +370,16 @@ export default function GerenciamentoAulas() {
             onShowToast={showToast}
           />
         </>
+      )}
+
+      {courseToDelete && (
+        <DeleteCourseModal
+          open={deleteCourseOpen}
+          onOpenChange={setDeleteCourseOpen}
+          courseTitle={courseToDelete.title}
+          loading={loadingDeleteCourse}
+          onConfirm={confirmDeleteCourse}
+        />
       )}
 
       <Toast message={toastConfig.message} type={toastConfig.type} onClose={hideToast} />

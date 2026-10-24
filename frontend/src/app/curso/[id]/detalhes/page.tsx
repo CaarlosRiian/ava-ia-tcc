@@ -13,6 +13,7 @@ import CourseSidebar from "./_components/course-sidebar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Toast from "@/components/ui/Toast";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function CursoDetalhePage() {
   const { id } = useParams();
@@ -38,6 +39,26 @@ export default function CursoDetalhePage() {
   };
 
   const courseIdNum = Number(Array.isArray(id) ? id[0] : id);
+
+  const formatCourseThumbnail = (courseData: any) => {
+    if (!courseData) return courseData;
+
+    let thumb = courseData.thumbnail || courseData.image;
+    
+    if (thumb && typeof thumb === "string" && thumb.trim() !== "") {
+      if (!thumb.startsWith("http://") && !thumb.startsWith("https://")) {
+        const { data } = supabase.storage
+          .from("course-thumbnails")
+          .getPublicUrl(thumb);
+        thumb = data.publicUrl;
+      }
+    }
+
+    return {
+      ...courseData,
+      thumbnail: thumb,
+    };
+  };
 
   useEffect(() => {
     async function loadCourseAndCheckAccess() {
@@ -81,10 +102,10 @@ export default function CursoDetalhePage() {
             return Number(c.id) === courseIdNum;
           });
 
-          setCourse(courseData);
+          setCourse(formatCourseThumbnail(courseData));
         } else {
           const data = await getCourseDetail(courseIdNum);
-          setCourse(data);
+          setCourse(formatCourseThumbnail(data));
         }
       } catch (err: any) {
         console.error(err);

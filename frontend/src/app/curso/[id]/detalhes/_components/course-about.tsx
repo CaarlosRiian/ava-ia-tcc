@@ -9,7 +9,6 @@ export default function CourseAbout({ description }: CourseAboutProps) {
     "Aulas práticas e objetivas",
     "Materiais complementares",
     "Assistente de IA para tirar dúvidas",
-    "Comunidade de alunos",
   ];
 
   return (
