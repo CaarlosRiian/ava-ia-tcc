@@ -16,7 +16,20 @@ export default function VideoPlayer({ lesson, onToggleAI }: VideoPlayerProps) {
   const [loadingUrl, setLoadingUrl] = useState(false);
 
   const rawVideoPath = lesson?.video || lesson?.video_url;
-  const lessonThumbnail = lesson?.thumbnail; 
+  const rawThumbnail = lesson?.thumbnail; 
+
+  const getThumbnailUrl = (thumb?: string | null) => {
+    if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+    if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+      return thumb;
+    }
+    const { data } = supabase.storage
+      .from("course-thumbnails") 
+      .getPublicUrl(thumb);
+    return data.publicUrl;
+  };
+
+  const lessonThumbnail = getThumbnailUrl(rawThumbnail);
 
   useEffect(() => {
     setPlaying(false);
@@ -81,6 +94,9 @@ export default function VideoPlayer({ lesson, onToggleAI }: VideoPlayerProps) {
               src={lessonThumbnail} 
               alt={lesson?.title}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-101 transition-transform duration-500 opacity-70" 
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
             />
           )}
 

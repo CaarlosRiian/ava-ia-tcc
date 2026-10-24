@@ -18,9 +18,21 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
   const [loadingVideo, setLoadingVideo] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
+  const getThumbnailUrl = (thumb?: string | null) => {
+    if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+    if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+      return thumb;
+    }
+    const { data } = supabase.storage
+      .from("course-thumbnails")
+      .getPublicUrl(thumb);
+    return data.publicUrl;
+  };
+
+  const courseThumbnail = getThumbnailUrl(course?.thumbnail);
+
   useEffect(() => {
     async function fetchSignedUrl() {
-
       if (!course?.intro_video) {
         console.warn("O campo intro_video está vazio ou é undefined/null.");
         return;
@@ -108,11 +120,14 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
             </div>
           ) : (
             <>
-              {course?.thumbnail && (
+              {courseThumbnail && (
                 <img
-                  src={course.thumbnail}
+                  src={courseThumbnail}
                   alt={course.title}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
                 />
               )}
 

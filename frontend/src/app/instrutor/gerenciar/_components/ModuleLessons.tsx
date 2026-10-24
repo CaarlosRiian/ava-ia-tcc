@@ -13,6 +13,7 @@ import { CreateLessonModal } from "./CreateLessonModal";
 import { DeleteLessonModal } from "./DeleteLessonModal";
 import { DeleteMaterialModal } from "./DeleteMaterialModal"; 
 import { LessonSubmissionsModal } from "./LessonSubmissionsModal"; 
+import { supabase } from "@/lib/supabaseClient";
 
 type Props = {
     lessons: Lesson[];
@@ -51,6 +52,20 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
         return `http://localhost:8000/media/${rawUrl}`;
     };
 
+    const getLessonThumbnailUrl = (thumb?: string | null) => {
+        if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+        
+        if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+            return thumb;
+        }
+        
+        const { data } = supabase.storage
+            .from("course-thumbnails") 
+            .getPublicUrl(thumb);
+            
+        return data.publicUrl;
+    };
+
     if (!lessons.length) {
         return (
             <div className="pl-2 py-3 text-xs text-zinc-400 italic bg-zinc-50/50 rounded-xl border border-dashed border-zinc-200 text-center">
@@ -65,6 +80,7 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
             {lessons.map((aula, index) => {
                 const hasChallenge = Boolean((aula as any).challenge);
                 const materials = (aula as any).materials || [];
+                const finalThumbnail = getLessonThumbnailUrl(aula.thumbnail);
 
                 return (
                     <div
@@ -74,11 +90,14 @@ export function ModuleLessons({ lessons, cursoId, modules, onToggle, onDelete, o
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3.5 min-w-0">
                                 <div className="w-20 h-12 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-100 shadow-inner">
-                                    {aula.thumbnail ? (
+                                    {finalThumbnail ? (
                                         <img
-                                            src={aula.thumbnail}
+                                            src={finalThumbnail}
                                             alt={aula.title}
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLElement).style.display = 'none';
+                                            }}
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-zinc-400">

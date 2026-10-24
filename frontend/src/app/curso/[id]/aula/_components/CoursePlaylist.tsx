@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, PlayCircle, FileText } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface CoursePlaylistProps {
   course: any;
@@ -11,6 +12,17 @@ interface CoursePlaylistProps {
 
 export default function CoursePlaylist({ course, currentLessonId, currentLessonCompleted }: CoursePlaylistProps) {
   const modules: any[] = course?.modules ?? [];
+
+  const getLessonThumbnailUrl = (thumb?: string | null) => {
+    if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+    if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+      return thumb;
+    }
+    const { data } = supabase.storage
+      .from("course-thumbnails") 
+      .getPublicUrl(thumb);
+    return data.publicUrl;
+  };
 
   const isDone = (l: any) =>
     Number(l.id) === Number(currentLessonId)
@@ -40,32 +52,58 @@ export default function CoursePlaylist({ course, currentLessonId, currentLessonC
               counter += 1;
               const isCurrent = Number(l.id) === Number(currentLessonId);
               const minutes = Math.round((l.duration_seconds || 0) / 60);
+              const lessonThumbnail = getLessonThumbnailUrl(l.thumbnail);
+              const concluida = isDone(l);
 
               return (
                 <Link
                   key={l.id}
                   href={`/curso/${course.id}/aula/${l.id}`}
                   aria-current={isCurrent ? "page" : undefined}
-                  className={`flex items-center gap-3 px-5 py-3.5 text-sm hover:bg-orange-50 transition-all ${
-                    isCurrent ? "bg-gray-50/80 border-l-4 border-[#2F52E0]" : "border-l-4 border-transparent"
+                  className={`flex items-center gap-3 px-4 py-3 text-sm hover:bg-orange-50/60 transition-all ${
+                    isCurrent ? "bg-orange-50/80 border-l-4 border-[#FF7A00]" : "border-l-4 border-transparent"
                   }`}
                 >
-                  <div className="w-6 flex items-center justify-center shrink-0">
-                    {isDone(l) ? (
-                      <CheckCircle className="h-4 w-4 text-green-500 fill-green-500/20" />
+                  <div className="relative w-20 h-12 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200/60 shadow-inner flex items-center justify-center">
+                    {lessonThumbnail ? (
+                      <img
+                        src={lessonThumbnail}
+                        alt={l.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
-                      <span className={`text-xs font-bold ${isCurrent ? "text-[#2F52E0]" : "text-gray-400"}`}>
-                        {String(counter).padStart(2, "0")}
-                      </span>
+                      <div className="w-full h-full flex items-center justify-center text-zinc-400 bg-zinc-100">
+                        <PlayCircle size={16} className="text-zinc-400" />
+                      </div>
+                    )}
+
+                    {concluida && (
+                      <div className="absolute inset-0 bg-emerald-900/40 backdrop-blur-[1px] flex items-center justify-center">
+                        <CheckCircle size={18} className="text-white drop-shadow" />
+                      </div>
                     )}
                   </div>
 
-                  <span className={`flex-1 leading-snug ${isCurrent ? "font-bold text-[#161B1D]" : "text-gray-600"}`}>
-                    {l.title}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-bold truncate leading-snug transition-colors ${
+                      isCurrent ? "text-[#161B1D]" : "text-gray-700"
+                    }`}>
+                      {counter}. {l.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        {concluida ? "Concluída" : minutes > 0 ? `${minutes} min` : "Aula"}
+                      </span>
+                    </div>
+                  </div>
 
-                  {minutes > 0 && (
-                    <span className="text-[10px] font-bold text-gray-400 shrink-0">{minutes} min</span>
+                  {isCurrent && (
+                    <span className="text-[10px] font-bold text-white bg-[#FF7A00] px-2 py-0.5 rounded-md shrink-0 shadow-sm">
+                      Transmitindo
+                    </span>
                   )}
                 </Link>
               );

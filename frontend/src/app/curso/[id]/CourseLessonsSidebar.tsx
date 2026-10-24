@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CheckCircle2, PlayCircle, BookOpen } from "lucide-react";
+import { CheckCircle2, PlayCircle, BookOpen, FileText } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface SidebarProps {
   course: any;
@@ -11,6 +12,17 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
   const router = useRouter();
   
   const lessons = course.modules?.flatMap((m: any) => m.lessons) || [];
+
+  const getLessonThumbnailUrl = (thumb?: string | null) => {
+    if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+    if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+      return thumb;
+    }
+    const { data } = supabase.storage
+      .from("course-thumbnails") 
+      .getPublicUrl(thumb);
+    return data.publicUrl;
+  };
 
   const handleNavigateToLesson = (lessonId: number | string) => {
     if (!course.id || !lessonId) return;
@@ -47,24 +59,38 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
 
               {module.lessons?.map((lesson: any, i: number) => {
                 const isConcluida = !!(lesson.completed || lesson.concluido);
+                const finalThumbnail = getLessonThumbnailUrl(lesson.thumbnail);
 
                 return (
                   <div
                     key={lesson.id}
                     onClick={() => handleNavigateToLesson(lesson.id)}
-                    className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all group cursor-pointer mb-2 ${
+                    className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all group cursor-pointer mb-2 ${
                       isConcluida 
                         ? "bg-emerald-50/40 border-emerald-100/80 hover:bg-emerald-50/80" 
                         : "bg-white border-zinc-100 hover:border-orange-200 hover:bg-orange-50/30 shadow-2xs"
                     }`}
                   >
-                    <div className="flex items-center justify-center min-w-[24px]">
-                      {isConcluida ? (
-                        <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                    <div className="relative w-20 h-12 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-100 shadow-inner flex items-center justify-center">
+                      {finalThumbnail ? (
+                        <img
+                          src={finalThumbnail}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
                       ) : (
-                        <span className="text-xs font-bold text-zinc-400 group-hover:text-[#FF7A00] transition-colors">
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
+                        <div className="w-full h-full flex items-center justify-center text-zinc-400 bg-zinc-100">
+                          <PlayCircle size={18} className="text-zinc-400 group-hover:text-[#FF7A00] transition-colors" />
+                        </div>
+                      )}
+
+                      {isConcluida && (
+                        <div className="absolute inset-0 bg-emerald-900/30 backdrop-blur-[1px] flex items-center justify-center">
+                          <CheckCircle2 size={18} className="text-white drop-shadow" />
+                        </div>
                       )}
                     </div>
 
@@ -74,21 +100,11 @@ export default function CourseLessonsSidebar({ course }: SidebarProps) {
                           ? "text-zinc-400 line-through decoration-zinc-300" 
                           : "text-zinc-700 group-hover:text-zinc-900"
                       }`}>
-                        {lesson.title}
+                        {i + 1}. {lesson.title}
                       </p>
-                    </div>
-
-                    <div className="text-xs font-medium shrink-0">
-                      {isConcluida ? (
-                        <span className="text-emerald-700 text-[10px] font-bold bg-emerald-100/60 px-2.5 py-1 rounded-lg">
-                          Concluída
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400 group-hover:text-white group-hover:bg-[#FF7A00] transition-all px-2.5 py-1 rounded-xl flex items-center gap-1 text-[11px] font-bold shadow-2xs">
-                          <PlayCircle size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                          Assistir
-                        </span>
-                      )}
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {isConcluida ? "Concluída" : "Clique para assistir"}
+                      </span>
                     </div>
 
                   </div>

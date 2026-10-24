@@ -2,6 +2,7 @@
 
 import { PlayCircle, BookOpen, Clock, Heart } from "lucide-react";
 import Link from "next/link"; 
+import { supabase } from "@/lib/supabaseClient";
 
 interface CourseProps {
   id: number;      
@@ -11,7 +12,7 @@ interface CourseProps {
   lessonsCount?: number;   
   progress?: number; 
   slug?: string;
-  thumbnail?: string;
+  thumbnail?: string | null;
   price?: any;
 
   showFavoriteButton?: boolean;
@@ -24,6 +25,22 @@ export default function CourseCard({ id, title, author, hours, lessonsCount, pro
 }: CourseProps) {
   const numericPrice = price ? Number(price) : 0;
   const isFree = !price || numericPrice === 0;
+
+  const getImageUrl = (thumb?: string | null) => {
+    if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
+    
+    if (thumb.startsWith("http://") || thumb.startsWith("https://")) {
+      return thumb;
+    }
+    
+    const { data } = supabase.storage
+      .from("course-thumbnails")
+      .getPublicUrl(thumb);
+      
+    return data.publicUrl;
+  };
+
+  const finalThumbnail = getImageUrl(thumbnail);
 
   return (
     <Link href={`/curso/${id}`} className="block h-full">
@@ -49,9 +66,9 @@ export default function CourseCard({ id, title, author, hours, lessonsCount, pro
         )}
 
         <div className="h-40 bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors relative overflow-hidden">
-          {thumbnail ? (
+          {finalThumbnail ? (
             <img 
-              src={thumbnail} 
+              src={finalThumbnail} 
               alt={title} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {

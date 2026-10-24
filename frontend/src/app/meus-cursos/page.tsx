@@ -10,6 +10,7 @@ import { getMyCourses } from "@/services/courses";
 import LoadingScreen from "@/components/LoadingScreen";
 import { formatName } from "@/utils/formatName"; 
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabaseClient";
 
 type Course = {
   course_id: number;
@@ -18,6 +19,20 @@ type Course = {
   professor: string;
   progress: number;
 };
+
+function getThumbnailUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  
+  const { data } = supabase.storage
+    .from("course-thumbnails")
+    .getPublicUrl(path);
+    
+  return data.publicUrl;
+}
 
 export default function MeusCursos() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -31,7 +46,14 @@ export default function MeusCursos() {
     async function fetchCourses() {
       try {
         const data = await getMyCourses();
-        setCourses(data);
+        console.log("Dados crus de meus cursos:", data); 
+        
+        const formattedData = data.map((c: Course) => ({
+          ...c,
+          thumbnail: getThumbnailUrl(c.thumbnail)
+        }));
+
+        setCourses(formattedData);
       } catch (err) {
         console.error(err);
       } finally {
@@ -61,7 +83,6 @@ export default function MeusCursos() {
       <Breadcrumb items={[{ label: "Meus Cursos" }]} />
 
       <main className="container mx-auto px-6 pt-6 pb-12">
-        
         <div className="mb-10">
           <h1 className="text-3xl font-extrabold text-[#161B1D] mb-2">
             Meus Cursos
@@ -76,7 +97,6 @@ export default function MeusCursos() {
         ) : courses.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 animate-in fade-in slide-in-from-top-3 duration-500">
-              
               <div className="bg-white p-5 rounded-2xl border border-gray-200/60 shadow-sm flex items-center gap-4">
                 <div className="bg-blue-50 p-3.5 rounded-xl text-[#2F52E0]">
                   <BookOpen size={22} />
@@ -112,7 +132,6 @@ export default function MeusCursos() {
                   </span>
                 </div>
               </div>
-
             </div>
 
             {studentCourses.length > 0 && (

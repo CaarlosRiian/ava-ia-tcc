@@ -3,6 +3,7 @@ from django.http import HttpResponse, request
 from django_filters.rest_framework import DjangoFilterBackend
 
 from ava_back.serializers.interaction import WishlistSerializer
+from core import settings
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
@@ -133,11 +134,18 @@ class CourseViewSet(ModelViewSet):
         for enrollment in enrollments:
             course = enrollment.course
             thumbnail = None
+            
             if course.thumbnail:
-                try:
-                    thumbnail = request.build_absolute_uri(course.thumbnail.url)
-                except Exception:
-                    thumbnail = None
+                thumb_str = str(course.thumbnail)
+                if thumb_str.startswith("http://") or thumb_str.startswith("https://"):
+                    thumbnail = thumb_str
+                else:
+                    supabase_url = getattr(settings, 'SUPABASE_URL', '')
+                    bucket = "course-thumbnails"
+                    if supabase_url:
+                        thumbnail = f"{supabase_url}/storage/v1/object/public/{bucket}/{thumb_str}"
+                    else:
+                        thumbnail = thumb_str
 
             data.append({
                 "course_id": course.id,
