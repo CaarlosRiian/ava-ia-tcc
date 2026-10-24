@@ -22,7 +22,6 @@ class ChallengeSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'evaluation_criteria']
 
 class LessonSerializer(serializers.ModelSerializer):
-    thumbnail = serializers.ImageField(required=False, allow_null=True)
     materials = LessonMaterialSerializer(many=True, read_only=True)
     challenge = serializers.SerializerMethodField()
     is_completed = serializers.SerializerMethodField()
@@ -40,17 +39,6 @@ class LessonSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return LessonProgress.objects.filter(user=request.user, lesson=obj, completed=True).exists()
         return False
-
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        request = self.context.get("request")
-        if instance.thumbnail and request:
-            ret['thumbnail'] = request.build_absolute_uri(instance.thumbnail.url)
-        elif instance.thumbnail:
-            ret['thumbnail'] = instance.thumbnail.url
-        else:
-            ret['thumbnail'] = None
-        return ret
 
 class InstructorLessonSerializer(LessonSerializer):
     def create(self, validated_data):

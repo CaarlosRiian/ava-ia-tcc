@@ -69,7 +69,7 @@ class Course(models.Model):
     description = models.TextField()
     categories = models.ManyToManyField('Category', related_name='courses', blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    thumbnail = models.ImageField(upload_to="courses/", null=True, blank=True)
+    thumbnail = models.CharField(max_length=500, blank=True, null=True)
     professor = models.ForeignKey(
         'User',
         on_delete=models.CASCADE,
@@ -78,7 +78,7 @@ class Course(models.Model):
     )
     published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    intro_video = models.CharField(max_length=255, blank=True, null=True)
+    intro_video = models.CharField(max_length=500, blank=True, null=True)
     min_age = models.PositiveIntegerField(default=0)     
     max_age = models.PositiveIntegerField(default=100)   
     target_area = models.CharField(max_length=100, blank=True, null=True)
@@ -132,7 +132,7 @@ class Lesson(models.Model):
     order = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,default='rascunho')
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='privado')
-    thumbnail = models.ImageField(upload_to='lesson_thumbnails/', blank=True, null=True)
+    thumbnail = models.CharField(max_length=500, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

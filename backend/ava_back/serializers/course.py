@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Sum
+from django.conf import settings
 from ..models import Category, Course, Enrollment, Lesson
 from .lesson import ModuleSerializer, ModuleDetailSerializer, InstructorModuleSerializer
 
@@ -10,7 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)
-    thumbnail = serializers.ImageField(required=False)
+    thumbnail = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True) 
     hours = serializers.SerializerMethodField()
     modules = ModuleSerializer(many=True, read_only=True)
@@ -35,7 +36,7 @@ class CourseSerializer(serializers.ModelSerializer):
 class CourseDetailSerializer(serializers.ModelSerializer):
     modules = ModuleDetailSerializer(many=True, read_only=True)
     professor_name = serializers.CharField(source='professor.username', read_only=True)
-    thumbnail = serializers.ImageField(required=False)
+    thumbnail = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
     categories = CategorySerializer(many=True, read_only=True)
@@ -59,7 +60,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 class InstructorCourseSerializer(serializers.ModelSerializer):
     modules = serializers.SerializerMethodField()
     alunos = serializers.SerializerMethodField()
-    thumbnail = serializers.ImageField(required=False)
+    thumbnail = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
 
@@ -84,10 +85,14 @@ class CourseSimpleSerializer(serializers.ModelSerializer):
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return f"http://localhost:8000{obj.thumbnail.url}"
+            if obj.thumbnail.startswith("http://") or obj.thumbnail.startswith("https://"):
+                return obj.thumbnail
+            
+            supabase_url = getattr(settings, 'SUPABASE_URL', '')
+            bucket = "course-lessons"
+            if supabase_url:
+                return f"{supabase_url}/storage/v1/object/public/{bucket}/{obj.thumbnail}"
+            return obj.thumbnail
         return None
 
     def get_lessons_count(self, obj):

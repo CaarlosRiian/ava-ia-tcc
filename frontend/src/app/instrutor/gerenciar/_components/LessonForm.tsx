@@ -57,9 +57,10 @@ export const LessonForm = ({ modules, courseId, mode, lesson, onCreate, onUpdate
         if (lesson.thumbnail.startsWith("http://") || lesson.thumbnail.startsWith("https://")) {
           setThumbPreview(lesson.thumbnail);
         } else {
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "").replace(/\/$/, "") || "";
-          const thumbUrl = lesson.thumbnail.startsWith("/") ? lesson.thumbnail : `/${lesson.thumbnail}`;
-          setThumbPreview(`${baseUrl}${thumbUrl}`);
+          const { data } = supabase.storage
+            .from("course-thumbnails")
+            .getPublicUrl(lesson.thumbnail);
+          setThumbPreview(data.publicUrl);
         }
       } else {
         setThumbPreview(null);
@@ -151,7 +152,23 @@ export const LessonForm = ({ modules, courseId, mode, lesson, onCreate, onUpdate
       }
 
       if (thumbnail) {
-        formData.append("thumbnail", thumbnail);
+        setUploadStatus("Enviando imagem de capa...");
+        const lessonIdForPath = lesson?.id || "temp";
+        const fileExt = thumbnail.name.split(".").pop();
+        const fileName = `lesson-thumb-${Date.now()}.${fileExt}`;
+        const filePath = `courses/${courseId}/lessons/${lessonIdForPath}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("course-thumbnails")
+          .upload(filePath, thumbnail, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        formData.append("thumbnail", filePath);
+      } else if (lesson?.thumbnail && thumbPreview) {
+        formData.append("thumbnail", lesson.thumbnail);
+      } else {
+        formData.append("thumbnail", "");
       }
 
       formData.append("has_challenge", String(challengeEnabled));
