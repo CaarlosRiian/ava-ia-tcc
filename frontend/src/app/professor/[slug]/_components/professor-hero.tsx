@@ -1,10 +1,11 @@
 import { BookOpen, Award, Users, Calendar } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ProfessorHeroProps {
   name: string;
   bio: string;
   initials: string;
+  avatarUrl?: string; 
   stats: {
     coursesCount: number;
     students: number; 
@@ -13,12 +14,14 @@ interface ProfessorHeroProps {
   };
 }
 
-export function ProfessorHero({ name, bio, initials, stats }: ProfessorHeroProps) {
+export function ProfessorHero({ name, bio, initials, avatarUrl, stats }: ProfessorHeroProps) {
   const memberSince = stats.joinedAt || "Jun/2026"; 
 
   return (
     <div className="flex flex-col md:flex-row gap-8 items-start mb-16 bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
-      <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+      <Avatar className="h-32 w-32 border-4 border-white shadow-xl overflow-hidden">
+        {avatarUrl && <AvatarImage src={avatarUrl} alt={name} className="object-cover h-full w-full" />}
+        
         <AvatarFallback className="text-3xl font-black bg-[#FF7A00] text-white">
           {initials}
         </AvatarFallback>

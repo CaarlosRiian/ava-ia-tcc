@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Search, Heart, ChevronDown, User, Settings, LogOut, BookMarked, GraduationCap,
   LayoutDashboard, ShieldCheck, Users } from "lucide-react";
 import { getCategories } from "@/services/categories";
+import { getMe } from "@/services/auth"; 
 
 interface HeaderProps {
   value?: string;
@@ -20,6 +21,7 @@ export default function Header({ value, onChange }: HeaderProps) {
   const [userRole, setUserRole] = useState("");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userAvatar, setUserAvatar] = useState(""); 
 
   const [localSearch, setLocalSearch] = useState("");
 
@@ -32,11 +34,29 @@ export default function Header({ value, onChange }: HeaderProps) {
     const role = localStorage.getItem("user_role");
     const name = localStorage.getItem("username");
     const email = localStorage.getItem("user_email");
+    const avatar = localStorage.getItem("user_avatar");
 
     setIsAuth(!!token);
     setUserRole(role || "");
     setUserName(name || "");
     setUserEmail(email || "");
+    setUserAvatar(avatar || "");
+
+    if (token) {
+      getMe(token)
+        .then((data) => {
+          if (data) {
+            const avatarUrl = data.avatar_url || data.avatar || "";
+            setUserAvatar(avatarUrl);
+            localStorage.setItem("user_avatar", avatarUrl);
+            if (data.name) {
+              setUserName(data.name);
+              localStorage.setItem("username", data.name);
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
     async function loadCategories() {
       try {
@@ -88,6 +108,7 @@ export default function Header({ value, onChange }: HeaderProps) {
     localStorage.removeItem("user_role");
     localStorage.removeItem("username");
     localStorage.removeItem("user_email");
+    localStorage.removeItem("user_avatar");
 
     window.location.href = "/entrar";
   };
@@ -186,8 +207,12 @@ export default function Header({ value, onChange }: HeaderProps) {
           {isAuth ? (
             <div className="relative group">
               <div className="flex items-center gap-2 cursor-pointer p-1">
-                <div className="h-9 w-9 rounded-full bg-[#FF7A00] text-white flex items-center justify-center font-bold shadow-sm">
-                  {getInitials(userName)}
+                <div className="h-9 w-9 rounded-full bg-[#FF7A00] text-white flex items-center justify-center font-bold shadow-sm overflow-hidden">
+                  {userAvatar ? (
+                    <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
+                  ) : (
+                    getInitials(userName)
+                  )}
                 </div>
 
                 <ChevronDown className="h-4 w-4 text-gray-500 transition-transform group-hover:rotate-180" />
@@ -195,15 +220,19 @@ export default function Header({ value, onChange }: HeaderProps) {
 
               <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
                 <div className="p-4 flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-[#FF7A00] text-white flex items-center justify-center text-lg font-bold">
-                    {getInitials(userName)}
+                  <div className="h-12 w-12 rounded-full bg-[#FF7A00] text-white flex items-center justify-center text-lg font-bold overflow-hidden shrink-0">
+                    {userAvatar ? (
+                      <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
+                    ) : (
+                      getInitials(userName)
+                    )}
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[15px] font-bold text-gray-800">
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-[15px] font-bold text-gray-800 truncate">
                       {formatName(userName)}
                     </span>
 
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 truncate">
                       {userEmail}
                     </span>
 

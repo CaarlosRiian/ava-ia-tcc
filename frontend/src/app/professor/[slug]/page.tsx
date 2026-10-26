@@ -66,6 +66,8 @@ export default function PerfilProfessor() {
   const rawName = professor?.username || "";
   const displayFormattedName = formatName(rawName);
 
+  const professorAvatar = professor.avatar_url || professor.avatar || "";
+
   const initials = rawName
     ? rawName
         .replaceAll("_", " ")
@@ -114,6 +116,7 @@ export default function PerfilProfessor() {
           name={displayFormattedName}
           bio={professor.bio || "Este professor ainda não adicionou uma descrição profissional."}
           initials={initials}
+          avatarUrl={professorAvatar} 
           stats={stats}
         />
 

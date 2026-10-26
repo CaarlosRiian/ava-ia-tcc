@@ -35,6 +35,8 @@ export default function CommentItem({
   const [submittingReply, setSubmittingReply] = useState(false);
 
   const authorName = comment.user_name || comment.user || "Usuário";
+  const authorAvatar = comment.user_avatar || comment.avatar_url || comment.avatar || "";
+
   const isOwner = currentUser && comment.user && comment.user.toLowerCase() === currentUser.toLowerCase();
   const formattedDate = comment.created_at
     ? new Date(comment.created_at).toLocaleDateString("pt-BR", {
@@ -90,11 +92,15 @@ export default function CommentItem({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div
-            className={`rounded-full bg-white border border-gray-300 text-[#000000] flex items-center justify-center font-bold text-xs ${
+            className={`rounded-full bg-white border border-gray-300 text-[#000000] flex items-center justify-center font-bold text-xs overflow-hidden ${
               isReply ? "w-6 h-6" : "w-8 h-8"
             }`}
           >
-            {formatName(authorName).charAt(0).toUpperCase()}
+            {authorAvatar ? (
+              <img src={authorAvatar} alt={authorName} className="h-full w-full object-cover" />
+            ) : (
+              formatName(authorName).charAt(0).toUpperCase()
+            )}
           </div>
           <span className="font-bold text-sm text-gray-800">{formatName(authorName)}</span>
         </div>

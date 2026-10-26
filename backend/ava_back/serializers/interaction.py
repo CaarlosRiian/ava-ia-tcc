@@ -80,11 +80,12 @@ class StudentChallengeSubmissionSerializer(serializers.ModelSerializer):
 class LessonCommentSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
     user_name = serializers.ReadOnlyField(source='user.first_name')
+    user_avatar = serializers.ReadOnlyField(source='user.avatar_url')
     replies = serializers.SerializerMethodField()
 
     class Meta:
         model = LessonComment
-        fields = ['id', 'lesson', 'user', 'user_name', 'parent', 'content', 'created_at', 'replies']
+        fields = ['id', 'lesson', 'user', 'user_name', 'user_avatar', 'parent', 'content', 'created_at', 'replies'] 
         read_only_fields = ['lesson', 'user', 'created_at', 'replies']
 
     def get_replies(self, obj):

@@ -95,6 +95,7 @@ def me(request):
             "role": getattr(user, "role", "aluno"),
             "bio": getattr(user, "bio", ""),
             "birth_date": getattr(user, "birth_date", None), 
+            "avatar_url": getattr(user, "avatar_url", ""),
             "interests": getattr(user, "interests", []),    
             "specialties": user_specialties,
             "primary_specialty": primary,
@@ -111,6 +112,8 @@ def me(request):
             user.bio = data["bio"]
         if "birth_date" in data:
             user.birth_date = data["birth_date"] if data["birth_date"] else None
+        if "avatar_url" in data: 
+            user.avatar_url = data["avatar_url"]
         if "specialties" in data: 
             user.specialties = data["specialties"]
         if "interests" in data:
@@ -133,6 +136,7 @@ def me(request):
             "role": user.role, 
             "bio": getattr(user, "bio", ""), 
             "birth_date": getattr(user, "birth_date", None), 
+            "avatar_url": getattr(user, "avatar_url", ""),
             "interests": getattr(user, "interests", []),    
             "specialties": updated_specialties,
             "primary_specialty": primary,

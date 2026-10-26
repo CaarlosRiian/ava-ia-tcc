@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb"; 
 import { Button } from "@/components/ui/button";
 import { toast, Toaster } from "sonner"; 
+import { supabase } from "@/lib/supabaseClient";
 
 import { ProfileHeader } from "./_components/profile-header";
 import { ProfileSkeleton } from "./_components/ProfileSkeleton";
@@ -26,6 +27,8 @@ export default function ConfiguracoesPerfil() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [primarySpecialty, setPrimarySpecialty] = useState<string>("");
@@ -36,6 +39,7 @@ export default function ConfiguracoesPerfil() {
     email: "", 
     bio: "", 
     birthDate: "", 
+    avatarUrl: "",
     interests: [] as string[],
     specialties: [] as string[],
     primarySpecialty: "",
@@ -72,6 +76,8 @@ export default function ConfiguracoesPerfil() {
         const userEmail = data.email || "";
         const userBio = data.bio || "";
         const userBirthDate = data.birth_date || "";
+        const userAvatar = data.avatar_url || data.avatar || data.profile_image || "";
+        
         const userInterests = data.interests || [];
         const userSpecialties = data.specialties || [];
         
@@ -82,6 +88,7 @@ export default function ConfiguracoesPerfil() {
         setBio(userBio);
         setUserRole(data.role || "");
         setBirthDate(userBirthDate);
+        setAvatarUrl(userAvatar);
         setInterests(userInterests);
         setSpecialties(userSpecialties);
         setPrimarySpecialty(userPrimarySpecialty);
@@ -91,6 +98,7 @@ export default function ConfiguracoesPerfil() {
           email: userEmail, 
           bio: userBio, 
           birthDate: userBirthDate, 
+          avatarUrl: userAvatar,
           interests: userInterests, 
           specialties: userSpecialties,
           primarySpecialty: userPrimarySpecialty,
@@ -109,6 +117,8 @@ export default function ConfiguracoesPerfil() {
     email !== initialData.email ||
     bio !== initialData.bio ||
     birthDate !== initialData.birthDate ||
+    avatarUrl !== initialData.avatarUrl ||
+    avatarFile !== null ||
     JSON.stringify(interests) !== JSON.stringify(initialData.interests) ||
     JSON.stringify(specialties) !== JSON.stringify(initialData.specialties) || 
     primarySpecialty !== initialData.primarySpecialty ||
@@ -134,6 +144,28 @@ export default function ConfiguracoesPerfil() {
 
     try {
       setIsSaving(true);
+      let currentAvatarUrl = avatarUrl;
+
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split(".").pop();
+        const fileName = `avatar-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("user-profiles") 
+          .upload(filePath, avatarFile, { upsert: true });
+
+        if (uploadError) {
+          throw new Error(`Erro no Supabase: ${uploadError.message}`);
+        }
+
+        const { data: publicURLData } = supabase.storage
+          .from("user-profiles") 
+          .getPublicUrl(filePath);
+
+        currentAvatarUrl = publicURLData.publicUrl;
+        setAvatarUrl(currentAvatarUrl);
+      }
 
       const allSpecialties = primarySpecialty 
         ? Array.from(new Set([primarySpecialty, ...specialties])) 
@@ -144,6 +176,7 @@ export default function ConfiguracoesPerfil() {
         email, 
         bio, 
         birth_date: birthDate || null, 
+        avatar_url: currentAvatarUrl,
         interests,
         specialties: allSpecialties, 
       };
@@ -154,14 +187,23 @@ export default function ConfiguracoesPerfil() {
 
       await updateMe(token, payload);
 
-      setInitialData({ name, email, bio, birthDate, interests, specialties, primarySpecialty });
+      setInitialData({ 
+        name, 
+        email, 
+        bio, 
+        birthDate, 
+        avatarUrl: currentAvatarUrl, 
+        interests, 
+        specialties, 
+        primarySpecialty 
+      });
 
+      setAvatarFile(null);
       setPassword("");
       setConfirmPassword("");
       toast.success("Perfil atualizado com sucesso!");
 
     } catch (error: any) {
-      console.error("Erro ao atualizar o perfil:", error);
       toast.error(error.message || "Erro ao salvar alterações.");
     } finally {
       setIsSaving(false);
@@ -208,6 +250,11 @@ export default function ConfiguracoesPerfil() {
             initials={initials} 
             role={userRole} 
             birthDate={birthDate} 
+            avatarUrl={avatarUrl}
+            onAvatarChange={(file) => {
+              setAvatarFile(file);
+              setAvatarUrl(URL.createObjectURL(file)); 
+            }}
           />
 
           <ProfileDataForm
@@ -246,6 +293,8 @@ export default function ConfiguracoesPerfil() {
                 setEmail(initialData.email);
                 setBio(initialData.bio);
                 setBirthDate(initialData.birthDate);
+                setAvatarUrl(initialData.avatarUrl);
+                setAvatarFile(null);
                 setInterests(initialData.interests);
                 setSpecialties(initialData.specialties);
                 setPrimarySpecialty(initialData.primarySpecialty);

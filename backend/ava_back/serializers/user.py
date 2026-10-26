@@ -51,15 +51,25 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
+        
         if 'username' in validated_data:
             instance.username = validated_data.pop('username')
+            
         specialties = validated_data.pop("specialties", None)
         if specialties is not None:
             instance.specialties = specialties
+            
+        # Garante explicitamente o avatar_url se vier no payload
+        avatar_url = validated_data.pop("avatar_url", None)
+        if avatar_url is not None:
+            instance.avatar_url = avatar_url
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+            
         if password:
             instance.set_password(password)
+            
         instance.save()
         return instance
 
@@ -101,7 +111,7 @@ class ProfessorProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'bio', 'especialidade', 'stats', 'courses']
+        fields = ['id', 'username', 'bio', 'avatar_url', 'especialidade', 'stats', 'courses'] 
 
     def get_especialidade(self, obj):
         req = InstructorRequest.objects.filter(user=obj, status='aprovado').first()
@@ -121,13 +131,14 @@ class ProfessorProfileSerializer(serializers.ModelSerializer):
             "lessons": lessons_count
         }
 
+
 class ProfessorSerializer(serializers.ModelSerializer):
     courses = CourseSimpleSerializer(many=True, read_only=True)
     total_lessons = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'specialties', 'bio', 'avatar_url', 'courses', 'date_joined', 'total_lessons']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'specialties', 'bio', 'avatar_url', 'courses', 'date_joined', 'total_lessons'] 
 
     def get_total_lessons(self, obj):
         return sum(module.lessons.count() for course in obj.courses.all() for module in course.modules.all())

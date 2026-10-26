@@ -203,8 +203,16 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
         className="flex items-center justify-between p-5 rounded-2xl bg-white border border-zinc-100 hover:border-orange-200 hover:shadow-md transition-all group cursor-pointer block"
       >
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-orange-50 text-[#FF7A00] flex items-center justify-center border border-orange-100/80 group-hover:scale-105 transition-transform shrink-0 shadow-sm">
-            <User size={22} />
+          <div className="h-12 w-12 rounded-2xl bg-orange-50 text-[#FF7A00] flex items-center justify-center border border-orange-100/80 group-hover:scale-105 transition-transform shrink-0 shadow-sm overflow-hidden">
+            {course.professor_avatar || course.professor?.avatar_url ? (
+              <img 
+                src={course.professor_avatar || course.professor?.avatar_url} 
+                alt={course.professor_name || "Professor"} 
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <User size={22} />
+            )}
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-400">Instrutor da Disciplina</p>
