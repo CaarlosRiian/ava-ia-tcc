@@ -99,7 +99,7 @@ export default function PerfilProfessor() {
 
   const stats = {
     coursesCount: apiStats.coursesCount ?? courses.length,
-    students: professor.students_count || 0,
+    students: apiStats.students ?? professor.total_students ?? 0,
     lessons: apiStats.lessons || 0,
     joinedAt: formattedJoinedAt,
   };

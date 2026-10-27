@@ -8,7 +8,7 @@ interface ProfessorHeroProps {
   avatarUrl?: string; 
   stats: {
     coursesCount: number;
-    students: number; 
+    students?: number; 
     lessons: number;
     joinedAt?: string; 
   };
@@ -28,36 +28,40 @@ export function ProfessorHero({ name, bio, initials, avatarUrl, stats }: Profess
       </Avatar>
 
       <div className="flex-1">
-        <h1 className="text-4xl font-black text-[#161B1D] mb-4 tracking-tight">{name}</h1>
-        
-        <p className="text-lg text-gray-500 leading-relaxed mb-6 max-w-2xl">{bio}</p>
+      <h1 className="text-4xl font-black text-[#161B1D] mb-4 tracking-tight">
+        {name}
+      </h1>
 
-        <div className="flex flex-wrap gap-8 py-6 border-t border-gray-100 mt-6">
-          <StatItem 
-            icon={<BookOpen className="h-5 w-5" />} 
-            label="Cursos" 
-            value={stats.coursesCount} 
-          />
-          
-          <StatItem 
-            icon={<Users className="h-5 w-5" />} 
-            label="Alunos" 
-            value={stats.students} 
-          />
-          
-          <StatItem 
-            icon={<Award className="h-5 w-5" />} 
-            label="Aulas" 
-            value={stats.lessons} 
-          />
+      <p className="text-lg text-gray-500 leading-relaxed mb-6 max-w-2xl">
+        {bio}
+      </p>
 
-          <StatItem 
-            icon={<Calendar className="h-5 w-5" />} 
-            label="Membro desde" 
-            value={memberSince} 
-          />
-        </div>
+      <div className="flex flex-wrap gap-8 py-6 border-t border-gray-200 mt-6">
+        <StatItem
+          icon={<BookOpen className="h-5 w-5 text-black" />}
+          label="Cursos"
+          value={stats.coursesCount}
+        />
+
+        <StatItem
+          icon={<Users className="h-5 w-5 text-black" />}
+          label="Alunos"
+          value={stats.students ?? 0}
+        />
+
+        <StatItem
+          icon={<Award className="h-5 w-5 text-black" />}
+          label="Aulas"
+          value={stats.lessons}
+        />
+
+        <StatItem
+          icon={<Calendar className="h-5 w-5 text-black" />}
+          label="Membro desde"
+          value={memberSince}
+        />
       </div>
+    </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export default function CourseModules({ modules }: CourseModulesProps) {
       <section>
         <h2 className="text-2xl font-bold mb-4">Conteúdo do curso</h2>
         <div className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">
-          Nenhum módulo listado para este curso ainda no Django.
+          Nenhum módulo listado para este curso ainda no sistema.
         </div>
       </section>
     );
@@ -33,8 +33,8 @@ export default function CourseModules({ modules }: CourseModulesProps) {
 
               <div className="flex items-center justify-between p-4 bg-muted/40 border-b">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <PlayCircle className="h-5 w-5" />
+                  <div className="h-9 w-9 rounded-lg bg-gray-50 border text-primary flex items-center justify-center shrink-0">
+                    <PlayCircle className="h-5 w-5 text-black" />
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm md:text-base truncate">{moduleTitle}</p>

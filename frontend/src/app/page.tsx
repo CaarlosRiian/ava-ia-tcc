@@ -14,8 +14,8 @@ export default function Home() {
           <div className="max-w-3xl mx-auto text-center">
             
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 text-[#161B1D]">
-              Aprenda melhor com{" "}
-              <span className="text-[#FF7A00]">IA ao seu lado</span>
+              Aprenda melhor de forma dinamica{" "}
+              <span className="text-[#FF7A00]">com a Inteligência Artificial ao seu lado</span>
             </h1>
             
             <p className="text-lg md:text-xl text-gray-500 mb-8 max-w-2xl mx-auto font-light">
@@ -46,7 +46,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#161B1D]">
-              Como a IA te ajuda a aprender
+              Como o AVA-IA te ajuda a aprender
             </h2>
             <p className="text-gray-500 text-lg max-w-2xl mx-auto font-light">
               Ferramentas inteligentes que se adaptam ao seu ritmo de estudo.
@@ -58,7 +58,7 @@ export default function Home() {
               {
                 icon: BookOpen,
                 title: "Resumos Inteligentes",
-                desc: "A IA gera resumos completos, destacando os pontos mais importantes das aulas.",
+                desc: "A Inteligência Artificial gera resumos completos, destacando os pontos mais importantes das aulas.",
               },
               {
                 icon: Brain,
@@ -68,12 +68,12 @@ export default function Home() {
               {
                 icon: MessageCircle,
                 title: "Tire Dúvidas",
-                desc: "Não entendeu algo? Pergunte à IA e receba explicações claras e didáticas.",
+                desc: "Não entendeu algo? Pergunte à Inteligência Artificial e receba explicações claras e didáticas.",
               },
               {
                 icon: CheckCircle,
                 title: "Correção Instantânea",
-                desc: "Envie suas respostas e a IA corrige, dá feedback e sugere melhorias na hora.",
+                desc: "Envie suas respostas e a Inteligência Artificial corrige, dá feedback e sugere melhorias na hora.",
               },
             ].map((feature) => (
               <div

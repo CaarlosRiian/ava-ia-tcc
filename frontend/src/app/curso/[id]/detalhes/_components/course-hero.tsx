@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, User, Clock, BookOpen, Heart } from "lucide-react";
+import { ArrowLeft, User, BookOpen, Heart } from "lucide-react";
 import { formatName } from "@/utils/formatName"; 
 
 interface CourseHeroProps {
@@ -8,6 +8,7 @@ interface CourseHeroProps {
     description: string;
     thumbnail?: string;
     professor_name?: string;
+    professor_slug?: string; 
     hours?: number;
     modules?: any[];
   };
@@ -20,7 +21,7 @@ export default function CourseHero({ course, isInWishlist = false, onToggleWishl
   
   const instructor = rawInstructor !== "Instrutor" ? formatName(rawInstructor) : rawInstructor;
   
-  const courseHours = course.hours || 40;
+  const professorSlug = course.professor_slug || "perfil";
 
   const totalLessons = course.modules?.reduce((acc: number, mod: any) => {
     const lessonsCount = mod.lessons?.length || mod.lessons_count || 0;
@@ -74,12 +75,13 @@ export default function CourseHero({ course, isInWishlist = false, onToggleWishl
             {course.description}
           </p>
           <div className="flex flex-wrap items-center gap-5 text-sm text-gray-300 font-medium">
-            <span className="flex items-center gap-1.5">
-              <User className="h-4 w-4 text-gray-400" /> {instructor}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-gray-400" /> {courseHours}h de conteúdo
-            </span>
+            <Link 
+              href={`/professor/${professorSlug}`} 
+              className="flex items-center gap-1.5 text-gray-300 hover:text-white transition-colors group cursor-pointer"
+            >
+              <User className="h-4 w-4 text-gray-400 group-hover:text-white transition-colors" />
+              <span>{instructor}</span>
+            </Link>
             <span className="flex items-center gap-1.5">
               <BookOpen className="h-4 w-4 text-gray-400" /> {totalLessons} aulas
             </span>

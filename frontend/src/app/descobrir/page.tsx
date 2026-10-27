@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { SlidersHorizontal, RotateCcw, X, ArrowUpDown, Clock, SearchX, Sparkles, Compass } from "lucide-react";
+import { SlidersHorizontal, RotateCcw, ArrowUpDown, Clock, SearchX, Sparkles, Compass } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -14,6 +14,7 @@ import { getCategories } from "@/services/categories";
 import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import axios from "axios";
+import OnboardingModal from "@/components/OnboardingModal"; 
 
 const SORT_OPTIONS = [
   { value: "default", label: "Relevância" },
@@ -33,8 +34,8 @@ function ExplorarContent() {
   const categoryUrlParam = searchParams.get("category"); 
 
   const [activeCategory, setActiveCategory] = useState<number | string | null>(
-  categoryUrlParam ? Number(categoryUrlParam) : null
-);
+    categoryUrlParam ? Number(categoryUrlParam) : null
+  );
   const [courses, setCourses] = useState<any[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
   const [newAreasCourses, setNewAreasCourses] = useState<any[]>([]);
@@ -49,6 +50,8 @@ function ExplorarContent() {
   const [durationFilter, setDurationFilter] = useState<string>("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (searchUrlParam !== searchQuery) setSearchQuery(searchUrlParam);
@@ -87,7 +90,13 @@ function ExplorarContent() {
             const userRes = await axios.get("http://localhost:8000/api/me/", {
               headers: { Authorization: `Bearer ${token}` }
             });
+
             userInterests = (userRes.data.interests || []).map((i: string) => i.toLowerCase());
+
+            if (userRes.data.onboarding_completed === false) {
+              setShowOnboarding(true);
+            }
+
           } catch (err) {
             console.error("Erro ao buscar interesses do utilizador", err);
           }
@@ -124,8 +133,51 @@ function ExplorarContent() {
     load();
   }, [currentPage]);
 
-  const filteredCourses = courses.filter((course) => {
+  const handleCompleteOnboarding = async (selectedInterests: string[]) => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
 
+    try {
+      await axios.patch(
+        "http://localhost:8000/api/me/",
+        {
+          interests: selectedInterests,
+          onboarding_completed: true,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setShowOnboarding(false);
+      window.location.reload(); 
+    } catch (err) {
+      console.error("Erro ao salvar preferências no onboarding:", err);
+      throw err;
+    }
+  };
+
+  const handleSkipOnboarding = async () => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+
+    try {
+      await axios.patch(
+        "http://localhost:8000/api/me/",
+        {
+          onboarding_completed: true,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setShowOnboarding(false);
+    } catch (err) {
+      console.error("Erro ao pular onboarding:", err);
+      throw err;
+    }
+  };
+
+  const filteredCourses = courses.filter((course) => {
     let courseCategoryIds: (number | string)[] = [];
 
     if (Array.isArray(course.categories)) {
@@ -290,6 +342,15 @@ function ExplorarContent() {
           </div>
         )}
       </main>
+
+      {showOnboarding && (
+        <OnboardingModal
+          categories={categories}
+          onComplete={handleCompleteOnboarding}
+          onSkip={handleSkipOnboarding}
+        />
+      )}
+
       <Footer />
     </div>
   );

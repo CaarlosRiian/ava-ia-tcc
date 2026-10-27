@@ -18,7 +18,7 @@ export default function CourseAbout({ description }: CourseAboutProps) {
       <ul className="mt-6 grid sm:grid-cols-2 gap-3 text-sm">
         {benefits.map((item) => (
           <li key={item} className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-black mt-0.5 shrink-0" />
             <span>{item}</span>
           </li>
         ))}

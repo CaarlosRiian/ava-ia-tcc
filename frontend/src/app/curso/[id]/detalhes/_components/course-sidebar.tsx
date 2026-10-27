@@ -24,8 +24,6 @@ export default function CourseSidebar({ course, isInWishlist = false, onToggleWi
     currency: "BRL",
   });
 
-  const totalHours = course.hours || 40;
-
   const totalLessons = course.modules?.reduce((acc: number, mod: any) => {
     const lessonsCount = mod.lessons?.length || mod.lessons_count || 0;
     return acc + lessonsCount;
@@ -52,7 +50,7 @@ export default function CourseSidebar({ course, isInWishlist = false, onToggleWi
         <Button 
           size="lg" 
           onClick={handleAcquire}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer h-12 rounded-xl" 
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold cursor-pointer h-12 rounded-xl" 
         >
           Adquirir Curso
         </Button>
@@ -62,14 +60,14 @@ export default function CourseSidebar({ course, isInWishlist = false, onToggleWi
             size="lg"
             variant="outline"
             onClick={onToggleWishlist}
-            className={`w-full h-11 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+            className={`w-full h-11 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 border transition-all hover:bg-gray-100 hover:border-red-500 cursor-pointer ${
               isInWishlist
-                ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+                ? "!bg-red-50 !border-red-200 text-red-600 hover:!bg-red-100"
+                : "!bg-white !border-zinc-300 text-zinc-900 hover:!bg-zinc-100"
             }`}
           >
             <Heart 
-              className={`h-4 w-4 transition-transform ${isInWishlist ? "fill-red-600 text-red-600 scale-110" : "text-zinc-500"}`} 
+              className={`h-4 w-4 transition-transform ${isInWishlist ? "fill-red-600 text-red-600 scale-110" : "text-zinc-700"}`} 
             />
             <span>{isInWishlist ? "Na Lista de Desejos" : "Adicionar aos Desejos"}</span>
           </Button>
@@ -78,21 +76,17 @@ export default function CourseSidebar({ course, isInWishlist = false, onToggleWi
 
       <ul className="mt-6 space-y-3 text-sm pt-4 border-t border-zinc-100">
         <li className="flex items-center gap-3">
-          <Clock className="h-4 w-4 text-primary" />
-          <span>
-            <strong>{totalHours}h</strong> de carga horária
-          </span>
+        <Award className="h-4 w-4 text-black" />
+        <span>Certificado de conclusão</span>
         </li>
+
         <li className="flex items-center gap-3">
-          <Award className="h-4 w-4 text-primary" />
-          <span>Certificado de conclusão</span>
-        </li>
-        <li className="flex items-center gap-3">
-          <InfinityIcon className="h-4 w-4 text-primary" />
+          <InfinityIcon className="h-4 w-4 text-black" />
           <span>Acesso vitalício ao conteúdo</span>
         </li>
+
         <li className="flex items-center gap-3">
-          <BookOpen className="h-4 w-4 text-primary" />
+          <BookOpen className="h-4 w-4 text-black" />
           <span>{totalLessons} {totalLessons === 1 ? 'aula' : 'aulas'} em vídeo</span>
         </li>
       </ul>
