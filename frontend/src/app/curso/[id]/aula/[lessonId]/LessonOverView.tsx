@@ -63,7 +63,10 @@ export default function LessonOverview({
     }
   };
 
-  const listagemMateriais = lesson.materials || [];
+  const listagemMateriais = (lesson.materials || []).filter((material: any) => {
+    const tipo = (material.material_type || "").toLowerCase();
+    return tipo !== "text" && tipo !== "texto";
+  });
 
   return (
     <div>
@@ -151,14 +154,14 @@ export default function LessonOverview({
                       alert("Não foi possível carregar o arquivo.");
                     }
                   }}
-                  className="w-full flex items-center justify-between p-3 bg-[#F8F9FA] border border-gray-200 rounded-xl hover:border-[#2F52E0] hover:bg-white transition group cursor-pointer shadow-sm text-left"
+                  className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:border-[#FF7A00] hover:bg-white transition group cursor-pointer shadow-sm text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${isLink ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"}`}>
                       {isLink ? <Link2 size={16} /> : <FileText size={16} />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-800 line-clamp-1 group-hover:text-[#2F52E0]">
+                      <p className="text-sm font-semibold text-gray-800 line-clamp-1 group-hover:text-[#FF7A00]">
                         {material.title || "Material sem título"}
                       </p>
                       <p className="text-[11px] text-gray-400 font-medium">
@@ -167,7 +170,7 @@ export default function LessonOverview({
                     </div>
                   </div>
 
-                  <div className="text-gray-400 group-hover:text-[#2F52E0] pr-1 shrink-0">
+                  <div className="text-gray-400 group-hover:text-[#FF7A00] pr-1 shrink-0">
                     <Download size={14} />
                   </div>
                 </button>

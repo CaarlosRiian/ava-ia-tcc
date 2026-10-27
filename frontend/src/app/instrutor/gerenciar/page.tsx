@@ -40,6 +40,14 @@ export default function GerenciamentoAulas() {
   const currentCourses = cursos.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(cursos.length / itemsPerPage);
 
+  const getCourseRating = (course: any) => {
+    if (!course) return "0.0";
+    if (course.average_rating !== undefined && course.average_rating !== null) {
+      return Number(course.average_rating).toFixed(1);
+    }
+    return "0.0";
+  };
+
   const confirmDeleteCourse = async () => {
     if (!courseToDelete) return;
     try {
@@ -314,7 +322,7 @@ export default function GerenciamentoAulas() {
                   </div>
                   <div className="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100">
                     <span className="text-xs text-gray-500 font-semibold">Média Geral</span>
-                    <p className="text-xl font-black text-amber-600">4.9</p>
+                    <p className="text-xl font-black text-amber-600">{getCourseRating(cursoAtivo)}</p>
                   </div>
                   <div className="bg-gray-50/80 p-3.5 rounded-2xl border border-gray-100">
                     <span className="text-xs text-gray-500 font-semibold">Novos/Semana</span>

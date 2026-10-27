@@ -176,13 +176,13 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
             e.stopPropagation();
             onFavoriteToggle();
           }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm select-none shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm select-none shrink-0 ${
             isFavorited
-              ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100/70 shadow-red-100"
+              ? "bg-red-600 border-red-100 text-white hover:bg-red-500 shadow-red-100"
               : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
           }`} 
         >
-          <Heart className={`h-4 w-4 transition-transform ${isFavorited ? "fill-red-600 text-red-600 scale-110" : ""}`} />
+          <Heart className={`h-4 w-4 transition-transform ${isFavorited ? "fill-white text-white scale-110" : ""}`} />
           <span className="hidden sm:inline">
             {isFavorited ? "Na Lista de Desejos" : "Adicionar aos Desejos"}
           </span>

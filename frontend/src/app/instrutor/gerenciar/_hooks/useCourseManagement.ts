@@ -31,25 +31,38 @@ export function useCourseManagement() {
     setToastConfig((prev) => ({ ...prev, message: null }));
   };
 
-  const cursoAtivo = cursos.find((c) => String(c.id) === String(cursoSelecionado));
-
   useEffect(() => {
     async function loadData() {
       try {
-        const [cats, courses] = await Promise.all([getCategories(), getCourses()]);
-        setCategories(cats);
-        const formatted: CourseUI[] = courses.map((curso: CourseAPI) => ({
+        const [catsResponse, courses] = await Promise.all([getCategories(), getCourses()]);
+        
+        const categoriesList = Array.isArray(catsResponse) 
+          ? catsResponse 
+          : (catsResponse?.results || []);
+          
+        setCategories(categoriesList);
+        
+        const listToFormat = Array.isArray(courses) ? courses : [];
+        const formatted: CourseUI[] = listToFormat.map((curso: CourseAPI) => ({
           ...curso,
-          aulas: curso.modules?.flatMap((m) => m.lessons) || [],
+          alunos: curso.alunos ?? 0,
+          aulas: curso.modules?.flatMap((m) => m.lessons || []) || [],
         }));
+        
         setCursos(formatted);
+
+        if (formatted.length > 0 && !cursoSelecionado) {
+          setCursoSelecionado(String(formatted[0].id));
+        }
       } catch (err) {
-        console.error(err);
-        showToast("Erro ao carregar dados", "error");
+        console.error("Erro ao carregar dados:", err);
       }
     }
     loadData();
   }, []);
+
+
+  const cursoAtivo = cursos.find((c) => String(c.id) === String(cursoSelecionado)) || cursos[0] || null;
 
   const handleCreateModule = async (title: string) => {
     if (!cursoSelecionado) return;
@@ -90,10 +103,11 @@ export function useCourseManagement() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setCursos((prev) => prev.filter((c) => String(c.id) !== String(courseId)));
+      const restante = cursos.filter((c) => String(c.id) !== String(courseId));
+      setCursos(restante);
 
       if (String(cursoSelecionado) === String(courseId)) {
-        setCursoSelecionado(null);
+        setCursoSelecionado(restante.length > 0 ? String(restante[0].id) : null);
       }
 
       showToast("Curso excluído com sucesso!", "success");
@@ -132,9 +146,10 @@ export function useCourseManagement() {
       setCursos((prevCursos) =>
         prevCursos.map((curso) => {
           if (String(curso.id) === String(cursoSelecionado)) {
+            const novasAulas = [...curso.aulas, novaAula];
             return {
               ...curso,
-              aulas: [...curso.aulas, novaAula],
+              aulas: novasAulas,
               modules: curso.modules?.map((modulo) => {
                 if (String(modulo.id) === String(moduloIdAlvo)) {
                   return {

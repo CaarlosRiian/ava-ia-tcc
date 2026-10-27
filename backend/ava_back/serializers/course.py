@@ -66,20 +66,28 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 class InstructorCourseSerializer(serializers.ModelSerializer):
     modules = serializers.SerializerMethodField()
     alunos = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
     thumbnail = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     intro_video = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "categories", "price", "published", "thumbnail", "intro_video", "alunos", "modules", "learning_objectives"]
-    
+        fields = ["id", "title", "description", "categories", "price", "published", "thumbnail", "intro_video", "alunos", "modules", "learning_objectives", "average_rating"]
+
     def get_modules(self, obj):
         modules = obj.modules.all().order_by('order')
         return InstructorModuleSerializer(modules, many=True, context=self.context).data
 
     def get_alunos(self, obj):
         return Enrollment.objects.filter(course=obj, is_active=True).exclude(user=obj.professor).count()
+
+    def get_average_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return round(sum(r.rating for r in reviews) / reviews.count(), 1)
+        
+        return 0.0
 
 class CourseSimpleSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()

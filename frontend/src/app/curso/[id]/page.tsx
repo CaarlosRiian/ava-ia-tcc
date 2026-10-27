@@ -11,6 +11,7 @@ import CourseLessonsSidebar from "./CourseLessonsSidebar";
 import { getCourseDetail, getMyCourses } from "@/services/courses";
 import { getWishlist, toggleWishlist } from "../../lista_desejos/wishlist.service"; 
 import Footer from "@/components/Footer";
+import Toast from "@/components/ui/Toast"; 
 
 export default function CursoDetalhe() {
   const params = useParams();
@@ -21,6 +22,9 @@ export default function CursoDetalhe() {
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false); 
+  
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   useEffect(() => {
     async function checkAuthAndFetchCourse() {
@@ -79,11 +83,15 @@ export default function CursoDetalhe() {
 
   const handleToggleWishlist = async () => {
     const previousState = isInWishlist;
+    const newState = !isInWishlist;
+    
     try {
-      setIsInWishlist(!isInWishlist);
+      setIsInWishlist(newState);
 
-      const token = localStorage.getItem("access") || "";
+      setToastType("success");
+      setToastMessage(newState ? "Adicionado à Lista de Desejos" : "Removido da Lista de Desejos");
       
+      const token = localStorage.getItem("access") || "";
       const data = await toggleWishlist(token, courseId);
       
       if (data && typeof data.in_wishlist === "boolean") {
@@ -92,6 +100,9 @@ export default function CursoDetalhe() {
     } catch (error) {
       console.error("Erro ao atualizar lista de desejos:", error);
       setIsInWishlist(previousState); 
+      
+      setToastType("error");
+      setToastMessage("Erro ao atualizar a lista de desejos");
     }
   };
 
@@ -113,8 +124,14 @@ export default function CursoDetalhe() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col relative">
       <Header />
+
+      <Toast 
+        message={toastMessage} 
+        type={toastType} 
+        onClose={() => setToastMessage(null)} 
+      />
 
       <Breadcrumb 
         items={[
