@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Sum
 from django.conf import settings
-from ..models import Category, Course, Enrollment, Lesson
+from ..models import Category, Course, Enrollment, Lesson, LessonProgress
 from .lesson import ModuleSerializer, ModuleDetailSerializer, InstructorModuleSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -42,12 +42,13 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     learning_objectives = serializers.ListField(child=serializers.CharField(), required=False)
     categories = CategorySerializer(many=True, read_only=True)
     hours = serializers.SerializerMethodField()
+    professor_slug = serializers.CharField(source='professor.slug', read_only=True)
 
     class Meta:
         model = Course
         fields = [
             'id', 'title', 'description', 'categories', 'professor_name', 
-            'professor_avatar', 'price', 'thumbnail', 'intro_video', 
+            'professor_avatar', 'professor_slug', 'price', 'thumbnail', 'intro_video', 
             'published', 'created_at', 'hours', 'modules', 'learning_objectives'
         ]
         read_only_fields = ['id', 'created_at', 'slug']
@@ -106,7 +107,30 @@ class CourseSimpleSerializer(serializers.ModelSerializer):
         return sum(module.lessons.count() for module in obj.modules.all())
 
 class EnrollmentSerializer(serializers.ModelSerializer):
+    progress = serializers.SerializerMethodField()
+    course_id = serializers.ReadOnlyField(source='course.id')
+    title = serializers.ReadOnlyField(source='course.title')
+    thumbnail = serializers.ImageField(source='course.thumbnail', read_only=True)
+    professor = serializers.ReadOnlyField(source='course.professor.username')
+
     class Meta:
         model = Enrollment
-        fields = ['id', 'course', 'enrolled_at', 'is_active']
+        fields = ['id', 'course', 'course_id', 'title', 'thumbnail', 'professor', 'progress', 'enrolled_at', 'is_active']
         read_only_fields = ['enrolled_at']
+
+    def get_progress(self, obj):
+        user = obj.user
+        course = obj.course
+
+        total_lessons = Lesson.objects.filter(module__course=course).count()
+        if total_lessons == 0:
+            return 0.0
+
+        completed_lessons = LessonProgress.objects.filter(
+            user=user,
+            lesson__module__course=course,
+            completed=True
+        ).count()
+
+        percentage = (completed_lessons / total_lessons) * 100
+        return round(percentage, 1)

@@ -99,6 +99,7 @@ def me(request):
             "interests": getattr(user, "interests", []),    
             "specialties": user_specialties,
             "primary_specialty": primary,
+            "onboarding_completed": getattr(user, "onboarding_completed", False),
         }, status=status.HTTP_200_OK)
 
     elif request.method == "PATCH":
@@ -118,6 +119,8 @@ def me(request):
             user.specialties = data["specialties"]
         if "interests" in data:
             user.interests = data["interests"]
+        if "onboarding_completed" in data: 
+            user.onboarding_completed = data["onboarding_completed"]
         if "password" in data and data["password"]:
             user.set_password(data["password"])
 
@@ -140,6 +143,7 @@ def me(request):
             "interests": getattr(user, "interests", []),    
             "specialties": updated_specialties,
             "primary_specialty": primary,
+            "onboarding_completed": getattr(user, "onboarding_completed", False),
             "message": "Perfil atualizado com sucesso!" 
         }, status=status.HTTP_200_OK)
 

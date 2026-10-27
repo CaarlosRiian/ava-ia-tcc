@@ -25,6 +25,7 @@ class User(AbstractUser):
     birth_date = models.DateField(null=True, blank=True)
     interests = models.JSONField(default=list, blank=True)
     specialties = models.JSONField(default=list, blank=True)
+    onboarding_completed = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.slug:

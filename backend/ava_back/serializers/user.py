@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Sum
 from .course import CourseSimpleSerializer 
-from ..models import InstructorRequest, Course, Lesson
+from ..models import Enrollment, InstructorRequest, Course, Lesson
 
 User = get_user_model()
 
@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'name', 'email', 'password', 'role', 'avatar_url', 'bio', 
-            'birth_date', 'interests', 'status', 'specialties', 'created_at', 'primary_specialty'
+            'birth_date', 'interests', 'status', 'specialties', 'created_at', 'primary_specialty', 'onboarding_completed'
         ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': False},
@@ -59,7 +59,6 @@ class UserSerializer(serializers.ModelSerializer):
         if specialties is not None:
             instance.specialties = specialties
             
-        # Garante explicitamente o avatar_url se vier no payload
         avatar_url = validated_data.pop("avatar_url", None)
         if avatar_url is not None:
             instance.avatar_url = avatar_url
@@ -135,18 +134,23 @@ class ProfessorProfileSerializer(serializers.ModelSerializer):
 class ProfessorSerializer(serializers.ModelSerializer):
     courses = CourseSimpleSerializer(many=True, read_only=True)
     total_lessons = serializers.SerializerMethodField()
+    total_students = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'specialties', 'bio', 'avatar_url', 'courses', 'date_joined', 'total_lessons'] 
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'specialties', 'bio', 'avatar_url', 'courses', 'date_joined', 'total_lessons', 'total_students'] 
 
     def get_total_lessons(self, obj):
         return sum(module.lessons.count() for course in obj.courses.all() for module in course.modules.all())
+
+    def get_total_students(self, obj):
+        return Enrollment.objects.filter(course__professor=obj).count()
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['stats'] = {
             'coursesCount': instance.courses.count(),
             'lessons': self.get_total_lessons(instance),
+            'students': self.get_total_students(instance),
         }
         return representation

@@ -3,6 +3,7 @@ from django.http import HttpResponse, request
 from django_filters.rest_framework import DjangoFilterBackend
 
 from ava_back.serializers.interaction import WishlistSerializer
+from ava_back.serializers import user
 from core import settings
 from rest_framework import filters, status
 from rest_framework.viewsets import ModelViewSet
@@ -84,39 +85,14 @@ class CourseViewSet(ModelViewSet):
         if not total_lessons:
             return 0.0
 
-        total_accumulated_progress = 0.0
+        completed_lessons = LessonProgress.objects.filter(
+            user=user,
+            lesson__in=lessons,
+            completed=True
+        ).count()
 
-        for lesson in lessons:
-            lesson_progress_score = 0.0
-            
-            video_completed = LessonProgress.objects.filter(
-                user=user,
-                lesson=lesson,
-                completed=True
-            ).exists()
-            
-            if video_completed:
-                lesson_progress_score += 70.0  
-            
-            from ..models import LessonChallenge, StudentChallengeSubmission
-            challenge = LessonChallenge.objects.filter(lesson=lesson).first()
-            
-            if challenge:
-                passed_challenge = StudentChallengeSubmission.objects.filter(
-                    student=user,
-                    challenge=challenge,
-                    score_percentage__gte=70.0
-                ).exists()
-                
-                if passed_challenge:
-                    lesson_progress_score += 30.0 
-            else:
-                lesson_progress_score += 30.0
-
-            total_accumulated_progress += lesson_progress_score
-
-        course_progress = total_accumulated_progress / total_lessons
-        return round(course_progress, 2)
+        percentage = (completed_lessons / total_lessons) * 100
+        return round(percentage, 2)
         
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
