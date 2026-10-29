@@ -307,14 +307,14 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
           <button
             onClick={() => handleQuickAction("summary")}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-[#2F52E0] text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-blue-100 cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed text-[#2F52E0] text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-blue-100 cursor-pointer"
           >
             <FileText className="h-4 w-4" /> Resumo
           </button>
           <button
             onClick={() => handleQuickAction("quiz")}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-600 text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-emerald-100 cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed text-emerald-600 text-xs font-semibold py-2 px-3 rounded-xl transition-all border border-emerald-100 cursor-pointer"
           >
             <CheckSquare className="h-4 w-4" /> Exercícios
           </button>
@@ -362,18 +362,18 @@ export default function AIChatPanel({ lessonTitle, lessonId }: AIChatPanelProps)
               disabled={isLoading}
               rows={1}
               placeholder={isLoading ? "O tutor está pensando..." : "Faça uma pergunta... (Enter para enviar)"}
-              className="w-full pl-4 pr-12 py-3 text-gray-800 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#2F52E0] transition-all disabled:opacity-50 resize-none max-h-[120px] min-h-[46px] overflow-y-auto custom-scrollbar"
+              className="w-full pl-4 pr-12 py-3 text-gray-800 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#282828] transition-all disabled:opacity-50 resize-none max-h-[120px] min-h-[46px] overflow-y-auto custom-scrollbar"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
               aria-label="Enviar mensagem"
-              className="absolute right-2 bottom-2.5 p-2 bg-[#2F52E0] text-white cursor-pointer rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="absolute right-2 bottom-2.5 p-2 bg-[#282828] text-white cursor-pointer rounded-lg hover:bg-[#494949] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
             </button>
           </form>
-          <p className="text-[10px] text-center text-gray-400 mt-3 italic">A IA pode cometer erros.</p>
+          <p className="text-[10px] text-center text-gray-400 mt-3 italic">A Inteligência Artificial pode cometer erros.</p>
         </div>
       )}
     </div>

@@ -29,7 +29,7 @@ export default function ChatHistory({ messages, isLoading, formatTime }: ChatHis
           >
             <div className={`flex gap-2.5 w-full ${isBot ? "justify-start" : "justify-end"}`}>
               {isBot && (
-                <div className="h-8 w-8 rounded-xl bg-[#2F52E0] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                <div className="h-8 w-8 rounded-xl bg-[#282828] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
                   <Bot className="h-4.5 w-4.5 text-white" />
                 </div>
               )}
@@ -38,7 +38,7 @@ export default function ChatHistory({ messages, isLoading, formatTime }: ChatHis
                 className={`p-3.5 rounded-2xl shadow-sm text-sm max-w-[85%] border ${
                   isBot
                     ? "bg-white text-gray-800 border-gray-100 rounded-tl-xs"
-                    : "bg-[#2F52E0] text-white border-transparent rounded-tr-xs"
+                    : "bg-[#282828] text-white border-transparent rounded-tr-xs"
                 }`}
               >
                 {isBot ? (
@@ -87,13 +87,13 @@ export default function ChatHistory({ messages, isLoading, formatTime }: ChatHis
 
       {isLoading && (
         <div className="flex items-start gap-2.5 justify-start">
-          <div className="h-8 w-8 rounded-xl bg-[#2F52E0] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+          <div className="h-8 w-8 rounded-xl bg-[#282828] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
             <Bot className="h-4.5 w-4.5 text-white" />
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-xs px-4 py-3 shadow-sm flex items-center gap-1.5 h-10">
-            <span className="w-2 h-2 bg-[#2F52E0] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-            <span className="w-2 h-2 bg-[#2F52E0] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-            <span className="w-2 h-2 bg-[#2F52E0] rounded-full animate-bounce"></span>
+            <span className="w-2 h-2 bg-[#282828] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="w-2 h-2 bg-[#282828] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="w-2 h-2 bg-[#282828] rounded-full animate-bounce"></span>
           </div>
         </div>
       )}

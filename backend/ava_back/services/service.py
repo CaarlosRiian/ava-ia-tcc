@@ -187,24 +187,24 @@ class LessonService:
         contexto_aluno = LessonService.obter_contexto_adaptativo_do_aluno(user, lesson) if user else ""
         
         prompt = f"""
-        Você é um tutor cognitivo e assistente virtual de uma plataforma de ensino.
-        O aluno está assistindo à aula "{lesson.title}" e enviou uma mensagem/dúvida.
+        Você é um Tutor, o tutor cognitivo e assistente pedagógico exclusivo desta plataforma de ensino.
+        O aluno está atualmente assistindo à aula específica: "{lesson.title}".
         
         {contexto_aluno}
 
-        Material Didático da Aula:
+        Material Didático / Conteúdo Oficial desta Aula:
         \"\"\"{texto_material}\"\"\"
 
         Mensagem/Pergunta do Aluno:
         "{pergunta_aluno}"
 
-        REGRAS RÍGIDAS DE FORMATAÇÃO E RESPOSTA:
-        1. Responda diretamente ao aluno de forma natural, clara, concisa e encorajadora.
-        2. Seja objetivo: evite introduções longas ou respostas prolixas a menos que o aluno peça explicitamente uma explicação detalhada.
-        3. Se a mensagem for uma solicitação de atalho como "Gerar Exercícios de Fixação" ou similar, crie imediatamente 2 a 3 questões práticas/dissertativas para o aluno responder e fixar o conteúdo.
-        4. NUNCA cite, mencione ou escreva os termos "Taxonomia de Bloom", "Nível de Bloom", "Nível de Aprendizado", nem termos entre parênteses como "(Nível: Entender)".
-        5. Se o aluno pedir resumos ou explicações, foque puramente no conteúdo acadêmico.
-        6. Se o aluno fugir do assunto da aula, reforce amigavelmente o foco na disciplina atual.
+        REGRAS RÍGIDAS DE COMPORTAMENTO E ESCOPO (OBRIGATÓRIO SEGUIR):
+        1. ESCOPO EXCLUSIVO: Você deve responder estritamente com base no conteúdo e tema da aula "{lesson.title}". 
+        2. BLOQUEIO DE ASSUNTOS EXTERNOS: Se o aluno fizer perguntas, pedir códigos (ex: Python, JavaScript, calculadoras, etc.), ou trouxer tópicos que NÃO pertençam ao conteúdo desta aula ou da disciplina, RECUSE educadamente e de forma concisa, dizendo que o foco atual é a aula "{lesson.title}", e convide-o a focar no material. NUNCA resolva tarefas de programação genéricas ou externas que não façam parte do escopo desta aula.
+        3. Se a mensagem for uma solicitação interna de fixação (ex: "Gerar Exercícios"), crie de 2 a 3 questões práticas baseadas EXCLUSIVAMENTE no material didático desta aula.
+        4. Seja natural, claro, conciso, objetivo e encorajador.
+        5. NUNCA cite termos técnicos de pedagogia ou a "Taxonomia de Bloom".
+        6. DETECÇÃO DE RESPOSTAS AO DESAFIO: Se o aluno enviar uma mensagem contendo 3 itens numerados (ex: 1., 2., 3.), trate-os SEMPRE como as respostas dele para o último desafio "Pensar e Responder" gerado, avaliando cada uma delas diretamente como correta ou incorreta em relação ao material da aula, sem dizer que ele enviou "análises genéricas".
         """
 
         client = LessonService._obter_cliente_gemini()
@@ -228,7 +228,7 @@ class LessonService:
                     msg_erro = str(e)
                     if "503" in msg_erro or "UNAVAILABLE" in msg_erro:
                         tempo_espera = (tentativa + 1) * 2
-                        print(f"[Aviso IA]: {modelo} ocupado (503). Retentando em {tempo_espera}s... (Tentativa {tentativa+1}/3)")
+                        print(f"[Aviso IA]: {modelo} ocupado (503). Retentando em {tempo_espera}s...")
                         time.sleep(tempo_espera)
                         continue
                     print(f"[Aviso IA]: Falha no modelo {modelo}: {msg_erro}. Tentando próximo modelo...")
@@ -260,6 +260,26 @@ class LessonService:
             strong_topics=strong_topics
         )
         return performance
+
+    @staticmethod
+    def gerar_novo_pensar_e_responder(lesson: Lesson) -> str:
+        texto_material = LessonService.obter_contexto_da_aula(lesson)
+        
+        prompt = f"""
+        Gere exatamente 3 perguntas abertas, DIFERENTES e REFLEXIVAS sobre a aula "{lesson.title}" 
+        baseadas no seguinte material didático. Evite repetir perguntas comuns.
+        
+        Material:
+        {texto_material}
+        """
+        
+        client = LessonService._obter_cliente_gemini()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        
+        return response.text
 
     @staticmethod
     def handle_submit_quiz_action(request, lesson: Lesson):

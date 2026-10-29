@@ -8,12 +8,18 @@ interface LessonLearningToolsProps {
 }
 
 export default function LessonLearningTools({ lessonTitle, setAiOpen }: LessonLearningToolsProps) {
-  const sendAuto = (prompt: string) => {
-    localStorage.setItem("pending_ai_prompt", prompt);
+  const sendAuto = (prompt: string, displayLabel?: string, forceNew: boolean = true) => {
+    const payload = {
+      prompt,
+      displayLabel: displayLabel || prompt, 
+      forceNew,
+      timestamp: Date.now()
+    };
 
+    localStorage.setItem("pending_ai_prompt", JSON.stringify(payload));
     setAiOpen(true);
 
-    window.dispatchEvent(new CustomEvent("send-ai-prompt", { detail: { prompt } }));
+    window.dispatchEvent(new CustomEvent("send-ai-prompt", { detail: payload }));
   };
 
   const tools = [
@@ -22,21 +28,30 @@ export default function LessonLearningTools({ lessonTitle, setAiOpen }: LessonLe
       title: "Resumo da aula",
       description: "Os pontos principais do conteúdo em poucas linhas.",
       color: "bg-orange-50 text-[#2F52E0]",
-      onClick: () => sendAuto(`Faça um resumo estruturado dos pontos principais da aula "${lessonTitle}".`),
+      onClick: () => sendAuto(
+        `Faça um resumo estruturado dos pontos principais da aula "${lessonTitle}".`, 
+        `📄 Gerando resumo estruturado para "${lessonTitle}"...`
+      ),
     },
     {
       icon: CheckSquare,
       title: "Exercícios de fixação",
       description: "Perguntas de múltipla escolha para testar o que você aprendeu.",
       color: "bg-emerald-50 text-emerald-600",
-      onClick: () => sendAuto(`Crie exercícios de fixação de múltipla escolha sobre a aula "${lessonTitle}".`),
+      onClick: () => sendAuto(
+        `Crie exercícios de fixação de múltipla escolha sobre a aula "${lessonTitle}".`, 
+        `📝 Gerando exercícios de fixação para "${lessonTitle}"...`
+      ),
     },
     {
       icon: Brain,
       title: "Pensar e Responder",
       description: "Desafios abertos para você explicar com suas próprias palavras.",
       color: "bg-purple-50 text-purple-600",
-      onClick: () => sendAuto(`Faça 3 perguntas abertas e reflexivas sobre a aula "${lessonTitle}" para eu responder com minhas próprias palavras.`),
+      onClick: () => sendAuto(
+        `Gere 3 NOVAS perguntas abertas, criativas e reflexivas sobre a aula "${lessonTitle}" (totalmente diferentes de tentativas anteriores) para eu responder com minhas próprias palavras.`, 
+        `🧠 Iniciando desafio "Pensar e Responder" para "${lessonTitle}"...`
+      ),
     },
     {
       icon: Sparkles,

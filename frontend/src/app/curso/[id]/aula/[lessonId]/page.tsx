@@ -205,7 +205,7 @@ export default function Aula() {
         <p className="text-sm text-gray-600 max-w-md">{errorMessage}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-5 py-2.5 bg-[#2F52E0] text-white rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition cursor-pointer"
+          className="px-5 py-2.5 bg-[#282828] text-white rounded-xl font-bold text-sm shadow-md hover:opacity-90 transition cursor-pointer"
         >
           Tentar Novamente
         </button>
