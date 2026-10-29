@@ -7,7 +7,7 @@ from .lesson import ModuleSerializer, ModuleDetailSerializer, InstructorModuleSe
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'avatar_url']
+        fields = ['id', 'name', 'icon']
 
 class CourseSerializer(serializers.ModelSerializer):
     professor_name = serializers.CharField(source='professor.username', read_only=True)

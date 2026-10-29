@@ -1,27 +1,27 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Settings, Pencil, Trash2, ImageIcon, Upload } from "lucide-react";
+import { useState } from "react";
+import { Settings, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
-import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DynamicIcon } from "../_components/DynamicIcon";
+import { AVAILABLE_ICONS } from "./CategoryForm";
 
 interface Categoria {
     id: string;
     name: string;
-    avatar_url?: string;
+    icon?: string;
 }
 
 interface CategoryItemProps {
     categoria: Categoria;
     handleRemover: (id: string) => void;
-    handleEditar: (id: string, novoNome: string, novoArquivo?: File | null) => Promise<void>;
+    handleEditar: (id: string, novoNome: string, novoIcone: string) => Promise<void>;
 }
 
 export function CategoryItem({ categoria, handleRemover, handleEditar }: CategoryItemProps) {
@@ -29,28 +29,11 @@ export function CategoryItem({ categoria, handleRemover, handleEditar }: Categor
     const [modalEditarAberto, setModalEditarAberto] = useState(false);
 
     const [novoNome, setNovoNome] = useState(categoria.name);
-    const [editImagemPreview, setEditImagemPreview] = useState<string | undefined>(categoria.avatar_url);
-    const [editArquivoReal, setEditArquivoReal] = useState<File | null>(null);
-    const editInputRef = useRef<HTMLInputElement>(null);
+    const [novoIcone, setNovoIcone] = useState(categoria.icon || "Code");
 
     const preConfirmarExclusao = () => {
         handleRemover(categoria.id);
         setModalDeletarAberto(false);
-    };
-
-    const handleTrocarImagem = (file: File | null) => {
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-            toast.error("Selecione uma imagem válida.");
-            return;
-        }
-        setEditArquivoReal(file);
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setEditImagemPreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
     };
 
     const salvarEdicao = async (e: React.FormEvent) => {
@@ -60,19 +43,15 @@ export function CategoryItem({ categoria, handleRemover, handleEditar }: Categor
             return;
         }
 
-        await handleEditar(categoria.id, novoNome, editArquivoReal);
+        await handleEditar(categoria.id, novoNome, novoIcone);
         setModalEditarAberto(false);
     };
 
     return (
         <>
             <li className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-2xs hover:bg-gray-50/50 transition-colors">
-                <div className="h-11 w-11 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {categoria.avatar_url ? (
-                        <img src={categoria.avatar_url} alt={categoria.name} className="h-full w-full object-cover" />
-                    ) : (
-                        <ImageIcon className="h-4 w-4 text-gray-400" />
-                    )}
+                <div className="h-11 w-11 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden shrink-0 text-[#FF7A00]">
+                    <DynamicIcon name={categoria.icon || "Folder"} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-gray-900 truncate">{categoria.name}</p>
@@ -91,7 +70,7 @@ export function CategoryItem({ categoria, handleRemover, handleEditar }: Categor
                     <DropdownMenuContent align="end" className="w-36 rounded-xl border-gray-100 shadow-md bg-white">
                         <DropdownMenuItem
                             onClick={() => setModalEditarAberto(true)}
-                            className="flex items-center gap-2 text-xs font-medium cursor-pointer py-2 text-gray-700"
+                            className="flex items-center gap-2 text-xs font-medium cursor-pointer py-2 text-gray-700 focus:bg-orange-50 focus:text-[#FF7A00]"
                         >
                             <Pencil className="h-3.5 w-3.5 text-gray-400" />
                             Editar
@@ -127,12 +106,12 @@ export function CategoryItem({ categoria, handleRemover, handleEditar }: Categor
             </Dialog>
 
             <Dialog open={modalEditarAberto} onOpenChange={setModalEditarAberto}>
-                <DialogContent className="sm:max-w-[425px] rounded-2xl border-gray-100 p-6 bg-white">
+                <DialogContent className="sm:max-w-[450px] rounded-2xl border-gray-100 p-6 bg-white">
                     <form onSubmit={salvarEdicao}>
                         <DialogHeader>
                             <DialogTitle className="text-base font-bold text-gray-900">Editar Categoria</DialogTitle>
                             <DialogDescription className="text-xs text-gray-500 pt-1">
-                                Altere o nome ou imagem da categoria selecionada.
+                                Altere o nome ou o ícone representativo da categoria.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -145,43 +124,40 @@ export function CategoryItem({ categoria, handleRemover, handleEditar }: Categor
                                     id="edit-nome"
                                     value={novoNome}
                                     onChange={(e) => setNovoNome(e.target.value)}
-                                    className="h-10 rounded-xl border-gray-300 focus-visible:ring-2 focus-visible:ring-[#6366F1]"
+                                    className="h-10 rounded-xl border-gray-300 focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-gray-700">Alterar Imagem de Capa</Label>
-                                <div
-                                    onClick={() => editInputRef.current?.click()}
-                                    className="border border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50/50 transition-colors bg-white flex items-center justify-center gap-4"
-                                >
-                                    {editImagemPreview ? (
-                                        <img src={editImagemPreview} alt="Preview" className="h-14 w-14 object-cover rounded-lg border border-gray-100" />
-                                    ) : (
-                                        <ImageIcon className="h-7 w-7 text-gray-400" />
-                                    )}
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-gray-600 flex items-center gap-1">
-                                            <Upload className="h-3.5 w-3.5 text-[#6366F1]" /> Escolher nova imagem
-                                        </p>
-                                        <p className="text-[10px] text-gray-400">Deixe como está para manter a atual</p>
-                                    </div>
-                                    <input
-                                        ref={editInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => handleTrocarImagem(e.target.files?.[0] ?? null)}
-                                    />
+                                <Label className="text-xs font-bold text-gray-700">Selecione o Ícone</Label>
+                                <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1 border border-gray-200 rounded-xl bg-gray-50/50">
+                                    {AVAILABLE_ICONS.map((item) => {
+                                        const isSelected = novoIcone === item.name;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={item.name}
+                                                onClick={() => setNovoIcone(item.name)}
+                                                className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-orange-50 border-[#FF7A00] text-[#FF7A00] shadow-2xs"
+                                                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                                                }`}
+                                            >
+                                                <DynamicIcon name={item.name} className="h-4 w-4 mb-1" />
+                                                <span className="text-[9px] font-medium truncate max-w-full">{item.label}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
 
-                        <DialogFooter className="flex flex-row justify-end gap-3 pt-5 sm:space-x-0">
+                        <DialogFooter className="flex flex-row justify-end gap-3 pt-3 sm:space-x-0">
                             <Button type="button" variant="outline" onClick={() => setModalEditarAberto(false)} className="rounded-lg text-xs font-semibold h-9 flex-1 sm:flex-none cursor-pointer">
                                 Cancelar
                             </Button>
-                            <Button type="submit" className="rounded-lg text-xs font-bold bg-[#6366F1] hover:bg-[#5356E2] h-9 flex-1 sm:flex-none cursor-pointer" >
+                            <Button type="submit" className="rounded-lg text-xs font-bold bg-[#FF7A00] hover:bg-[#ea7306] text-white h-9 flex-1 sm:flex-none cursor-pointer">
                                 Salvar Alterações
                             </Button>
                         </DialogFooter>

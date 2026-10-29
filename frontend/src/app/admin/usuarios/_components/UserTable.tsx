@@ -75,7 +75,7 @@ export const UserTable = ({ usuarios, idUsuarioLogado, onEdit, onBan, onOpenRole
 
               <TableCell className="text-right">
                 {idUsuarioLogado && u.id === idUsuarioLogado ? (
-                  <span className="text-xs font-bold bg-indigo-50 text-[#6366F1] py-1 px-2.5 rounded-lg border border-indigo-100 select-none inline-block align-middle">
+                  <span className="text-xs font-bold bg-orange-50 text-[#FF7A00] py-1 px-2.5 rounded-lg border border-orange-100 select-none inline-block align-middle">
                     Você
                   </span>
                 ) : (

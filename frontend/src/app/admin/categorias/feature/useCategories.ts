@@ -1,87 +1,76 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 
 interface Categoria {
   id: string;
   name: string;
-  avatar_url?: string;
+  icon?: string;
 }
 
 export function useCategories() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   const [nome, setNome] = useState("");
-  const [imagemPreview, setImagemPreview] = useState<string | undefined>(undefined);
-  const [arquivoReal, setArquivoReal] = useState<File | null>(null);
-  const [nomeArquivo, setNomeArquivo] = useState<string>("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [iconeSelecionado, setIconeSelecionado] = useState("Code");
 
-  async function fetchCategorias() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  const pageSize = 10;
+
+   async function fetchCategorias(page: number = 1) {
     try {
       setLoading(true);
-      const response = await api.get<Categoria[]>("/categories/");
-      setCategorias(response.data);
+      const response = await api.get<any>(`/categories/?page=${page}`);
+      const dadosApi = response.data;
+
+      if (Array.isArray(dadosApi)) {
+        setCategorias(dadosApi);
+        setTotalCount(dadosApi.length);
+      } else if (dadosApi && Array.isArray(dadosApi.results)) {
+        setCategorias(dadosApi.results);
+        setTotalCount(dadosApi.count || dadosApi.results.length);
+      } else {
+        setCategorias([]);
+      }
+      setCurrentPage(page);
     } catch {
       toast.error("Erro ao carregar categorias.");
+      setCategorias([]);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    fetchCategorias();
+    fetchCategorias(1);
   }, []);
 
-  const handleArquivo = (file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem válido.");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 4MB.");
-      return;
-    }
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-    setArquivoReal(file);
-    setNomeArquivo(file.name);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagemPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchCategorias(page);
+    }
   };
 
   const limparFormulario = () => {
     setNome("");
-    setImagemPreview(undefined);
-    setArquivoReal(null);
-    setNomeArquivo("");
-    if (inputRef.current) inputRef.current.value = "";
+    setIconeSelecionado("Code");
   };
 
-  const handleEditar = async (id: string, novoNome: string, novoArquivo?: File | null) => {
+  const handleEditar = async (id: string, novoNome: string, novoIcone: string) => {
     try {
       setLoading(true);
-      const formData = new FormData();
-      formData.append("name", novoNome.trim());
-
-      if (novoArquivo) {
-        formData.append("avatar_url", novoArquivo);
-      }
-
-      await api.patch(`/categories/${id}/`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      await api.patch(`/categories/${id}/`, {
+        name: novoNome.trim(),
+        icon: novoIcone,
       });
-
       toast.success("Categoria atualizada com sucesso!");
-      fetchCategorias();
+      fetchCategorias(currentPage);
     } catch (error: any) {
       const mensagemErro = error.response?.data?.name?.[0] || "Erro ao atualizar categoria.";
       toast.error(mensagemErro);
@@ -92,40 +81,23 @@ export function useCategories() {
 
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!nome.trim()) {
       toast.error("Informe o nome da categoria.");
-      return;
-    }
-    if (!arquivoReal) {
-      toast.error("Adicione uma imagem para a categoria.");
       return;
     }
 
     try {
       setLoading(true);
-
-      const formData = new FormData();
-      formData.append("name", nome.trim());
-
-      formData.append("avatar_url", arquivoReal);
-
-      await api.post("/categories/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      await api.post("/categories/", {
+        name: nome.trim(),
+        icon: iconeSelecionado,
       });
 
       toast.success(`Categoria "${nome.trim()}" cadastrada com sucesso!`);
       limparFormulario();
-      fetchCategorias();
+      fetchCategorias(1);
     } catch (error: any) {
-
-      const mensagemErro =
-        error.response?.data?.avatar_url?.[0] ||
-        error.response?.data?.name?.[0] ||
-        "Erro ao salvar categoria.";
-
+      const mensagemErro = error.response?.data?.name?.[0] || "Erro ao salvar categoria.";
       toast.error(mensagemErro);
     } finally {
       setLoading(false);
@@ -136,7 +108,7 @@ export function useCategories() {
     try {
       await api.delete(`/categories/${id}/`);
       toast.success("Categoria removida com sucesso.");
-      fetchCategorias();
+      fetchCategorias(currentPage);
     } catch {
       toast.error("Erro ao remover categoria.");
     }
@@ -147,10 +119,12 @@ export function useCategories() {
     loading,
     nome,
     setNome,
-    imagemPreview,
-    nomeArquivo,
-    inputRef,
-    handleArquivo,
+    iconeSelecionado,
+    setIconeSelecionado,
+    totalCount,
+    currentPage,
+    totalPages,
+    handlePageChange,
     limparFormulario,
     handleSalvar,
     handleEditar,

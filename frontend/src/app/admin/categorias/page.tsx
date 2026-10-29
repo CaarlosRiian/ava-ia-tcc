@@ -7,8 +7,9 @@ import { CategoryForm } from "./_components/CategoryForm";
 import { CategoryList } from "./_components/CategoryList";
 
 export default function AdminCategorias() {
-  const {categorias, loading, nome, setNome, imagemPreview, nomeArquivo, inputRef, handleArquivo, limparFormulario, handleSalvar, handleRemover, handleEditar, 
-  } = useCategories();
+  const { categorias, loading, nome, setNome, iconeSelecionado, setIconeSelecionado, 
+    totalCount, currentPage, totalPages, handlePageChange, limparFormulario, handleSalvar, 
+    handleRemover,  handleEditar } = useCategories();
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -25,7 +26,7 @@ export default function AdminCategorias() {
         <header>
           <h1 className="text-2xl font-black text-[#161B1D]">Gerenciar Categorias</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Cadastre e controle as categorias estruturais de cursos da plataforma.
+            Cadastre e controle as categorias estruturais de cursos da plataforma usando ícones.
           </p>
         </header>
 
@@ -33,10 +34,8 @@ export default function AdminCategorias() {
           <CategoryForm
             nome={nome}
             setNome={setNome}
-            imagemPreview={imagemPreview}
-            nomeArquivo={nomeArquivo}
-            inputRef={inputRef}
-            handleArquivo={handleArquivo}
+            iconeSelecionado={iconeSelecionado}
+            setIconeSelecionado={setIconeSelecionado}
             limparFormulario={limparFormulario}
             handleSalvar={handleSalvar}
           />
@@ -44,6 +43,10 @@ export default function AdminCategorias() {
           <CategoryList 
             categorias={categorias} 
             loading={loading} 
+            totalCount={totalCount}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
             handleRemover={handleRemover} 
             handleEditar={handleEditar} 
           />

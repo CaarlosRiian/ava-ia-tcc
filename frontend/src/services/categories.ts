@@ -1,6 +1,6 @@
 const API_URL = "http://localhost:8000/api";
 
-export async function getCategories() {
+export async function getCategories(all: boolean = false) {
   const token = localStorage.getItem("access");
 
   const headers: Record<string, string> = {};
@@ -8,7 +8,9 @@ export async function getCategories() {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}/categories/`, {
+  const url = all ? `${API_URL}/categories/?all=true` : `${API_URL}/categories/`;
+
+  const response = await fetch(url, {
     headers: headers,
   });
 
@@ -20,5 +22,7 @@ export async function getCategories() {
     throw new Error("Erro ao buscar categorias");
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return data.results || data;
 }

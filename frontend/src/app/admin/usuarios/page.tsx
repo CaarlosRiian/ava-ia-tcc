@@ -78,7 +78,7 @@ export default function AdminUsuarios() {
 
             <form onSubmit={handleAcaoBusca} className="relative flex-1 w-full flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 text-gray-400 pointer-events-none" />
-              <Input className="pl-10 pr-24 h-11 w-full bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#6366F1] focus-visible:border-transparent transition-all"
+              <Input className="pl-10 pr-24 h-11 w-full bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:border-transparent transition-all"
                 value={termo}
                 onChange={(e) => setTermo(e.target.value)}
                 placeholder="Buscar por nome ou e-mail..."
@@ -86,7 +86,7 @@ export default function AdminUsuarios() {
 
               <button type="submit" className={`absolute right-1.5 h-8 px-4 text-xs font-bold rounded-lg transition-colors cursor-pointer ${busca
                 ? "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200"
-                : "bg-[#6366F1] hover:bg-[#5356E2] text-white"
+                : "bg-[#FF7A00] hover:bg-[#ea7306] text-white"
                 }`}
               >
                 {busca ? "Limpar" : "Buscar"}
@@ -94,24 +94,24 @@ export default function AdminUsuarios() {
             </form>
 
             <Select value={filtroRole} onValueChange={(v) => setFiltroRole(v as any)}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11 bg-white border border-gray-300 rounded-x text-gray-700 font-medium px-3 justify-between items-center focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all cursor-pointer">
+              <SelectTrigger className="w-full sm:w-[180px] h-11 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium px-3 justify-between items-center focus:ring-2 focus:ring-[#FF7A00] focus:border-transparent transition-all cursor-pointer">
                 <SelectValue placeholder="Papel" />
               </SelectTrigger>
 
               <SelectContent className="bg-white border border-gray-200 shadow-xl rounded-xl p-1 z-50 min-w-[180px]">
-                <SelectItem value="todos" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-gray-50 cursor-pointer transition-colors"
+                <SelectItem value="todos" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-orange-50 focus:text-[#FF7A00] cursor-pointer transition-colors"
                 >
                   Todos
                 </SelectItem>
-                <SelectItem value="admin" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-gray-50 cursor-pointer transition-colors"
+                <SelectItem value="admin" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-orange-50 focus:text-[#FF7A00] cursor-pointer transition-colors"
                 >
                   Admin
                 </SelectItem>
-                <SelectItem value="professor" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-gray-50 cursor-pointer transition-colors"
+                <SelectItem value="professor" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-orange-50 focus:text-[#FF7A00] cursor-pointer transition-colors"
                 >
                   Professor
                 </SelectItem>
-                <SelectItem value="aluno" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-gray-50 cursor-pointer transition-colors"
+                <SelectItem value="aluno" className="rounded-lg py-2 px-3 text-sm text-gray-700 focus:bg-orange-50 focus:text-[#FF7A00] cursor-pointer transition-colors"
                 >
                   Aluno
                 </SelectItem>

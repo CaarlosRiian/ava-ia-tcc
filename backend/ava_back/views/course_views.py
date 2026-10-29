@@ -25,6 +25,13 @@ class CategoryViewSet(ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get('all') == 'true':
+            queryset = Category.objects.all()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        
+        return super().list(request, *args, **kwargs)
 
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
@@ -197,6 +204,14 @@ class CourseViewSet(ModelViewSet):
         courses = CourseService.get_recommended_courses(request.user)
         serializer = self.get_serializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get('all') == 'true':
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        
+        return super().list(request, *args, **kwargs)
 
 class WishListViewSet(ModelViewSet):
     serializer_class = WishlistSerializer

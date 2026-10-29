@@ -56,13 +56,10 @@ class User(AbstractUser):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    avatar_url = models.ImageField(upload_to='categories/', null=True, blank=True)
+    icon = models.CharField(max_length=50, default="Folder")
 
     def __str__(self):
         return self.name
-
-from django.db import models
-from django.utils.text import slugify
 
 class Course(models.Model):
     title = models.CharField(max_length=100, null=False, blank=False)

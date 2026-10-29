@@ -5,9 +5,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LayoutGrid, Palette, BrainCircuit, FlaskConical, UserRound, PenTool, ChefHat,
   Code2, Megaphone, Briefcase, Cloud, Wallet, Layers } from "lucide-react";
 
+import { DynamicIcon } from "../../app/admin/categorias/_components/DynamicIcon"
+
 interface Category {
   id: number | string;
   name: string;
+  icon?: string; 
 }
 
 interface Props {
@@ -109,8 +112,9 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
         </button>
 
         {categories.map((cat) => {
-          const Icon = getCategoryIcon(cat.name);
           const isActive = activeCategory !== null && String(activeCategory) === String(cat.id);
+          const FallbackIcon = getCategoryIcon(cat.name);
+
           return (
             <button
               key={cat.id}
@@ -121,7 +125,11 @@ export default function CategoryFilters({ categories, activeCategory, onSelect }
                   : "bg-white text-gray-500 border-gray-200/80 hover:border-gray-300 hover:text-gray-700 shadow-sm"
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 ${isActive ? "text-white" : "text-gray-400"}`} />
+              {cat.icon ? (
+                <DynamicIcon name={cat.icon} className={`h-3.5 w-3.5 ${isActive ? "text-white" : "text-gray-400"}`} />
+              ) : (
+                <FallbackIcon className={`h-3.5 w-3.5 ${isActive ? "text-white" : "text-gray-400"}`} />
+              )}
               <span>{cat.name}</span>
             </button>
           );

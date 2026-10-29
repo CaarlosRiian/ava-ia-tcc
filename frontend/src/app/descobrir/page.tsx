@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { SlidersHorizontal, RotateCcw, ArrowUpDown, Clock, SearchX, Sparkles, Compass } from "lucide-react";
+import { Suspense } from "react";
+import { SlidersHorizontal, RotateCcw, ArrowUpDown, Clock, SearchX } from "lucide-react";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/BreadCrumb";
 import LoadingScreen from "@/components/LoadingScreen";
 import CourseGrid from "@/app/descobrir/CourseGrid";
 import CategoryFilters from "@/app/descobrir/CategoryFilters";
-import { TopicSection } from "@/app/descobrir/TopicSection";
 import { Pagination } from "@/components/Pagination";
-import { getCourses } from "@/services/courses";
-import { getCategories } from "@/services/categories";
-import { useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
+import OnboardingModal from "@/components/OnboardingModal";
+import { useExplorar } from "./hook/useExplorar";
+import { ExplorarSections } from "./_components/ExplorarSections";
 import axios from "axios";
-import OnboardingModal from "@/components/OnboardingModal"; 
 
 const SORT_OPTIONS = [
   { value: "default", label: "Relevância" },
@@ -29,127 +27,21 @@ const DURATION_OPTIONS = [
 ];
 
 function ExplorarContent() {
-  const searchParams = useSearchParams();
-  const searchUrlParam = searchParams.get("search") || "";
-  const categoryUrlParam = searchParams.get("category"); 
+  const { categories, courses, loading, currentPage, totalPages, setCurrentPage, searchQuery, setSearchQuery, activeCategory, setActiveCategory, sortBy, setSortBy,
+    durationFilter, setDurationFilter, showAdvanced, setShowAdvanced, expandedTopic,
+    setExpandedTopic, showOnboarding, setShowOnboarding, sortedCourses, recommendedCourses,
+    newAreasCourses, handleResetFilters, } = useExplorar();
 
-  const [activeCategory, setActiveCategory] = useState<number | string | null>(
-    categoryUrlParam ? Number(categoryUrlParam) : null
-  );
-  const [courses, setCourses] = useState<any[]>([]);
-  const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
-  const [newAreasCourses, setNewAreasCourses] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const [searchQuery, setSearchQuery] = useState(searchUrlParam);
-  const [sortBy, setSortBy] = useState<string>("default");
-  const [durationFilter, setDurationFilter] = useState<string>("all");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
-
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (searchUrlParam !== searchQuery) setSearchQuery(searchUrlParam);
-  }, [searchUrlParam]);
-
-  useEffect(() => {
-    if (categoryUrlParam) {
-      setActiveCategory(Number(categoryUrlParam));
-    }
-  }, [categoryUrlParam]);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("access");
-
-        const [coursesData, categoriesData] = await Promise.all([
-          getCourses(currentPage), 
-          getCategories(),
-        ]);
-
-        const rawCourses = coursesData?.results || coursesData || [];
-        const allCategories = categoriesData?.results || categoriesData || [];
-        setCategories(allCategories);
-
-        const totalCount = coursesData?.count || rawCourses.length;
-        setTotalPages(Math.ceil(totalCount / 10));
-
-        const shuffledCourses = [...rawCourses].sort(() => Math.random() - 0.5);
-        setCourses(shuffledCourses);
-
-        let userInterests: string[] = [];
-        if (token) {
-          try {
-            const userRes = await axios.get("http://localhost:8000/api/me/", {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-
-            userInterests = (userRes.data.interests || []).map((i: string) => i.toLowerCase());
-
-            if (userRes.data.onboarding_completed === false) {
-              setShowOnboarding(true);
-            }
-
-          } catch (err) {
-            console.error("Erro ao buscar interesses do utilizador", err);
-          }
-        }
-
-        const recommended = shuffledCourses.filter((course: any) => {
-          const courseCats = course.categories || [];
-          const matchesAnyCategory = courseCats.some((cat: any) => {
-            const catName = typeof cat === "object" ? cat.name : allCategories.find((c: any) => c.id === cat)?.name;
-            return userInterests.includes(catName?.toLowerCase());
-          });
-          return matchesAnyCategory;
-        });
-
-        setRecommendedCourses(recommended.length > 0 ? recommended : shuffledCourses.slice(0, 4));
-
-        const newAreas = shuffledCourses.filter((course: any) => {
-          const courseCats = course.categories || [];
-          const matchesAnyCategory = courseCats.some((cat: any) => {
-            const catName = typeof cat === "object" ? cat.name : allCategories.find((c: any) => c.id === cat)?.name;
-            return userInterests.includes(catName?.toLowerCase());
-          });
-          return !matchesAnyCategory;
-        });
-
-        setNewAreasCourses(newAreas.length > 0 ? newAreas : shuffledCourses.slice(4, 8));
-
-      } catch (error) {
-        console.error("Erro ao carregar explorar:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [currentPage]);
+  const isBrowsingResults = Boolean(activeCategory || searchQuery || sortBy !== "default" || durationFilter !== "all");
+  const hasActiveFilters = activeCategory !== null || sortBy !== "default" || durationFilter !== "all" || searchQuery !== "" || expandedTopic !== null;
 
   const handleCompleteOnboarding = async (selectedInterests: string[]) => {
     const token = localStorage.getItem("access");
     if (!token) return;
-
     try {
-      await axios.patch(
-        "http://localhost:8000/api/me/",
-        {
-          interests: selectedInterests,
-          onboarding_completed: true,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.patch("http://localhost:8000/api/me/", { interests: selectedInterests, onboarding_completed: true }, { headers: { Authorization: `Bearer ${token}` } });
       setShowOnboarding(false);
-      window.location.reload(); 
+      window.location.reload();
     } catch (err) {
       console.error("Erro ao salvar preferências no onboarding:", err);
       throw err;
@@ -159,93 +51,13 @@ function ExplorarContent() {
   const handleSkipOnboarding = async () => {
     const token = localStorage.getItem("access");
     if (!token) return;
-
     try {
-      await axios.patch(
-        "http://localhost:8000/api/me/",
-        {
-          onboarding_completed: true,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.patch("http://localhost:8000/api/me/", { onboarding_completed: true }, { headers: { Authorization: `Bearer ${token}` } });
       setShowOnboarding(false);
     } catch (err) {
       console.error("Erro ao pular onboarding:", err);
       throw err;
     }
-  };
-
-  const filteredCourses = courses.filter((course) => {
-    let courseCategoryIds: (number | string)[] = [];
-
-    if (Array.isArray(course.categories)) {
-      courseCategoryIds = course.categories.map((cat: any) => 
-        typeof cat === "object" && cat !== null ? cat.id : cat
-      );
-    } else if (course.category) {
-      courseCategoryIds = [course.category];
-    }
-
-    const matchesCategory = activeCategory !== null
-      ? courseCategoryIds.some((catId) => {
-          const isMatch = String(catId) === String(activeCategory);
-          return isMatch;
-        })
-      : true;
-
-    const matchesSearch = (() => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      const titleMatch = course.title?.toLowerCase().includes(query);
-      
-      const matchesCategoryName = courseCategoryIds.some((cat: any) => {
-        const catName = typeof cat === "object" 
-          ? cat?.name 
-          : categories.find((c) => String(c.id) === String(cat))?.name;
-        return catName?.toLowerCase().includes(query);
-      });
-      return titleMatch || matchesCategoryName;
-    })();
-
-    const totalLessons = course.modules?.length || 0;
-    let matchesDuration = true;
-    if (durationFilter === "short") matchesDuration = totalLessons <= 3;
-    if (durationFilter === "long") matchesDuration = totalLessons > 3;
-
-    return matchesCategory && matchesSearch && matchesDuration;
-  });
-
-  const sortedCourses = [...filteredCourses].sort((a, b) => {
-    if (sortBy === "az") return a.title.localeCompare(b.title);
-    if (sortBy === "lessons") return (b.modules?.length || 0) - (a.modules?.length || 0);
-    return 0;
-  });
-
-  const recommendedList = expandedTopic === "recommended" ? recommendedCourses : recommendedCourses.slice(0, 4);
-  const excludedIds = new Set(recommendedList.map((c: any) => c.id));
-
-  const newAreasList = expandedTopic === "newAreas" ? newAreasCourses : newAreasCourses.filter((c: any) => !excludedIds.has(c.id)).slice(0, 4);
-  newAreasList.forEach((c: any) => excludedIds.add(c.id));
-
-  const popularCoursesData = courses.filter((c: any) => !excludedIds.has(c.id));
-  const popularList = expandedTopic === "popular" ? popularCoursesData : popularCoursesData.slice(0, 4);
-  popularList.forEach((c: any) => excludedIds.add(c.id));
-
-  const recentCoursesData = [...courses].filter((c: any) => !excludedIds.has(c.id)).reverse();
-  const recentList = expandedTopic === "recent" ? recentCoursesData : recentCoursesData.slice(0, 4);
-
-  const isBrowsingResults = Boolean(activeCategory || searchQuery || sortBy !== "default" || durationFilter !== "all");
-  const hasActiveFilters = activeCategory !== null || sortBy !== "default" || durationFilter !== "all" || searchQuery !== "" || expandedTopic !== null;
-
-  const handleResetFilters = () => {
-    setActiveCategory(null);
-    setSortBy("default");
-    setDurationFilter("all");
-    setSearchQuery("");
-    setExpandedTopic(null);
-    setCurrentPage(1);
   };
 
   if (loading && courses.length === 0) return <LoadingScreen text="Carregando cursos..." />;
@@ -324,22 +136,16 @@ function ExplorarContent() {
             )}
           </div>
         ) : (
-          <div className="space-y-14 mt-2">
-            {recommendedCourses.length > 0 && (expandedTopic === null || expandedTopic === "recommended") && (
-              <TopicSection title="Recomendados para Você" icon={<Sparkles className="h-5 w-5 text-[#FF7A00]" />} courses={recommendedList} total={recommendedCourses.length} expanded={expandedTopic === "recommended"} onExpand={() => setExpandedTopic("recommended")} />
-            )}
-            {newAreasList.length > 0 && (expandedTopic === null || expandedTopic === "newAreas") && (
-              <TopicSection title="Dê uma chance a novas áreas" icon={<Compass className="h-5 w-5 text-[#2F52E0]" />} courses={newAreasList} total={newAreasCourses.length} expanded={expandedTopic === "newAreas"} onExpand={() => setExpandedTopic("newAreas")} />
-            )}
-            {popularList.length > 0 && (expandedTopic === null || expandedTopic === "popular") && (
-              <TopicSection title="Cursos em destaque" courses={popularList} total={popularCoursesData.length} expanded={expandedTopic === "popular"} onExpand={() => setExpandedTopic("popular")} />
-            )}
-            {recentList.length > 0 && (expandedTopic === null || expandedTopic === "recent") && (
-              <TopicSection title="Novidades na plataforma" courses={recentList} total={recentCoursesData.length} expanded={expandedTopic === "recent"} onExpand={() => setExpandedTopic("recent")} />
-            )}
-
-            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          </div>
+          <ExplorarSections
+            courses={courses}
+            recommendedCourses={recommendedCourses}
+            newAreasCourses={newAreasCourses}
+            expandedTopic={expandedTopic}
+            setExpandedTopic={setExpandedTopic}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+          />
         )}
       </main>
 

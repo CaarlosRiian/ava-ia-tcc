@@ -51,7 +51,7 @@ export function UserPagination({
                   isActive={paginaAtual === numeroPagina}
                   className={`cursor-pointer transition-all rounded-lg text-xs font-bold ${
                     paginaAtual === numeroPagina
-                      ? "bg-[#6366F1] text-white hover:bg-[#5356E2] hover:text-white"
+                      ? "bg-[#FF7A00] text-white hover:bg-[#ea7306] hover:text-white"
                       : "text-gray-600 hover:bg-gray-50 border-transparent"
                   }`}
                   onClick={(e) => {
