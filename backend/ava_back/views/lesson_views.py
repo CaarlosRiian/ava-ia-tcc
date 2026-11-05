@@ -16,9 +16,9 @@ from rest_framework.views import APIView
 from django.core.paginator import Paginator
 
 
-from ..models import ( Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, LessonSubmission, LessonComment, CourseReview )
+from ..models import ( Module, Lesson, LessonMaterial, StudentChallengeSubmission, StudentPerformance, LessonSubmission, LessonComment, CourseReview, LessonChallenge )
 from ..serializers import ( LessonCommentSerializer, ModuleSerializer, LessonSerializer, LessonMaterialSerializer, InstructorLessonSerializer, StudentChallengeSubmissionSerializer, LessonCommentSerializer, CourseReviewSerializer )
-from ..services.service import LessonService
+from ..services import LessonService
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,38 @@ class LessonViewSet(ModelViewSet):
 
     def get_queryset(self):
         return Lesson.objects.select_related('module__course').all()
+
+    def perform_create(self, serializer):
+        lesson = serializer.save()
+        self._save_challenge_from_request(lesson, self.request)
+
+    def perform_update(self, serializer):
+        lesson = serializer.save()
+        self._save_challenge_from_request(lesson, self.request)
+
+    def _save_challenge_from_request(self, lesson, request):
+        has_challenge = request.data.get('has_challenge')
+        
+        if isinstance(has_challenge, str):
+            has_challenge = has_challenge.lower() == 'true'
+
+        if has_challenge:
+            title = request.data.get('challenge_title')
+            description = request.data.get('challenge_description')
+            criteria = request.data.get('challenge_criteria')
+
+            if title or description:
+                LessonChallenge.objects.update_or_create(
+                    lesson=lesson,
+                    defaults={
+                        'title': title or f"Desafio: {lesson.title}",
+                        'description': description or "Resolva o desafio prático proposto.",
+                        'evaluation_criteria': criteria or "Avalie a lógica e a sintaxe de forma objetiva.",
+                        'taxonomy_level': 'analisar'
+                    }
+                )
+        else:
+            LessonChallenge.objects.filter(lesson=lesson).delete()
 
     @action(detail=True, methods=['post'], permission_classes=[drf_permissions.IsAuthenticated])
     def complete(self, request, pk=None):
@@ -77,83 +109,68 @@ class LessonViewSet(ModelViewSet):
         lesson = self.get_object()
         return LessonService.handle_submit_quiz_action(request, lesson)
 
-    @action(detail=False, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='meu-desempenho')
-    def meu_desempenho(self, request):
-        performances = StudentPerformance.objects.filter(
-            user=request.user
-        ).select_related('lesson').order_by('created_at')
-
-        data = [
-            {
-                "id": p.id,
-                "score_percentage": p.score_percentage,
-                "lesson_title": p.lesson.title if p.lesson else "Aula sem título",
-                "created_at": p.created_at.isoformat() if p.created_at else None,
-                "weak_topics": p.weak_topics,
-                "strong_topics": p.strong_topics
-            }
-            for p in performances
-        ]
-
-        return Response(data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['get', 'post'], permission_classes=[drf_permissions.IsAuthenticated], url_path='comments')
-    def comments(self, request, pk=None):
+    @action(detail=True, methods=['get'], permission_classes=[drf_permissions.IsAuthenticated], url_path='submissions')
+    def submissions(self, request, pk=None):
         lesson = self.get_object()
+
+        if request.user.role != "professor" and not request.user.is_staff:
+            raise PermissionDenied("Você não tem permissão para ver estas submissões.")
+
+        challenge = LessonChallenge.objects.filter(lesson=lesson).first()
+        if not challenge:
+            return Response([], status=status.HTTP_200_OK)
+
+        submissions = StudentChallengeSubmission.objects.filter(
+            challenge=challenge
+        ).select_related('student', 'challenge')
         
+        serializer = StudentChallengeSubmissionSerializer(submissions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get', 'post'], permission_classes=[drf_permissions.IsAuthenticated])
+    def submit(self, request, pk=None):
+        lesson = self.get_object()
+        user = request.user
+
         if request.method == 'GET':
-            total_count = lesson.comments.count()
-            root_comments = lesson.comments.filter(parent__isnull=True).order_by('-created_at')
-
-            page_number = int(request.query_params.get('page', 1))
-            page_size = int(request.query_params.get('page_size', 5))
-
-            paginator = Paginator(root_comments, page_size)
-            page_obj = paginator.get_page(page_number)
-
-            serializer = LessonCommentSerializer(page_obj.object_list, many=True)
-
-            return Response({
-                'total_count': total_count,
-                'has_next': page_obj.has_next(),
-                'next_page': page_number + 1 if page_obj.has_next() else None,
-                'results': serializer.data
-            })
+            challenge = LessonChallenge.objects.filter(lesson=lesson).first()
+            if not challenge:
+                return Response({"submitted": False, "message": "Nenhum desafio para esta aula."}, status=status.HTTP_200_OK)
             
-        elif request.method == 'POST':
-            serializer = LessonCommentSerializer(data=request.data)
-            if serializer.is_valid():
-                parent_id = request.data.get('parent')
-                parent_comment = None
-                if parent_id:
-                    parent_comment = LessonComment.objects.filter(id=parent_id, lesson=lesson).first()
+            submission = StudentChallengeSubmission.objects.filter(student=user, challenge=challenge).first()
+            if not submission:
+                return Response({"submitted": False, "score": 0.0}, status=status.HTTP_200_OK)
                 
-                serializer.save(user=request.user, lesson=lesson, parent=parent_comment)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "submitted": True,
+                "score": submission.score_percentage,
+                "feedback": submission.improvements,
+                "answer_text": submission.answer_text,
+                "passed": submission.score_percentage >= 70.0
+            }, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['put', 'delete'], permission_classes=[drf_permissions.IsAuthenticated], url_path=r'comments/(?P<comment_id>\d+)')
-    def comment_detail(self, request, pk=None, comment_id=None):
+        answer_text = request.data.get('answer_text') or request.data.get('student_answer')
+        
+        if not answer_text:
+            return Response({"detail": "O texto da resposta é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            
         try:
-            comment = LessonComment.objects.get(id=comment_id, lesson_id=pk)
-        except LessonComment.DoesNotExist:
-            return Response({"error": "Comentário não encontrado."}, status=status.HTTP_404_NOT_FOUND)
-
-        if comment.user != request.user:
-            return Response({"error": "Você não tem permissão para alterar este comentário."}, status=status.HTTP_403_FORBIDDEN)
-
-        if request.method == 'PUT':
-            content = request.data.get('content')
-            if not content:
-                return Response({"error": "O conteúdo não pode ser vazio."}, status=status.HTTP_400_BAD_REQUEST)
-            comment.content = content
-            comment.save()
-            serializer = LessonCommentSerializer(comment)
-            return Response(serializer.data)
-
-        elif request.method == 'DELETE':
-            comment.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            resultado = LessonService.handle_submit_challenge_action(
+                user=user, 
+                lesson=lesson, 
+                answer_text=answer_text
+            )
+            
+            if isinstance(resultado, tuple):
+                data, status_code = resultado
+                return Response(data, status=status_code)
+            
+            return Response(resultado, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            traceback.print_exc()
+            logger.error(f"Erro ao submeter desafio: {str(e)}")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class IsOwnerOrInstructorOrReadOnly(drf_permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -327,6 +344,35 @@ class CourseReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [drf_permissions.IsAuthenticated, IsOwnerOrInstructorOrReadOnly]
 
 class LessonSubmitView(APIView):
+    def get(self, request, pk=None):
+        try:
+            lesson = Lesson.objects.get(pk=pk)
+        except Lesson.DoesNotExist:
+            return Response({"error": "Aula não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            LessonChallengeModel = apps.get_model('ava_back', 'LessonChallenge') if 'apps' in globals() else LessonChallenge
+            challenge = LessonChallengeModel.objects.filter(lesson=lesson).first()
+            
+            if not challenge:
+                return Response({"submitted": False, "message": "Nenhum desafio encontrado para esta aula."}, status=status.HTTP_200_OK)
+                
+            submission = StudentChallengeSubmission.objects.filter(student=request.user, challenge=challenge).first()
+            
+            if not submission:
+                return Response({"submitted": False}, status=status.HTTP_200_OK)
+                
+            return Response({
+                "submitted": True,
+                "answer_text": submission.answer_text,
+                "feedback": submission.improvements,
+                "score": submission.score_percentage,
+                "lesson_completed": submission.score_percentage >= 70.0
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request, pk=None):
         try:
             lesson = Lesson.objects.get(pk=pk)

@@ -1,7 +1,7 @@
 from core import settings
 from rest_framework import serializers
 from django.db.models import Sum
-from ..models import AIAssistant, CourseReview, StudentChallengeSubmission, LessonComment, Wishlist, Lesson
+from ..models import AIAssistant, CourseReview, LessonChallenge, StudentChallengeSubmission, LessonComment, Wishlist, Lesson
 
 class AIAssistantSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,6 +47,12 @@ class QuizSubmissionSerializer(serializers.Serializer):
     weak_topics = serializers.ListField(child=serializers.CharField(max_length=100), required=False, default=list)
     strong_topics = serializers.ListField(child=serializers.CharField(max_length=100), required=False, default=list)
 
+class LessonChallengeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonChallenge
+        fields = ['id', 'lesson', 'title', 'description', 'taxonomy_level', 'evaluation_criteria', 'created_at']
+        read_only_fields = ['id', 'created_at', 'lesson']
+        
 class CourseReviewSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
     user_id = serializers.ReadOnlyField(source='user.id')

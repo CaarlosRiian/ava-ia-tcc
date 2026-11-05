@@ -169,6 +169,12 @@ export default function Aula() {
   }, [courseId, lessonId, router]);
 
   const handleEmitirCertificado = async () => {
+    if (course?.progress < 100) {
+      setCertificateError("Você precisa concluir todas as aulas e desafios do curso para emitir o certificado.");
+      alert("Você precisa concluir 100% do curso para emitir o certificado.");
+      return;
+    }
+
     setIsGeneratingCertificate(true);
     setCertificateError(null);
     try {
@@ -181,7 +187,8 @@ export default function Aula() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        setCertificateError(errorData.error || "Não foi possível emitir o certificado.");
+        setCertificateError(errorData.error || errorData.detail || "Não foi possível emitir o certificado. Conclua todas as atividades pendentes.");
+        alert(errorData.error || errorData.detail || "Certificado bloqueado: Conclua todas as atividades.");
         return;
       }
 
@@ -233,7 +240,31 @@ export default function Aula() {
 
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 w-full overflow-y-auto lg:overflow-hidden">
         <main className="min-w-0 lg:flex-1 lg:h-full lg:overflow-y-auto bg-white custom-scrollbar">
-          <VideoPlayer lesson={lesson} onToggleAI={() => setAiOpen(!aiOpen)} />
+          <VideoPlayer 
+            lesson={lesson} 
+            onToggleAI={() => setAiOpen(!aiOpen)}
+            isCompleted={!!(lesson.completed || lesson.is_completed)}
+            hasNextLesson={lessonIndex < course.lessons.length - 1} 
+            onMarkComplete={async () => {
+              try {
+                const token = localStorage.getItem("access");
+                await fetch(`http://localhost:8000/api/lessons/${lessonId}/complete/`, {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${token}` }
+                });
+                refreshProgress();
+              } catch (e) {
+                console.error("Erro ao marcar conclusão automática:", e);
+              }
+            }}
+            onNextLesson={() => {
+              const next = course.lessons[lessonIndex + 1];
+              if (next) {
+                const nextId = next.id ?? next.lesson_id;
+                router.push(`/curso/${courseId}/aula/${nextId}`);
+              }
+            }}
+          />
 
           <LessonContent
             key={lesson.id}

@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import ( CourseViewSet, UserViewSet, CategoryViewSet, ModuleViewSet, 
     LessonViewSet, EnrollmentViewSet, InstructorRequestViewSet, 
     EmailTokenView, me, WishListViewSet, 
-    LessonMaterialViewSet)
+    LessonMaterialViewSet, LessonSubmitView)
 from ava_back.views.instructor_views import ProfessorDetailView
 
 router = DefaultRouter()
@@ -22,6 +22,7 @@ urlpatterns = [
     path('me/', me),  
     path('courses/<int:course_id>/reviews/', CourseReviewListCreateView.as_view(), name='course-review-list-create'),
     path('courses/reviews/<int:pk>/', CourseReviewDetailView.as_view(), name='course-review-detail'),
+    path('lessons/<int:pk>/submissions/', LessonViewSet.as_view({'get': 'submissions', 'post': 'submit'}), name='lesson-submissions'),
     re_path(r'^professor/(?P<name>.+)/?$', ProfessorDetailView.as_view(), name='professor-detail'),
 ]
 

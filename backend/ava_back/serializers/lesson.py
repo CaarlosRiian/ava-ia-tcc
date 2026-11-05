@@ -31,7 +31,7 @@ class LessonSerializer(serializers.ModelSerializer):
         fields = ["id", "module", "title", "slug", "video", "thumbnail", "duration_seconds", "order", "status", "visibility", "materials", "challenge", "is_completed"]
 
     def get_challenge(self, obj):
-        challenge_obj = obj.challenges.first()
+        challenge_obj = Challenge.objects.filter(lesson=obj).first()
         return ChallengeSerializer(challenge_obj).data if challenge_obj else None
 
     def get_is_completed(self, obj):

@@ -24,12 +24,33 @@ export function useSolicitacoes() {
   const fetchSolicitacoes = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/instructor-requests/");
-      
-      const rawData = res.data;
-      const dataArray = Array.isArray(rawData) ? rawData : (rawData?.results || []);
+      let allResults: any[] = [];
+      let nextUrl: string | null = "/instructor-requests/";
 
-      const normalizado: Solicitacao[] = dataArray.map((item: any) => ({
+      while (nextUrl) {
+        const res: any = await api.get(nextUrl);
+        const rawData = res.data;
+
+        if (Array.isArray(rawData)) {
+          allResults = allResults.concat(rawData);
+          nextUrl = null; 
+        } else {
+          allResults = allResults.concat(rawData?.results || []);
+          
+          if (rawData?.next) {
+            try {
+              const urlObj = new URL(rawData.next);
+              nextUrl = "/instructor-requests/" + urlObj.search;
+            } catch {
+              nextUrl = null;
+            }
+          } else {
+            nextUrl = null;
+          }
+        }
+      }
+
+      const normalizado: Solicitacao[] = allResults.map((item: any) => ({
         id: item.id,
         nome: item.user?.username ?? "sem nome",
         user: item.user,

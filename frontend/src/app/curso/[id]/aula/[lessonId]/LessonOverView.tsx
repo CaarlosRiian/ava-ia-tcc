@@ -30,6 +30,8 @@ export default function LessonOverview({
   const [isCompleted, setIsCompleted] = useState(lesson?.is_completed || lesson?.completed || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInstructor, setIsInstructor] = useState(false);
+  
+  const [currentChallengeScore, setCurrentChallengeScore] = useState<number | null>(null);
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -67,6 +69,9 @@ export default function LessonOverview({
     const tipo = (material.material_type || "").toLowerCase();
     return tipo !== "text" && tipo !== "texto";
   });
+
+  const hasPassedCurrentChallenge = currentChallengeScore !== null && currentChallengeScore >= 70;
+  const canShowCertificate = (courseProgress === 100) || (isCompleted && hasPassedCurrentChallenge);
 
   return (
     <div>
@@ -184,9 +189,12 @@ export default function LessonOverview({
         lesson={lesson}
         isCompleted={isCompleted}
         apiBaseUrl={apiBaseUrl}
-        onChallengeCompleted={() => {
+        onChallengeCompleted={(resultData?: any) => {
           setIsCompleted(true);
           lesson.completed = true;
+          if (resultData?.score !== undefined) {
+            setCurrentChallengeScore(Number(resultData.score));
+          }
           if (onLessonCreateOrComplete) {
             onLessonCreateOrComplete();
           }
@@ -202,7 +210,7 @@ export default function LessonOverview({
           </Link>
         )}
 
-        {courseProgress === 100 && (
+        {canShowCertificate && (
           <div className="w-full sm:flex-1 space-y-2">
             <button
               type="button"

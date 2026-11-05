@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link"; 
 import { formatName } from "@/utils/formatName";
-import { User, Play, Heart, CheckCircle2, GraduationCap, ArrowRight, Loader2 } from "lucide-react";
+import { User, Play, Pause, Volume2, VolumeX, Maximize, Heart, CheckCircle2, GraduationCap, ArrowRight, Loader2, FastForward } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient"; 
 
 interface CourseHeroProps {
@@ -16,7 +16,17 @@ interface CourseHeroProps {
 export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPlayClick }: CourseHeroProps) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState<boolean>(false);
+  
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   const getThumbnailUrl = (thumb?: string | null) => {
     if (!thumb || typeof thumb !== "string" || thumb.trim() === "") return null;
@@ -34,7 +44,6 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
   useEffect(() => {
     async function fetchSignedUrl() {
       if (!course?.intro_video) {
-        console.warn("O campo intro_video está vazio ou é undefined/null.");
         return;
       }
 
@@ -46,8 +55,6 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
           return;
         }
 
-        console.log("Solicitando Signed URL para o path:", course.intro_video);
-
         const { data, error } = await supabase.storage
           .from("course-lessons")
           .createSignedUrl(course.intro_video, 3600);
@@ -57,7 +64,6 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
           return;
         }
 
-        console.log("Signed URL gerada com sucesso:", data?.signedUrl);
         if (data?.signedUrl) {
           setVideoUrl(data.signedUrl);
         }
@@ -71,15 +77,88 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
     fetchSignedUrl();
   }, [course?.intro_video]);
 
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleStartIntro = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    onPlayClick?.(e);
 
     if (videoUrl) {
+      setHasStarted(true);
       setIsPlaying(true);
     }
   };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value);
+    setCurrentTime(time);
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      setIsMuted(val === 0);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = volume || 1;
+        setIsMuted(false);
+      } else {
+        videoRef.current.volume = 0;
+        setIsMuted(true);
+      }
+    }
+  };
+
+  const changeSpeed = (rate: number) => {
+    setPlaybackRate(rate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+    }
+    setShowSpeedMenu(false);
+  };
+
+  const toggleFullScreen = () => {
+    if (videoRef.current && videoRef.current.requestFullscreen) {
+      videoRef.current.requestFullscreen();
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
   const professorSlug = course.professor_slug || course.professor?.slug || (course.professor_name
     ? course.professor_name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll(" ", "_")
@@ -102,24 +181,111 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
           <span className="text-xs text-zinc-400 font-medium">Visão geral do curso</span>
         </div>
 
-        <div 
-          onClick={handleContainerClick} 
-          className="aspect-video rounded-3xl bg-zinc-900 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-xl border border-zinc-100/80 transition-all hover:shadow-2xl"
-        >
-          {isPlaying && videoUrl ? (
-            <div 
-              className="w-full h-full flex items-center justify-center bg-black"
-              onClick={(e) => e.stopPropagation()}
-            >
+        <div className="aspect-video rounded-3xl bg-black flex items-center justify-center overflow-hidden relative group shadow-xl border border-zinc-100/80">
+          
+          {hasStarted && videoUrl ? (
+            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
               <video
+                ref={videoRef}
                 src={videoUrl}
-                controls
                 autoPlay
-                className="w-full h-full object-contain"
+                className={`w-full h-full object-contain cursor-pointer ${isPlaying ? '' : 'brightness-90'}`}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onClick={togglePlay}
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
               />
+
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2 z-20">
+                
+                <div className="relative w-full h-2 flex items-center group/slider cursor-pointer">
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                  />
+                  <div className="absolute inset-x-0 h-1 bg-gray-600/70 rounded-full overflow-hidden group-hover/slider:h-1.5 transition-all">
+                    <div 
+                      className="h-full bg-[#FF7A00] rounded-full transition-all"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <div 
+                    className="absolute h-3 w-3 bg-[#FF7A00] rounded-full shadow-md scale-0 group-hover/slider:scale-100 transition-transform pointer-events-none"
+                    style={{ left: `calc(${progressPercent}% - 6px)` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-white text-xs">
+                  <div className="flex items-center gap-4">
+                    <button onClick={togglePlay} className="hover:text-[#FF7A00] transition cursor-pointer">
+                      {isPlaying ? <Pause size={18} /> : <Play size={18} className="fill-white" />}
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button onClick={toggleMute} className="hover:text-[#FF7A00] transition cursor-pointer">
+                        {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                        className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
+                      />
+                    </div>
+
+                    <span className="text-gray-300 font-medium">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 relative">
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                        className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-md font-bold text-[11px] transition cursor-pointer"
+                      >
+                        <FastForward size={14} />
+                        {playbackRate}x
+                      </button>
+
+                      {showSpeedMenu && (
+                        <div className="absolute bottom-8 right-0 bg-black/90 border border-gray-700 rounded-xl shadow-xl py-1.5 w-24 z-20 flex flex-col">
+                          {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                            <button
+                              key={rate}
+                              onClick={() => changeSpeed(rate)}
+                              className={`px-3 py-1.5 text-left text-xs hover:bg-[#FF7A00] transition cursor-pointer ${playbackRate === rate ? 'font-bold text-[#FF7A00]' : 'text-gray-300'}`}
+                            >
+                              {rate}x
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <button onClick={toggleFullScreen} className="hover:text-[#FF7A00] transition cursor-pointer">
+                      <Maximize size={16} />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
             </div>
           ) : (
-            <>
+            <div 
+              onClick={handleStartIntro}
+              className="w-full h-full flex flex-col items-center justify-center text-center cursor-pointer relative"
+            >
               {courseThumbnail && (
                 <img
                   src={courseThumbnail}
@@ -131,18 +297,9 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
                 />
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/70 transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent group-hover:from-black/75 transition-all duration-300" />
 
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  if (videoUrl) {
-                    setIsPlaying(true);
-                  }
-                }}
-                className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/20 cursor-pointer"
-              >
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl scale-100 group-hover:scale-110 transition-all duration-300 z-10 relative flex items-center gap-3 border border-white/25">
                 <div className="w-12 h-12 rounded-xl bg-[#FF7A00] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
                   {loadingVideo ? (
                     <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -159,7 +316,7 @@ export default function CourseHero({ course, isFavorited, onFavoriteToggle, onPl
                   </p>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

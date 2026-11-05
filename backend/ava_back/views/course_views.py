@@ -16,7 +16,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from ..models import Course, Category, Module, Lesson, Enrollment, LessonProgress, Wishlist, StudentChallengeSubmission
 from ..serializers import ( CourseSerializer, CategorySerializer, CourseDetailSerializer, 
     InstructorCourseSerializer )
-from ..services.service import LessonService, CourseService 
+from ..services import LessonService, CourseService 
 
 class CategoryViewSet(ModelViewSet):
     serializer_class = CategorySerializer
